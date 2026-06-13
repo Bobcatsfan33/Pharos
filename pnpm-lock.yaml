@@ -106,6 +106,8 @@ importers:
 
   packages/observability: {}
 
+  packages/pdp-spec: {}
+
   packages/policy:
     dependencies:
       '@pharos/core':
@@ -170,6 +172,9 @@ importers:
       '@pharos/observability':
         specifier: workspace:*
         version: link:../../packages/observability
+      '@pharos/pdp-spec':
+        specifier: workspace:*
+        version: link:../../packages/pdp-spec
       '@pharos/policy':
         specifier: workspace:*
         version: link:../../packages/policy

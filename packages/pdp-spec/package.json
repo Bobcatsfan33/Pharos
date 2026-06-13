@@ -1,0 +1,17 @@
+{
+  "name": "@pharos/pdp-spec",
+  "version": "1.0.0",
+  "description": "Open Policy Decision Point (PDP) specification for AI agents — contract, conformance suite, and a reference implementation.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

@@ -26,6 +26,7 @@
     "@pharos/evidence": "workspace:*",
     "@pharos/identity": "workspace:*",
     "@pharos/judge": "workspace:*",
+    "@pharos/pdp-spec": "workspace:*",
     "@pharos/policy": "workspace:*",
     "@pharos/review": "workspace:*",
     "@pharos/storage": "workspace:*",

@@ -71,7 +71,13 @@ Built sprint-by-sprint against [the roadmap](docs/ROADMAP.md). Sequence and proo
 
 **Sprint 8 (Granite) — complete.** Buyable by a bank: **observability** (Prometheus `/metrics`, OTel-style tracing, alerting runbooks), **resilience** (multi-AZ, documented RPO/RTO, a region-failover exercise with **zero evidence loss** and the chain re-verifying green on the recovered region), **customer-hosted GA** (hardened Compose + Helm chart + install-from-docs, CPU-only judge), and **metering/billing** for the three-part model with invoices that **reconcile to recorded usage exactly**. SOC 2 control mapping, SIG/CAIQ answer pack, and DPA templates prepared. See [docs/operations.md](docs/operations.md), [deploy/INSTALL.md](deploy/INSTALL.md), and [docs/compliance/soc2-and-procurement.md](docs/compliance/soc2-and-procurement.md).
 
-148 TS tests + 10 Python tests green (adds billing + Granite failover/metering/metrics integration against real Postgres / S3 WORM / Redis).
+**Sprint 9 (Signal) — complete.** GA, standards, and the channel: the **open PDP specification v1.0** is public with a conformance suite and an **independent reference implementation that conforms** (alongside the Pharos cascade), a public `POST /v1/pdp` endpoint returning a signed **evidence binding**, AIUC-1 accountability-pillar + NAIC mappings, identity-rail integration (Okta for AI Agents / Entra Agent ID via OIDC), published GA pricing, and the insurer channel. See [docs/spec/pdp-v1.md](docs/spec/pdp-v1.md) and [docs/standards-and-channel.md](docs/standards-and-channel.md).
+
+154 TS tests + 10 Python tests green (adds PDP conformance + Signal integration against real Postgres / S3 WORM / Redis).
+
+---
+
+**All ten sprints (Bedrock → Signal) are code-complete and milestone-verified.** Every milestone's exit criteria are exercised by passing tests against real infrastructure. The remaining items are explicitly external/human gates — outside-counsel and consultant reviews, SOC 2 attestation, a commissioned penetration test, design-partner/pilot/production-customer signatures, carrier feed confirmations, and publishing the SDKs to PyPI/npm — none of which are code. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Monorepo layout
 
