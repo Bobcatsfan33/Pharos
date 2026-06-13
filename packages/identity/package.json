@@ -1,5 +1,5 @@
 {
-  "name": "@pharos/storage",
+  "name": "@pharos/identity",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,13 +14,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.703.0",
-    "@pharos/core": "workspace:*",
-    "@pharos/identity": "workspace:*",
-    "ioredis": "^5.4.2",
-    "pg": "^8.13.1"
-  },
-  "devDependencies": {
-    "@types/pg": "^8.11.10"
+    "jose": "^5.9.6",
+    "zod": "^3.24.1"
   }
 }

@@ -6,14 +6,18 @@ import {
   type SigningProvider,
 } from "@pharos/core";
 import {
+  AccessAuditLog,
+  ApiKeyStore,
   ChainIntegrityService,
   EvidenceStore,
+  TenantStore,
   VerdictCache,
   WormStore,
   createPool,
   runMigrations,
   type Pool,
 } from "@pharos/storage";
+import { OidcVerifier, type OidcIssuerConfig } from "@pharos/identity";
 
 /**
  * The composition root: build the durable platform spine from configuration.
@@ -32,7 +36,16 @@ export interface Platform {
   store: EvidenceStore;
   engine: VerdictEngine;
   integrity: ChainIntegrityService;
+  tenants: TenantStore;
+  apiKeys: ApiKeyStore;
+  accessAudit: AccessAuditLog;
+  oidc: OidcVerifier;
   close: () => Promise<void>;
+}
+
+export interface BuildPlatformOptions {
+  /** Override OIDC issuer configs (tests inject local JWKS issuers). */
+  oidcIssuers?: OidcIssuerConfig[];
 }
 
 export function buildSigner(config: PharosConfig): SigningProvider {
@@ -43,7 +56,10 @@ export function buildSigner(config: PharosConfig): SigningProvider {
   throw new Error(`KMS provider not yet supported: ${config.kms.provider}`);
 }
 
-export async function buildPlatform(config: PharosConfig = loadConfig()): Promise<Platform> {
+export async function buildPlatform(
+  config: PharosConfig = loadConfig(),
+  options: BuildPlatformOptions = {},
+): Promise<Platform> {
   const pool = createPool(config.pg.url);
   await runMigrations(pool);
 
@@ -62,8 +78,8 @@ export async function buildPlatform(config: PharosConfig = loadConfig()): Promis
 
   const cache = new VerdictCache(config.redis.url);
 
-  // Sprint 0: per-environment signing key. Sprint 1 swaps this resolver for per-tenant keys.
-  const resolveKeyName = (_tenantId: string) => `pharos-${config.env}`;
+  // Sprint 1: per-tenant signing keys (matches TenantStore.kmsKeyName).
+  const resolveKeyName = (tenantId: string) => `tenant:${tenantId}`;
 
   const store = new EvidenceStore({ pool, worm, signer, resolveKeyName });
   const engine = new VerdictEngine({ deadlineMs: config.api.verdictDeadlineMs });
@@ -76,6 +92,12 @@ export async function buildPlatform(config: PharosConfig = loadConfig()): Promis
     },
   });
 
+  const tenants = new TenantStore(pool);
+  const apiKeys = new ApiKeyStore(pool);
+  const accessAudit = new AccessAuditLog(pool);
+  const oidcIssuers = options.oidcIssuers ?? (config.oidc as OidcIssuerConfig[]);
+  const oidc = new OidcVerifier(oidcIssuers);
+
   return {
     config,
     pool,
@@ -85,6 +107,10 @@ export async function buildPlatform(config: PharosConfig = loadConfig()): Promis
     store,
     engine,
     integrity,
+    tenants,
+    apiKeys,
+    accessAudit,
+    oidc,
     close: async () => {
       integrity.stop();
       await cache.close().catch(() => {});

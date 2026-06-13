@@ -12,9 +12,11 @@
  * run (or the --verify flag) reconnects to the durable stores with a fresh process —
  * simulating a platform restart — and verifies the full chain from genesis to head.
  */
+import { writeFileSync } from "node:fs";
 import { buildPlatform } from "../services/api/src/platform.js";
 
 const DEMO_TENANT = "demo-tenant";
+const AUDITOR_KEY_FILE = ".pharos-demo-auditor-key";
 
 const DEMO_ACTIONS = [
   {
@@ -49,6 +51,14 @@ const DEMO_ACTIONS = [
 async function submit(): Promise<void> {
   const platform = await buildPlatform();
   try {
+    // Provision the tenant (per-tenant signing key) and mint a read-scoped auditor key
+    // so the external verifier can fetch the evidence bundle.
+    const tenant = await platform.tenants.createTenant({ tenantId: DEMO_TENANT, displayName: "Demo Tenant" });
+    await platform.signer.ensureKey(tenant.kmsKeyName);
+    const auditor = await platform.apiKeys.create(DEMO_TENANT, "demo-auditor", ["records:read", "chain:verify"]);
+    writeFileSync(AUDITOR_KEY_FILE, auditor.plaintext);
+    console.log(`Provisioned tenant + auditor key (saved to ${AUDITOR_KEY_FILE}).`);
+
     console.log(`\n=== Submitting ${DEMO_ACTIONS.length} demo actions for tenant "${DEMO_TENANT}" ===`);
     for (const item of DEMO_ACTIONS) {
       const action = { ...item.action, payload: item.action.payload ?? {}, emittedAt: new Date().toISOString() };

@@ -49,6 +49,10 @@ export class EvidenceStore {
     const client = await this.deps.pool.connect();
     try {
       await client.query("BEGIN");
+      // Bind the RLS tenant context and drop to the NOBYPASSRLS app role so the
+      // row-level security policy actually confines the action_records write.
+      await client.query("SELECT set_config('pharos.tenant_id', $1, true)", [input.tenantId]);
+      await client.query("SET LOCAL ROLE pharos_app");
 
       // Ensure a head row exists, then lock it to serialize this tenant's appends.
       await client.query(
@@ -138,26 +142,57 @@ export class EvidenceStore {
     };
   }
 
-  async getRecord(tenantId: string, sequence: number): Promise<ActionRecord | null> {
-    const res = await this.deps.pool.query<RecordRow>(
-      `SELECT * FROM action_records WHERE tenant_id = $1 AND sequence = $2`,
-      [tenantId, sequence],
-    );
-    return res.rows[0] ? this.rowToRecord(res.rows[0]) : null;
+  /**
+   * Run reads inside a transaction that binds the RLS tenant context. The row-level
+   * security policy on action_records then confines every query to this tenant — a
+   * defense-in-depth backstop beneath the application-layer authorization checks.
+   */
+  private async withTenant<T>(tenantId: string, fn: (client: PoolClient) => Promise<T>): Promise<T> {
+    const client = await this.deps.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT set_config('pharos.tenant_id', $1, true)", [tenantId]);
+      await client.query("SET LOCAL ROLE pharos_app");
+      const result = await fn(client);
+      await client.query("COMMIT");
+      return result;
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
-  async getRecordById(id: string): Promise<ActionRecord | null> {
-    const res = await this.deps.pool.query<RecordRow>(`SELECT * FROM action_records WHERE id = $1`, [id]);
-    return res.rows[0] ? this.rowToRecord(res.rows[0]) : null;
+  async getRecord(tenantId: string, sequence: number): Promise<ActionRecord | null> {
+    return this.withTenant(tenantId, async (client) => {
+      const res = await client.query<RecordRow>(
+        `SELECT * FROM action_records WHERE tenant_id = $1 AND sequence = $2`,
+        [tenantId, sequence],
+      );
+      return res.rows[0] ? this.rowToRecord(res.rows[0]) : null;
+    });
+  }
+
+  async getRecordById(tenantId: string, id: string): Promise<ActionRecord | null> {
+    return this.withTenant(tenantId, async (client) => {
+      const res = await client.query<RecordRow>(
+        `SELECT * FROM action_records WHERE id = $1 AND tenant_id = $2`,
+        [id, tenantId],
+      );
+      return res.rows[0] ? this.rowToRecord(res.rows[0]) : null;
+    });
   }
 
   /** Full per-tenant chain ordered by ascending sequence (genesis -> head). */
   async getChain(tenantId: string): Promise<ActionRecord[]> {
-    const res = await this.deps.pool.query<RecordRow>(
-      `SELECT * FROM action_records WHERE tenant_id = $1 ORDER BY sequence ASC`,
-      [tenantId],
-    );
-    return res.rows.map((r) => this.rowToRecord(r));
+    return this.withTenant(tenantId, async (client) => {
+      const res = await client.query<RecordRow>(
+        `SELECT * FROM action_records WHERE tenant_id = $1 ORDER BY sequence ASC`,
+        [tenantId],
+      );
+      return res.rows.map((r) => this.rowToRecord(r));
+    });
   }
 
   async getHead(tenantId: string): Promise<{ sequence: number; hash: string } | null> {
@@ -178,9 +213,8 @@ export class EvidenceStore {
   }
 
   async count(tenantId: string): Promise<number> {
-    const res = await this.deps.pool.query<{ n: string }>(
-      `SELECT count(*)::text AS n FROM action_records WHERE tenant_id = $1`,
-      [tenantId],
+    const res = await this.withTenant(tenantId, (client) =>
+      client.query<{ n: string }>(`SELECT count(*)::text AS n FROM action_records WHERE tenant_id = $1`, [tenantId]),
     );
     return Number(res.rows[0]?.n ?? 0);
   }

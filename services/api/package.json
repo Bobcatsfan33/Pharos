@@ -19,6 +19,7 @@
     "@fastify/cors": "^10.0.1",
     "@pharos/config": "workspace:*",
     "@pharos/core": "workspace:*",
+    "@pharos/identity": "workspace:*",
     "@pharos/storage": "workspace:*",
     "fastify": "^5.2.0",
     "zod": "^3.24.1"

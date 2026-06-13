@@ -26,6 +26,17 @@ export class VerdictCache {
     await this.redis.set(key, value, "EX", ttlSeconds);
   }
 
+  /**
+   * Fixed-window counter for per-principal rate limiting. Returns the current count in
+   * the window after incrementing; the first increment sets the window TTL. Backed by
+   * Redis so limits hold across API instances (not in process memory).
+   */
+  async incr(key: string, ttlSeconds: number): Promise<number> {
+    const count = await this.redis.incr(key);
+    if (count === 1) await this.redis.expire(key, ttlSeconds);
+    return count;
+  }
+
   async ping(): Promise<boolean> {
     try {
       return (await this.redis.ping()) === "PONG";

@@ -6,18 +6,18 @@ import {
   ActionRecordSchema,
 } from "@pharos/core";
 import type { Platform } from "../platform.js";
+import { requireAuth } from "../auth.js";
 
 /**
- * The single ingestion surface.
+ * The single ingestion surface plus evidence reads.
  *
- * POST /v1/actions submits an agent action and returns two outputs of one
- * transaction: the verdict (Beam) and the sealed, chained ActionRecord (Ledger).
- * The action cannot be governed without being recorded.
+ * POST /v1/actions submits an agent action and returns two outputs of one transaction:
+ * the verdict (Beam) and the sealed, chained ActionRecord (Ledger). Reads of evidence
+ * require authentication and are recorded in the hash-chained access audit.
  */
 const SubmitBodySchema = z.object({
   tenantId: z.string().min(1),
   action: ActionIntentSchema.extend({
-    // Allow clients to omit emittedAt; the platform stamps it.
     emittedAt: z.string().datetime().optional(),
   }),
   liability: LiabilityContextSchema,
@@ -34,6 +34,10 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
       });
     }
     const body = parsed.data;
+
+    const principal = await requireAuth(platform, request, reply, "actions:write", body.tenantId);
+    if (!principal) return reply;
+
     const action = {
       ...body.action,
       payload: body.action.payload ?? {},
@@ -54,10 +58,7 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
 
     return reply.status(201).send({
       success: true,
-      data: {
-        verdict: record.content.verdict,
-        record: ActionRecordSchema.parse(record),
-      },
+      data: { verdict: record.content.verdict, record: ActionRecordSchema.parse(record) },
       error: null,
     });
   });
@@ -65,32 +66,55 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
   app.get<{ Params: { tenantId: string; sequence: string } }>(
     "/v1/records/:tenantId/:sequence",
     async (request, reply) => {
+      const { tenantId } = request.params;
+      const principal = await requireAuth(platform, request, reply, "records:read", tenantId);
+      if (!principal) return reply;
+
       const sequence = Number(request.params.sequence);
       if (!Number.isInteger(sequence) || sequence < 0) {
         return reply.status(400).send({ success: false, data: null, error: { code: "invalid_sequence" } });
       }
-      const record = await platform.store.getRecord(request.params.tenantId, sequence);
+      const record = await platform.store.getRecord(tenantId, sequence);
       if (!record) {
         return reply.status(404).send({ success: false, data: null, error: { code: "not_found" } });
       }
+      await platform.accessAudit.record({
+        tenantId,
+        actor: principal.subject,
+        actorKind: principal.kind,
+        action: "view",
+        resource: `record:${sequence}`,
+      });
       return reply.send({ success: true, data: record, error: null });
     },
   );
 
-  app.get<{ Params: { tenantId: string } }>(
-    "/v1/chain/:tenantId/verify",
-    async (request, reply) => {
-      const report = await platform.integrity.verifyTenant(request.params.tenantId);
-      return reply.status(report.ok ? 200 : 409).send({ success: report.ok, data: report, error: null });
-    },
-  );
+  app.get<{ Params: { tenantId: string } }>("/v1/chain/:tenantId/verify", async (request, reply) => {
+    const { tenantId } = request.params;
+    const principal = await requireAuth(platform, request, reply, "chain:verify", tenantId);
+    if (!principal) return reply;
+
+    const report = await platform.integrity.verifyTenant(tenantId);
+    await platform.accessAudit.record({
+      tenantId,
+      actor: principal.subject,
+      actorKind: principal.kind,
+      action: "verify",
+      resource: "chain",
+    });
+    return reply.status(report.ok ? 200 : 409).send({ success: report.ok, data: report, error: null });
+  });
 
   app.get<{ Params: { tenantId: string } }>("/v1/chain/:tenantId", async (request, reply) => {
-    const head = await platform.store.getHead(request.params.tenantId);
-    const count = await platform.store.count(request.params.tenantId);
+    const { tenantId } = request.params;
+    const principal = await requireAuth(platform, request, reply, "records:read", tenantId);
+    if (!principal) return reply;
+    const head = await platform.store.getHead(tenantId);
+    const count = await platform.store.count(tenantId);
     return reply.send({ success: true, data: { head, count }, error: null });
   });
 
+  // The published public keyset is verification material — intentionally public.
   app.get("/v1/keyset", async (_request, reply) => {
     const keyset = await platform.signer.publishKeyset();
     return reply.send({ success: true, data: { keys: keyset }, error: null });

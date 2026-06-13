@@ -49,6 +49,92 @@ export const MIGRATIONS: Migration[] = [
         ON action_records (content_hash);
     `,
   },
+  {
+    version: "0002_gatehouse",
+    sql: /* sql */ `
+      -- Tenant lifecycle. Evidence-retention rules survive tenant deletion where required.
+      CREATE TABLE IF NOT EXISTS tenants (
+        tenant_id     TEXT PRIMARY KEY,
+        display_name  TEXT NOT NULL,
+        status        TEXT NOT NULL DEFAULT 'active', -- active | suspended | deleted
+        kms_key_name  TEXT NOT NULL,
+        evidence_prefix TEXT NOT NULL,
+        retain_evidence_on_delete BOOLEAN NOT NULL DEFAULT true,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+
+      -- Scoped API keys (machine identities). Only the secret hash is stored.
+      CREATE TABLE IF NOT EXISTS api_keys (
+        key_id       TEXT PRIMARY KEY,
+        tenant_id    TEXT NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+        name         TEXT NOT NULL,
+        secret_hash  TEXT NOT NULL,
+        scopes       JSONB NOT NULL DEFAULT '[]',
+        status       TEXT NOT NULL DEFAULT 'active', -- active | revoked
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        last_used_at TIMESTAMPTZ,
+        revoked_at   TIMESTAMPTZ
+      );
+      CREATE INDEX IF NOT EXISTS api_keys_tenant_idx ON api_keys (tenant_id);
+
+      -- Hash-chained access audit: who viewed/exported/shared which evidence, when.
+      CREATE TABLE IF NOT EXISTS access_audit (
+        tenant_id    TEXT NOT NULL,
+        sequence     BIGINT NOT NULL,
+        id           UUID NOT NULL,
+        actor        TEXT NOT NULL,
+        actor_kind   TEXT NOT NULL,
+        action       TEXT NOT NULL,  -- view | export | share | verify
+        resource     TEXT NOT NULL,  -- e.g. record:42, chain, claims-pack:abc
+        metadata     JSONB NOT NULL DEFAULT '{}',
+        prev_hash    TEXT NOT NULL,
+        entry_hash   TEXT NOT NULL,
+        at           TEXT NOT NULL,  -- ISO-8601 stored verbatim so the entry hash round-trips exactly
+        PRIMARY KEY (tenant_id, sequence),
+        UNIQUE (id)
+      );
+      CREATE TABLE IF NOT EXISTS access_audit_head (
+        tenant_id     TEXT PRIMARY KEY,
+        last_sequence BIGINT NOT NULL,
+        last_hash     TEXT NOT NULL
+      );
+
+      -- Row-level security: defense-in-depth tenant isolation on the evidence tables.
+      -- Even if application code omits a tenant filter, the database refuses cross-tenant
+      -- rows. Access is scoped per request via SET LOCAL pharos.tenant_id.
+      ALTER TABLE action_records ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE action_records FORCE ROW LEVEL SECURITY;
+      DROP POLICY IF EXISTS action_records_tenant_isolation ON action_records;
+      CREATE POLICY action_records_tenant_isolation ON action_records
+        USING (tenant_id = current_setting('pharos.tenant_id', true))
+        WITH CHECK (tenant_id = current_setting('pharos.tenant_id', true));
+
+      ALTER TABLE access_audit ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE access_audit FORCE ROW LEVEL SECURITY;
+      DROP POLICY IF EXISTS access_audit_tenant_isolation ON access_audit;
+      CREATE POLICY access_audit_tenant_isolation ON access_audit
+        USING (tenant_id = current_setting('pharos.tenant_id', true))
+        WITH CHECK (tenant_id = current_setting('pharos.tenant_id', true));
+    `,
+  },
+  {
+    version: "0003_rls_app_role",
+    sql: /* sql */ `
+      -- Superusers and BYPASSRLS roles ignore row-level security, so the application
+      -- assumes a dedicated NOBYPASSRLS role per tenant-scoped transaction (SET LOCAL
+      -- ROLE). Only then does the RLS policy actually confine queries to one tenant.
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'pharos_app') THEN
+          CREATE ROLE pharos_app NOBYPASSRLS;
+        END IF;
+      END $$;
+      GRANT USAGE ON SCHEMA public TO pharos_app;
+      GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO pharos_app;
+      ALTER DEFAULT PRIVILEGES IN SCHEMA public
+        GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO pharos_app;
+    `,
+  },
 ];
 
 export async function runMigrations(pool: Pool): Promise<string[]> {

@@ -10,3 +10,5 @@ coverage/
 .DS_Store
 .pharos-keystore/
 .turbo/
+
+.pharos-demo-auditor-key

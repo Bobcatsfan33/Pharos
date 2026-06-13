@@ -30,10 +30,31 @@ const ConfigSchema = z.object({
   api: z.object({
     port: z.coerce.number().int().positive().default(4000),
     verdictDeadlineMs: z.coerce.number().int().positive().default(800),
+    /** Allowed CORS origins. Empty = same-origin only (deny cross-origin browser calls). */
+    allowedOrigins: z.array(z.string()).default([]),
+    /** Per-principal (tenant+subject) request budget per minute. */
+    rateLimitPerMin: z.coerce.number().int().positive().default(600),
   }),
+  /** Trusted OIDC issuers (Okta, Entra, ...). Optional; empty disables SSO bearer auth. */
+  oidc: z.array(z.unknown()).default([]),
+  /** Platform-operator bootstrap token for tenant provisioning. */
+  admin: z.object({ token: z.string().optional() }),
 });
 
 export type PharosConfig = z.infer<typeof ConfigSchema>;
+
+function csv(value: string | undefined): string[] {
+  return value ? value.split(",").map((s) => s.trim()).filter(Boolean) : [];
+}
+
+function safeJsonArray(value: string): unknown[] {
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    throw new Error("PHAROS_OIDC_ISSUERS must be a JSON array of issuer configs");
+  }
+}
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
   const parsed = ConfigSchema.safeParse({
@@ -56,7 +77,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
     api: {
       port: env.PHAROS_API_PORT,
       verdictDeadlineMs: env.PHAROS_VERDICT_DEADLINE_MS,
+      allowedOrigins: csv(env.PHAROS_ALLOWED_ORIGINS),
+      rateLimitPerMin: env.PHAROS_RATE_LIMIT_PER_MIN,
     },
+    oidc: env.PHAROS_OIDC_ISSUERS ? safeJsonArray(env.PHAROS_OIDC_ISSUERS) : [],
+    admin: { token: env.PHAROS_ADMIN_TOKEN },
   });
   if (!parsed.success) {
     const detail = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");

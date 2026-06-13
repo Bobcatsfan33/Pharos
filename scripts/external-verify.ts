@@ -11,13 +11,30 @@
  *
  *   Usage: tsx scripts/external-verify.ts <tenantId> [apiBaseUrl]
  */
+import { readFileSync } from "node:fs";
 import { verifyChain, type ActionRecord, type PublicKeyEntry } from "../packages/core/src/index.js";
 
 const tenantId = process.argv[2] ?? "demo-tenant";
 const base = process.argv[3] ?? "http://localhost:4000";
 
-async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${base}${path}`);
+// Evidence reads are authenticated and audited; the auditor presents a read-scoped key.
+// (The published keyset is public — verification math needs no credentials.)
+function auditorKey(): string | undefined {
+  return process.env.PHAROS_API_KEY ?? readKeyFile();
+}
+function readKeyFile(): string | undefined {
+  try {
+    return readFileSync(".pharos-demo-auditor-key", "utf8").trim();
+  } catch {
+    return undefined;
+  }
+}
+
+async function getJson<T>(path: string, authenticated = true): Promise<T> {
+  const headers: Record<string, string> = {};
+  const key = auditorKey();
+  if (authenticated && key) headers["x-api-key"] = key;
+  const res = await fetch(`${base}${path}`, { headers });
   if (!res.ok) throw new Error(`GET ${path} -> ${res.status}`);
   const body = (await res.json()) as { data: T };
   return body.data;
@@ -32,7 +49,7 @@ async function main(): Promise<void> {
   for (let seq = 0; seq < count; seq++) {
     records.push(await getJson<ActionRecord>(`/v1/records/${tenantId}/${seq}`));
   }
-  const { keys } = await getJson<{ keys: PublicKeyEntry[] }>(`/v1/keyset`);
+  const { keys } = await getJson<{ keys: PublicKeyEntry[] }>(`/v1/keyset`, false);
 
   console.log(`Fetched ${records.length} records and ${keys.length} public keys.`);
   console.log("Verifying with @pharos/core ONLY (no DB, no signer, no platform calls)…\n");

@@ -53,7 +53,11 @@ See [docs/architecture.md](docs/architecture.md) for the implemented design.
 
 Built sprint-by-sprint against [the roadmap](docs/ROADMAP.md). Sequence and proof are the contract: no external claim ships before its proof exists, and every milestone is a live demo with measured exit criteria — not a document.
 
-**Sprint 0 (Bedrock) — complete.** A single deployable platform where an agent action receives a verdict and produces a sealed, durable, externally-verifiable evidence record — surviving restarts, verifiable genesis-to-head. M0 exit criteria all pass; 31 tests green (unit + durability integration against real Postgres / S3 WORM / Redis).
+**Sprint 0 (Bedrock) — complete.** A single deployable platform where an agent action receives a verdict and produces a sealed, durable, externally-verifiable evidence record — surviving restarts, verifiable genesis-to-head.
+
+**Sprint 1 (Gatehouse) — complete.** Enterprise SSO (OIDC, verified against Okta + Entra), scoped + rotatable API keys, deny-by-default RBAC, hard multi-tenant isolation (Postgres RLS under a `NOBYPASSRLS` app role + per-tenant signing keys), a hash-chained access audit, and CORS/rate-limit hardening. The tenant-isolation attack suite (cross-tenant reads, IDOR, scope escalation, revoked-key reuse, DB-level RLS) finds zero crossings. See [docs/identity-and-tenancy.md](docs/identity-and-tenancy.md).
+
+58 tests green (unit + durability + Gatehouse integration against real Postgres / S3 WORM / Redis).
 
 ## Monorepo layout
 

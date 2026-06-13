@@ -29,6 +29,7 @@ process.env.PHAROS_S3_SECRET_KEY ??= "pharos_local_dev";
 process.env.PHAROS_S3_FORCE_PATH_STYLE ??= "true";
 process.env.PHAROS_KMS_PROVIDER = "local-kms";
 process.env.PHAROS_KMS_KEYSTORE_DIR = keystoreDir;
+process.env.PHAROS_ADMIN_TOKEN = "it-admin-token";
 
 const TENANT = `it-${randomUUID().slice(0, 8)}`;
 
@@ -36,6 +37,7 @@ type Platform = import("../services/api/src/platform.js").Platform;
 
 let available = true;
 let firstPlatform: Platform | null = null;
+let apiKey = ""; // tenant-admin key minted in beforeAll
 
 async function tryBuild(): Promise<Platform | null> {
   try {
@@ -50,6 +52,15 @@ async function tryBuild(): Promise<Platform | null> {
 
 beforeAll(async () => {
   firstPlatform = await tryBuild();
+  if (firstPlatform) {
+    await firstPlatform.tenants.createTenant({ tenantId: TENANT, displayName: "IT Tenant" });
+    const created = await firstPlatform.apiKeys.create(TENANT, "it-admin", [
+      "actions:write",
+      "records:read",
+      "chain:verify",
+    ]);
+    apiKey = created.plaintext;
+  }
 });
 
 afterAll(async () => {
@@ -65,6 +76,7 @@ describe("durable round trip + restart + chain verification", () => {
     const res = await app.inject({
       method: "POST",
       url: "/v1/actions",
+      headers: { "x-api-key": apiKey },
       payload: {
         tenantId: TENANT,
         action: { type: "payment.transfer", agentId: "agent-it", payload: { amount: 30000 } },
@@ -93,6 +105,7 @@ describe("durable round trip + restart + chain verification", () => {
     const res = await app.inject({
       method: "POST",
       url: "/v1/actions",
+      headers: { "x-api-key": apiKey },
       payload: {
         tenantId: TENANT,
         action: { type: "email.send", agentId: "agent-it", payload: { to: "x@y.com" } },

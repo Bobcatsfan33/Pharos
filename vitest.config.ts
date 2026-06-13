@@ -8,6 +8,7 @@ export default defineConfig({
     alias: {
       "@pharos/core": r("./packages/core/src/index.ts"),
       "@pharos/config": r("./packages/config/src/index.ts"),
+      "@pharos/identity": r("./packages/identity/src/index.ts"),
       "@pharos/storage": r("./packages/storage/src/index.ts"),
     },
   },
@@ -17,5 +18,8 @@ export default defineConfig({
     testTimeout: 30_000,
     hookTimeout: 60_000,
     pool: "forks",
+    // Integration suites share one Postgres/WORM instance and run migrations on boot;
+    // run files serially to avoid migration races and cross-suite interference.
+    fileParallelism: false,
   },
 });

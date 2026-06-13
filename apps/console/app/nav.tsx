@@ -22,6 +22,7 @@ const SECTIONS = [
     items: [
       { href: "/ledger/evidence", label: "Evidence explorer" },
       { href: "/ledger/chain", label: "Chain integrity" },
+      { href: "/ledger/access-audit", label: "Access audit" },
     ],
   },
 ];

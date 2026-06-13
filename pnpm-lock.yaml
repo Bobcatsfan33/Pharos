@@ -11,6 +11,9 @@ importers:
       '@types/node':
         specifier: ^22.10.0
         version: 22.19.21
+      jose:
+        specifier: ^5.9.6
+        version: 5.10.0
       tsx:
         specifier: ^4.19.2
         version: 4.22.4
@@ -55,6 +58,15 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
 
+  packages/identity:
+    dependencies:
+      jose:
+        specifier: ^5.9.6
+        version: 5.10.0
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+
   packages/storage:
     dependencies:
       '@aws-sdk/client-s3':
@@ -63,6 +75,9 @@ importers:
       '@pharos/core':
         specifier: workspace:*
         version: link:../core
+      '@pharos/identity':
+        specifier: workspace:*
+        version: link:../identity
       ioredis:
         specifier: ^5.4.2
         version: 5.11.1
@@ -85,6 +100,9 @@ importers:
       '@pharos/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@pharos/identity':
+        specifier: workspace:*
+        version: link:../../packages/identity
       '@pharos/storage':
         specifier: workspace:*
         version: link:../../packages/storage
@@ -1113,6 +1131,9 @@ packages:
   ipaddr.js@2.4.0:
     resolution: {integrity: sha512-9VGk3HGanVE6JoZXHiCpnGy5X0jYDnN4EA4lntFPj+1vIWlFhIylq2CrrCOJH9EAhc5CYhq18F2Av2tgoAPsYQ==}
     engines: {node: '>= 10'}
+
+  jose@5.10.0:
+    resolution: {integrity: sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==}
 
   json-schema-ref-resolver@3.0.0:
     resolution: {integrity: sha512-hOrZIVL5jyYFjzk7+y7n5JDzGlU8rfWDuYyHwGa2WA8/pcmMHezp2xsVwxrebD/Q9t8Nc5DboieySDpCp4WG4A==}
@@ -2418,6 +2439,8 @@ snapshots:
       - supports-color
 
   ipaddr.js@2.4.0: {}
+
+  jose@5.10.0: {}
 
   json-schema-ref-resolver@3.0.0:
     dependencies:
