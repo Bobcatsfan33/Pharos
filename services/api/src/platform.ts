@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { loadConfig, type PharosConfig } from "@pharos/config";
 import {
   FileKeystore,
@@ -5,11 +6,13 @@ import {
   VerdictEngine,
   type SigningProvider,
 } from "@pharos/core";
+import { createTimestamp } from "@pharos/evidence";
 import {
   AccessAuditLog,
   ApiKeyStore,
   ChainIntegrityService,
   EscalationStore,
+  EvidenceOpsStore,
   EvidenceStore,
   MandateStore,
   ReviewNotifier,
@@ -44,6 +47,11 @@ export interface Platform {
   registry: ModelRegistry;
   cascade: VerdictCascade;
   integrity: ChainIntegrityService;
+  evidenceOps: EvidenceOpsStore;
+  /** Independent timestamp authority (separate keys) for trusted-time anchoring. */
+  tsa: SigningProvider;
+  /** Anchor a tenant's current chain head with a trusted timestamp. */
+  anchorHead: (tenantId: string) => Promise<{ sequence: number; headHash: string } | null>;
   tenants: TenantStore;
   apiKeys: ApiKeyStore;
   accessAudit: AccessAuditLog;
@@ -68,6 +76,14 @@ export function buildSigner(config: PharosConfig): SigningProvider {
   throw new Error(`KMS provider not yet supported: ${config.kms.provider}`);
 }
 
+/** The timestamp authority uses an INDEPENDENT keystore so anchors don't trust platform keys. */
+export function buildTsa(config: PharosConfig): SigningProvider {
+  if (config.kms.provider === "local-kms") {
+    return new LocalKms(new FileKeystore(`${config.kms.keystoreDir}-tsa`));
+  }
+  throw new Error(`KMS provider not yet supported: ${config.kms.provider}`);
+}
+
 export async function buildPlatform(
   config: PharosConfig = loadConfig(),
   options: BuildPlatformOptions = {},
@@ -76,6 +92,7 @@ export async function buildPlatform(
   await runMigrations(pool);
 
   const signer = buildSigner(config);
+  const tsa = buildTsa(config);
 
   const worm = new WormStore({
     endpoint: config.s3.endpoint,
@@ -125,6 +142,24 @@ export async function buildPlatform(
     defaultChannels: ["email"],
   });
   const reviewSla = new ReviewSlaService({ tenants, escalations, notifier });
+  const evidenceOps = new EvidenceOpsStore(pool);
+
+  const anchorHead = async (tenantId: string) => {
+    const head = await store.getHead(tenantId);
+    if (!head) return null;
+    const time = new Date().toISOString();
+    const ts = await createTimestamp(tsa, `tsa-${config.env}`, head.hash, time);
+    await evidenceOps.createAnchor({
+      id: randomUUID(),
+      tenantId,
+      sequence: head.sequence,
+      headHash: head.hash,
+      tsaTime: ts.time,
+      tsaSignature: ts.signature,
+      tsaKeyId: ts.keyId,
+    });
+    return { sequence: head.sequence, headHash: head.hash };
+  };
   const oidcIssuers = options.oidcIssuers ?? (config.oidc as OidcIssuerConfig[]);
   const oidc = new OidcVerifier(oidcIssuers);
 
@@ -139,6 +174,9 @@ export async function buildPlatform(
     registry,
     cascade,
     integrity,
+    evidenceOps,
+    tsa,
+    anchorHead,
     tenants,
     apiKeys,
     accessAudit,

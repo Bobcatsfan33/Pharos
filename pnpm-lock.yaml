@@ -70,6 +70,12 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
 
+  packages/evidence:
+    dependencies:
+      '@pharos/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/identity:
     dependencies:
       jose:
@@ -131,6 +137,9 @@ importers:
       '@pharos/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@pharos/evidence':
+        specifier: workspace:*
+        version: link:../../packages/evidence
       '@pharos/identity':
         specifier: workspace:*
         version: link:../../packages/identity

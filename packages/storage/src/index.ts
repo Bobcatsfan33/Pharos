@@ -1,7 +1,7 @@
 export { createPool, type Pool } from "./pg.js";
 export { runMigrations, MIGRATIONS, type Migration } from "./migrations.js";
 export { WormStore, type WormStoreConfig, type WormPutResult } from "./wormStore.js";
-export { EvidenceStore, type AppendInput, type EvidenceStoreDeps } from "./evidenceStore.js";
+export { EvidenceStore, type AppendInput, type EvidenceStoreDeps, type RecordDisclosure } from "./evidenceStore.js";
 export { ChainIntegrityService, type ChainIntegrityDeps } from "./chainIntegrity.js";
 export { VerdictCache } from "./cache.js";
 export { TenantStore, type Tenant, type TenantStatus } from "./tenantStore.js";
@@ -26,3 +26,9 @@ export {
   type NotificationRecord,
   type ReviewNotifierOptions,
 } from "./notifier.js";
+export {
+  EvidenceOpsStore,
+  type LegalHold,
+  type ChainAnchor,
+  type ClaimsPackRow,
+} from "./evidenceOpsStore.js";

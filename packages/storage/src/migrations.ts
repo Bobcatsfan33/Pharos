@@ -198,6 +198,62 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS review_notifications_tenant_idx ON review_notifications (tenant_id, event);
     `,
   },
+  {
+    version: "0006_seal",
+    sql: /* sql */ `
+      -- Selective-disclosure redaction commitments (additive; do not change contentHash).
+      ALTER TABLE action_records ADD COLUMN IF NOT EXISTS disclosure_root TEXT;
+      ALTER TABLE action_records ADD COLUMN IF NOT EXISTS disclosure_sig TEXT;
+      ALTER TABLE action_records ADD COLUMN IF NOT EXISTS salts JSONB;
+      ALTER TABLE action_records ADD COLUMN IF NOT EXISTS commitments JSONB;
+
+      -- Trusted-time anchors: chain heads signed by an independent timestamp authority.
+      CREATE TABLE IF NOT EXISTS chain_anchors (
+        id            UUID PRIMARY KEY,
+        tenant_id     TEXT NOT NULL,
+        sequence      BIGINT NOT NULL,
+        head_hash     TEXT NOT NULL,
+        tsa_time      TEXT NOT NULL,
+        tsa_signature TEXT NOT NULL,
+        tsa_key_id    TEXT NOT NULL,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS chain_anchors_tenant_idx ON chain_anchors (tenant_id, sequence);
+
+      -- Litigation hold: freezes retention + disables redaction on scoped record sets.
+      CREATE TABLE IF NOT EXISTS legal_holds (
+        id            UUID PRIMARY KEY,
+        tenant_id     TEXT NOT NULL,
+        name          TEXT NOT NULL,
+        reason        TEXT,
+        from_sequence BIGINT,
+        to_sequence   BIGINT,
+        status        TEXT NOT NULL DEFAULT 'active', -- active | released
+        created_by    TEXT,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+        released_at   TIMESTAMPTZ
+      );
+      CREATE INDEX IF NOT EXISTS legal_holds_tenant_idx ON legal_holds (tenant_id, status);
+
+      -- Claims packs: scoped, audience-targeted evidence bundles.
+      CREATE TABLE IF NOT EXISTS claims_packs (
+        id            UUID PRIMARY KEY,
+        tenant_id     TEXT NOT NULL,
+        incident      TEXT,
+        audience      TEXT NOT NULL,    -- claims_adjuster | outside_counsel | regulator | broker
+        from_sequence BIGINT NOT NULL,
+        to_sequence   BIGINT NOT NULL,
+        redact_fields JSONB NOT NULL DEFAULT '[]',
+        status        TEXT NOT NULL DEFAULT 'draft', -- draft | sealed | released
+        bundle        JSONB,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+        sealed_at     TIMESTAMPTZ,
+        released_at   TIMESTAMPTZ,
+        released_to   TEXT
+      );
+      CREATE INDEX IF NOT EXISTS claims_packs_tenant_idx ON claims_packs (tenant_id, status);
+    `,
+  },
 ];
 
 export async function runMigrations(pool: Pool): Promise<string[]> {

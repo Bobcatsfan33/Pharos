@@ -10,6 +10,7 @@ export { sealRecord } from "./chain/seal.js";
 export {
   verifyRecord,
   verifyChain,
+  keysetVerifier,
   type RecordVerification,
   type ChainVerification,
 } from "./chain/verify.js";
@@ -31,6 +32,19 @@ export {
   type VerdictRequest,
   type VerdictEngineOptions,
 } from "./verdict/engine.js";
+
+// Selective-disclosure redaction
+export {
+  type DisclosureSet,
+  type RedactedView,
+  type RedactedField,
+  type RedactionVerification,
+  computeDisclosures,
+  disclosureRoot,
+  disclosureBindingMessage,
+  redactPayload,
+  verifyRedactedView,
+} from "./redaction.js";
 
 // Migration
 export {

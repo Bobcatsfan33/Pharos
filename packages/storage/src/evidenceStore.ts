@@ -9,6 +9,8 @@ import {
   ACTION_RECORD_SCHEMA_VERSION,
   GENESIS_HASH,
   sealRecord,
+  computeDisclosures,
+  disclosureBindingMessage,
 } from "@pharos/core";
 import type { WormStore } from "./wormStore.js";
 
@@ -88,6 +90,14 @@ export class EvidenceStore {
         keyId,
       });
 
+      // Selective-disclosure commitments over the payload, signed and bound to this
+      // record's contentHash so a redacted view cannot be lifted onto another record.
+      const disclosures = computeDisclosures(record.content.action.payload);
+      const disclosureSig = await this.deps.signer.sign(
+        keyId,
+        disclosureBindingMessage(disclosures.disclosureRoot, record.seal.contentHash),
+      );
+
       // Write to WORM first; a failure here aborts the whole append.
       const wormResult = await this.deps.worm.putRecord(record, this.deps.worm.retainUntil(this.now()));
 
@@ -95,8 +105,9 @@ export class EvidenceStore {
       await client.query(
         `INSERT INTO action_records
            (tenant_id, sequence, id, content_hash, prev_hash, algorithm, key_id, signature,
-            content, worm_key, worm_version_id, decision, sealed_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+            content, worm_key, worm_version_id, decision, sealed_at,
+            disclosure_root, disclosure_sig, salts, commitments)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
         [
           input.tenantId,
           sequence,
@@ -111,6 +122,10 @@ export class EvidenceStore {
           wormResult.versionId ?? null,
           record.content.verdict.decision,
           sealedAt,
+          disclosures.disclosureRoot,
+          disclosureSig,
+          JSON.stringify(disclosures.salts),
+          JSON.stringify(disclosures.commitments),
         ],
       );
       await client.query(
@@ -195,6 +210,24 @@ export class EvidenceStore {
     });
   }
 
+  /** Records in a sequence range with their selective-disclosure data (for claims packs). */
+  async getRange(tenantId: string, fromSequence: number, toSequence: number): Promise<RecordDisclosure[]> {
+    return this.withTenant(tenantId, async (client) => {
+      const res = await client.query<RecordRow>(
+        `SELECT * FROM action_records WHERE tenant_id = $1 AND sequence >= $2 AND sequence <= $3 ORDER BY sequence ASC`,
+        [tenantId, fromSequence, toSequence],
+      );
+      return res.rows.map((r) => ({
+        record: this.rowToRecord(r),
+        disclosureRoot: r.disclosure_root ?? "",
+        disclosureSignature: r.disclosure_sig ?? "",
+        salts: (typeof r.salts === "string" ? JSON.parse(r.salts) : r.salts ?? {}) as Record<string, string>,
+        commitments: (typeof r.commitments === "string" ? JSON.parse(r.commitments) : r.commitments ?? {}) as Record<string, string>,
+        keyId: r.key_id,
+      }));
+    });
+  }
+
   async getHead(tenantId: string): Promise<{ sequence: number; hash: string } | null> {
     const res = await this.deps.pool.query<{ last_sequence: string; last_hash: string }>(
       `SELECT last_sequence, last_hash FROM tenant_chain_head WHERE tenant_id = $1`,
@@ -234,6 +267,19 @@ interface RecordRow {
   worm_version_id: string | null;
   decision: string;
   sealed_at: string;
+  disclosure_root: string | null;
+  disclosure_sig: string | null;
+  salts: unknown;
+  commitments: unknown;
+}
+
+export interface RecordDisclosure {
+  record: ActionRecord;
+  disclosureRoot: string;
+  disclosureSignature: string;
+  salts: Record<string, string>;
+  commitments: Record<string, string>;
+  keyId: string;
 }
 
 export type { PoolClient };

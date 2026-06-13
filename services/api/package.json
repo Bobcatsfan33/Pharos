@@ -20,6 +20,7 @@
     "@pharos/cascade": "workspace:*",
     "@pharos/config": "workspace:*",
     "@pharos/core": "workspace:*",
+    "@pharos/evidence": "workspace:*",
     "@pharos/identity": "workspace:*",
     "@pharos/judge": "workspace:*",
     "@pharos/review": "workspace:*",

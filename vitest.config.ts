@@ -11,6 +11,7 @@ export default defineConfig({
       "@pharos/identity": r("./packages/identity/src/index.ts"),
       "@pharos/judge": r("./packages/judge/src/index.ts"),
       "@pharos/cascade": r("./packages/cascade/src/index.ts"),
+      "@pharos/evidence": r("./packages/evidence/src/index.ts"),
       "@pharos/sdk": r("./packages/sdk-ts/src/index.ts"),
       "@pharos/middleware": r("./packages/middleware/src/index.ts"),
       "@pharos/gateway": r("./services/gateway/src/index.ts"),

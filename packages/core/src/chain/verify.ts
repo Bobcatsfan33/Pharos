@@ -51,6 +51,27 @@ function verifySignatureWithKeyset(
   }
 }
 
+/**
+ * Build an offline Ed25519 signature checker from a published keyset. This is the pure
+ * verification primitive a third party uses (for chain signatures, disclosure bindings, and
+ * trusted-timestamp anchors) without any Pharos infrastructure.
+ */
+export function keysetVerifier(
+  keyset: PublicKeyEntry[] | Map<string, PublicKeyEntry>,
+): (keyId: string, message: Buffer, signature: string) => boolean {
+  const map = keyset instanceof Map ? keyset : new Map(keyset.map((k) => [k.keyId, k]));
+  return (keyId, message, signature) => {
+    const entry = map.get(keyId);
+    if (!entry) return false;
+    try {
+      const publicKey = createPublicKey({ key: Buffer.from(entry.publicKey, "base64"), format: "der", type: "spki" });
+      return edVerify(null, message, publicKey, Buffer.from(signature, "base64"));
+    } catch {
+      return false;
+    }
+  };
+}
+
 export function verifyRecord(
   record: ActionRecord,
   prevHash: string,

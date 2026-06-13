@@ -63,7 +63,9 @@ Built sprint-by-sprint against [the roadmap](docs/ROADMAP.md). Sequence and proo
 
 **Sprint 4 (Watchroom) — complete.** Review operations as an OS: a queue engine routing escalations by action class / risk / regulation pack (treasury-control, privacy-office, registered-principal), a deadline-aware SLA engine with exactly-once breach alerts, multi-channel notifications with an audited delivery log, reviewer analytics (review time, SLA attainment, throughput, measured disagreement rate), and a disagreement→draft-rule feedback loop. A seeded **500-escalation backlog drains within SLA across three reviewer roles** (100% attainment) with every breach alert firing. See [docs/review-operations.md](docs/review-operations.md).
 
-114 TS tests + 10 Python tests green (unit + durability + Gatehouse + Lantern + Causeway + gateway + Watchroom integration against real Postgres / S3 WORM / Redis).
+**Sprint 5 (Seal) — complete.** Legally-usable evidence: independent trusted-time anchoring, **field-level redaction via selective disclosure** (a redacted pack verifies cryptographically; the unredacted original stays intact), litigation hold (which disables redaction on held records), audience-scoped **claims packs** (draft→sealed→released) that a third party **verifies offline using only the bundle**, the FINRA / EU AI Act Art. 12 / SR 11-7 regulatory exports, and a consent-gated, access-audited exchange portal. The full incident drill — declare → hold → assemble → seal → release → offline-verify — passes end to end. See [docs/evidence-seal.md](docs/evidence-seal.md) and the [admissibility white paper](docs/legal/admissibility.md).
+
+121 TS tests + 10 Python tests green (adds evidence + Seal incident-drill integration against real Postgres / S3 WORM / Redis).
 
 ## Monorepo layout
 
