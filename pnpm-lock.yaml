@@ -46,6 +46,15 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  packages/cascade:
+    dependencies:
+      '@pharos/core':
+        specifier: workspace:*
+        version: link:../core
+      '@pharos/judge':
+        specifier: workspace:*
+        version: link:../judge
+
   packages/config:
     dependencies:
       zod:
@@ -66,6 +75,12 @@ importers:
       zod:
         specifier: ^3.24.1
         version: 3.25.76
+
+  packages/judge:
+    dependencies:
+      '@pharos/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/storage:
     dependencies:
@@ -94,6 +109,9 @@ importers:
       '@fastify/cors':
         specifier: ^10.0.1
         version: 10.1.0
+      '@pharos/cascade':
+        specifier: workspace:*
+        version: link:../../packages/cascade
       '@pharos/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -103,6 +121,9 @@ importers:
       '@pharos/identity':
         specifier: workspace:*
         version: link:../../packages/identity
+      '@pharos/judge':
+        specifier: workspace:*
+        version: link:../../packages/judge
       '@pharos/storage':
         specifier: workspace:*
         version: link:../../packages/storage

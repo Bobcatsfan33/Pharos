@@ -57,7 +57,9 @@ Built sprint-by-sprint against [the roadmap](docs/ROADMAP.md). Sequence and proo
 
 **Sprint 1 (Gatehouse) — complete.** Enterprise SSO (OIDC, verified against Okta + Entra), scoped + rotatable API keys, deny-by-default RBAC, hard multi-tenant isolation (Postgres RLS under a `NOBYPASSRLS` app role + per-tenant signing keys), a hash-chained access audit, and CORS/rate-limit hardening. The tenant-isolation attack suite (cross-tenant reads, IDOR, scope escalation, revoked-key reuse, DB-level RLS) finds zero crossings. See [docs/identity-and-tenancy.md](docs/identity-and-tenancy.md).
 
-58 tests green (unit + durability + Gatehouse integration against real Postgres / S3 WORM / Redis).
+**Sprint 2 (Lantern) — complete.** A real tiered decision cascade (Tier 1 deterministic rules → Tier 2 statistical risk → Tier 3 served distilled judge models with a versioned registry), a hard 800ms deadline manager with engineered fail-open/fail-closed semantics, and a reproducibility (replay) harness. Measured: **p99 3.7ms at ~5,400 verdicts/sec** (budget 800ms; [benchmark](docs/benchmarks/latency.md)). Semantic evaluation is learned models, **zero regex**. See [docs/decision-cascade.md](docs/decision-cascade.md).
+
+76 tests green (unit + durability + Gatehouse + Lantern integration against real Postgres / S3 WORM / Redis).
 
 ## Monorepo layout
 

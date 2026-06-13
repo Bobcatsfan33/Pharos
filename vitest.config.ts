@@ -9,6 +9,8 @@ export default defineConfig({
       "@pharos/core": r("./packages/core/src/index.ts"),
       "@pharos/config": r("./packages/config/src/index.ts"),
       "@pharos/identity": r("./packages/identity/src/index.ts"),
+      "@pharos/judge": r("./packages/judge/src/index.ts"),
+      "@pharos/cascade": r("./packages/cascade/src/index.ts"),
       "@pharos/storage": r("./packages/storage/src/index.ts"),
     },
   },

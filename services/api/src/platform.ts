@@ -18,6 +18,8 @@ import {
   type Pool,
 } from "@pharos/storage";
 import { OidcVerifier, type OidcIssuerConfig } from "@pharos/identity";
+import { loadDefaultRegistry, type ModelRegistry } from "@pharos/judge";
+import { VerdictCascade, DEFAULT_PACK_BINDINGS } from "@pharos/cascade";
 
 /**
  * The composition root: build the durable platform spine from configuration.
@@ -35,6 +37,8 @@ export interface Platform {
   cache: VerdictCache;
   store: EvidenceStore;
   engine: VerdictEngine;
+  registry: ModelRegistry;
+  cascade: VerdictCascade;
   integrity: ChainIntegrityService;
   tenants: TenantStore;
   apiKeys: ApiKeyStore;
@@ -83,6 +87,13 @@ export async function buildPlatform(
 
   const store = new EvidenceStore({ pool, worm, signer, resolveKeyName });
   const engine = new VerdictEngine({ deadlineMs: config.api.verdictDeadlineMs });
+  const registry = loadDefaultRegistry();
+  const cascade = new VerdictCascade({
+    engine,
+    registry,
+    deadlineMs: config.api.verdictDeadlineMs,
+    packs: DEFAULT_PACK_BINDINGS,
+  });
   const integrity = new ChainIntegrityService({
     store,
     signer,
@@ -106,6 +117,8 @@ export async function buildPlatform(
     cache,
     store,
     engine,
+    registry,
+    cascade,
     integrity,
     tenants,
     apiKeys,

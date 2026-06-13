@@ -62,7 +62,7 @@ async function submit(): Promise<void> {
     console.log(`\n=== Submitting ${DEMO_ACTIONS.length} demo actions for tenant "${DEMO_TENANT}" ===`);
     for (const item of DEMO_ACTIONS) {
       const action = { ...item.action, payload: item.action.payload ?? {}, emittedAt: new Date().toISOString() };
-      const verdict = platform.engine.evaluate({ tenantId: DEMO_TENANT, action, liability: item.liability }, new Date());
+      const verdict = await platform.cascade.evaluate({ tenantId: DEMO_TENANT, action, liability: item.liability }, new Date());
       const record = await platform.store.append({ tenantId: DEMO_TENANT, action, verdict, liability: item.liability });
       console.log(
         `  seq ${record.content.sequence}  ${action.type.padEnd(18)}  -> ${verdict.decision.toUpperCase().padEnd(9)}` +

@@ -19,7 +19,9 @@
     "infra:logs": "docker compose logs -f",
     "demo:durability": "tsx --env-file=.env scripts/demo-durability.ts",
     "verify:external": "tsx --env-file=.env scripts/external-verify.ts",
-    "api:dev": "tsx --env-file=.env services/api/src/server.ts"
+    "api:dev": "tsx --env-file=.env services/api/src/server.ts",
+    "judges:train": "tsx scripts/train-judges.ts",
+    "bench:latency": "tsx --env-file=.env scripts/bench-latency.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

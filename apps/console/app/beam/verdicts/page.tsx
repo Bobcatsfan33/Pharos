@@ -4,7 +4,15 @@ interface ActionRecord {
   content: {
     sequence: number;
     action: { type: string; agentId: string };
-    verdict: { decision: string; tierReached: number | string; riskScore: number; ruleCitations: { ruleId: string }[] };
+    verdict: {
+      decision: string;
+      tierReached: number | string;
+      riskScore: number;
+      ruleCitations: { ruleId: string }[];
+      judgeVersion: string | null;
+      latency: { totalMs: number; deadlineMs: number; deadlineBreached: boolean };
+      failMode: string | null;
+    };
   };
   seal: { contentHash: string };
 }
@@ -42,6 +50,8 @@ export default async function VerdictsPage() {
               <th style={{ padding: 8 }}>Decision</th>
               <th style={{ padding: 8 }}>Tier</th>
               <th style={{ padding: 8 }}>Risk</th>
+              <th style={{ padding: 8 }}>Judge</th>
+              <th style={{ padding: 8 }}>Budget</th>
               <th style={{ padding: 8 }}>Citations</th>
             </tr>
           </thead>
@@ -56,6 +66,13 @@ export default async function VerdictsPage() {
                 </td>
                 <td style={{ padding: 8 }}>{r.content.verdict.tierReached}</td>
                 <td style={{ padding: 8 }}>{r.content.verdict.riskScore.toFixed(2)}</td>
+                <td style={{ padding: 8, color: "#9ca3af", fontFamily: "ui-monospace, monospace", fontSize: 11 }}>
+                  {r.content.verdict.judgeVersion ?? "—"}
+                </td>
+                <td style={{ padding: 8, color: r.content.verdict.latency.deadlineBreached ? "#f87171" : "#9ca3af" }}>
+                  {r.content.verdict.latency.totalMs.toFixed(2)}/{r.content.verdict.latency.deadlineMs}ms
+                  {r.content.verdict.failMode ? ` · ${r.content.verdict.failMode}` : ""}
+                </td>
                 <td style={{ padding: 8, color: "#9ca3af" }}>
                   {r.content.verdict.ruleCitations.map((c) => c.ruleId).join(", ") || "—"}
                 </td>
