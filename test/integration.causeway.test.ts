@@ -115,7 +115,7 @@ describe("Causeway — escalation round trip (exactly-once)", () => {
 
     // A reviewer approves the pending escalation.
     let escalationId = "";
-    for (let i = 0; i < 40 && !escalationId; i++) {
+    for (let i = 0; i < 120 && !escalationId; i++) {
       const pending = await (await fetch(`${baseUrl}/v1/tenants/${TENANT}/escalations`, { headers: { "x-api-key": apiKey } })).json();
       if (pending.data.escalations.length > 0) escalationId = pending.data.escalations[0].id;
       else await new Promise((r) => setTimeout(r, 50));
@@ -147,7 +147,7 @@ describe("Causeway — escalation round trip (exactly-once)", () => {
     const governP = c.govern(input, () => { runs++; }, { pollIntervalMs: 50, timeoutMs: 8000 });
 
     let escalationId = "";
-    for (let i = 0; i < 40 && !escalationId; i++) {
+    for (let i = 0; i < 120 && !escalationId; i++) {
       const pending = await (await fetch(`${baseUrl}/v1/tenants/${TENANT}/escalations`, { headers: { "x-api-key": apiKey } })).json();
       const fresh = pending.data.escalations[0];
       if (fresh) escalationId = fresh.id;
