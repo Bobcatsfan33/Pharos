@@ -14,6 +14,7 @@ export default defineConfig({
       "@pharos/sdk": r("./packages/sdk-ts/src/index.ts"),
       "@pharos/middleware": r("./packages/middleware/src/index.ts"),
       "@pharos/gateway": r("./services/gateway/src/index.ts"),
+      "@pharos/review": r("./packages/review/src/index.ts"),
       "@pharos/storage": r("./packages/storage/src/index.ts"),
     },
   },

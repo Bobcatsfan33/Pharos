@@ -6,6 +6,7 @@ import {
   ActionRecordSchema,
 } from "@pharos/core";
 import { fingerprintVerdict } from "@pharos/cascade";
+import { routeEscalation } from "@pharos/review";
 import type { Platform } from "../platform.js";
 import { requireAuth } from "../auth.js";
 
@@ -63,15 +64,28 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
 
     const record = await platform.store.append({ tenantId: body.tenantId, action, verdict, liability });
 
-    // Workflow continuation: an escalate verdict parks the action for a human verdict.
+    // Workflow continuation: an escalate verdict parks the action, routed to a queue.
     let escalation = null;
     if (verdict.decision === "escalate") {
+      const routing = routeEscalation({
+        actionType: action.type,
+        riskScore: verdict.riskScore,
+        packs: [...new Set(verdict.ruleCitations.map((c) => c.pack))],
+        financialAmount: liability.blastRadius.financialAmount,
+        reversibility: liability.blastRadius.reversibility,
+      });
+      const slaDueAt = new Date(Date.now() + routing.slaMinutes * 60_000).toISOString();
       escalation = await platform.escalations.create({
         tenantId: body.tenantId,
         recordSequence: record.content.sequence,
         idempotencyKey: body.idempotencyKey ?? record.content.id,
         context: { action, liability, verdict, recordId: record.content.id },
+        queue: routing.queue,
+        priority: routing.priority,
+        slaDueAt,
+        fourEyes: routing.fourEyes,
       });
+      await platform.notifier.fire({ tenantId: body.tenantId, event: "assigned", escalationId: escalation.id, queue: routing.queue });
     }
 
     return reply.status(201).send({

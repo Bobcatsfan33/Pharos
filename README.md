@@ -61,7 +61,9 @@ Built sprint-by-sprint against [the roadmap](docs/ROADMAP.md). Sequence and proo
 
 **Sprint 3 (Causeway) — complete.** Production SDKs (TypeScript + Python — deadline-aware, retries, local fail-mode), framework middlewares for LangChain/LangGraph, OpenAI Agents, Anthropic SDK, CrewAI, and the MS Agent Framework (all passing one conformance contract), a zero-code HTTP egress **gateway**, programmatic **mandates** (a $25k mandate blocks a $30k action at Tier 1), and **workflow continuation** — an escalated action parks, a human verdict seals a tier-`human` record, and the agent resumes **exactly once**. An unmodified agent is governed purely via the gateway. See [docs/sdks-and-integration.md](docs/sdks-and-integration.md).
 
-103 TS tests + 10 Python tests green (unit + durability + Gatehouse + Lantern + Causeway + gateway integration against real Postgres / S3 WORM / Redis).
+**Sprint 4 (Watchroom) — complete.** Review operations as an OS: a queue engine routing escalations by action class / risk / regulation pack (treasury-control, privacy-office, registered-principal), a deadline-aware SLA engine with exactly-once breach alerts, multi-channel notifications with an audited delivery log, reviewer analytics (review time, SLA attainment, throughput, measured disagreement rate), and a disagreement→draft-rule feedback loop. A seeded **500-escalation backlog drains within SLA across three reviewer roles** (100% attainment) with every breach alert firing. See [docs/review-operations.md](docs/review-operations.md).
+
+114 TS tests + 10 Python tests green (unit + durability + Gatehouse + Lantern + Causeway + gateway + Watchroom integration against real Postgres / S3 WORM / Redis).
 
 ## Monorepo layout
 

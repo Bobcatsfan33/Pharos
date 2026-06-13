@@ -11,6 +11,7 @@ async function main(): Promise<void> {
     console.warn("[startup] redis connect failed (cache disabled):", (err as Error).message);
   });
   platform.integrity.start(60_000);
+  platform.reviewSla.start(30_000);
 
   const app = await buildApp(platform);
   await app.listen({ port: platform.config.api.port, host: "0.0.0.0" });

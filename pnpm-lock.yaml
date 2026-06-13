@@ -91,6 +91,8 @@ importers:
         specifier: workspace:*
         version: link:../sdk-ts
 
+  packages/review: {}
+
   packages/sdk-ts: {}
 
   packages/storage:
@@ -135,6 +137,9 @@ importers:
       '@pharos/judge':
         specifier: workspace:*
         version: link:../../packages/judge
+      '@pharos/review':
+        specifier: workspace:*
+        version: link:../../packages/review
       '@pharos/storage':
         specifier: workspace:*
         version: link:../../packages/storage

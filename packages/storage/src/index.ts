@@ -19,3 +19,10 @@ export {
   type EscalationStatus,
   type ResolutionDecision,
 } from "./escalationStore.js";
+export {
+  ReviewNotifier,
+  type NotificationChannel,
+  type NotificationEvent,
+  type NotificationRecord,
+  type ReviewNotifierOptions,
+} from "./notifier.js";

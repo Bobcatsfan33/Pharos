@@ -173,6 +173,31 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS escalations_tenant_status_idx ON escalations (tenant_id, status);
     `,
   },
+  {
+    version: "0005_watchroom",
+    sql: /* sql */ `
+      -- Review-ops: route each escalation to a queue with a priority and an SLA deadline.
+      ALTER TABLE escalations ADD COLUMN IF NOT EXISTS queue TEXT NOT NULL DEFAULT 'general';
+      ALTER TABLE escalations ADD COLUMN IF NOT EXISTS priority INTEGER NOT NULL DEFAULT 4;
+      ALTER TABLE escalations ADD COLUMN IF NOT EXISTS sla_due_at TIMESTAMPTZ;
+      ALTER TABLE escalations ADD COLUMN IF NOT EXISTS assigned_to TEXT;
+      ALTER TABLE escalations ADD COLUMN IF NOT EXISTS four_eyes BOOLEAN NOT NULL DEFAULT false;
+      ALTER TABLE escalations ADD COLUMN IF NOT EXISTS sla_breach_notified BOOLEAN NOT NULL DEFAULT false;
+      CREATE INDEX IF NOT EXISTS escalations_queue_idx ON escalations (tenant_id, queue, status);
+
+      -- Notification audit: which alerts fired for which escalation, when.
+      CREATE TABLE IF NOT EXISTS review_notifications (
+        id          UUID PRIMARY KEY,
+        tenant_id   TEXT NOT NULL,
+        escalation_id UUID,
+        queue       TEXT,
+        channel     TEXT NOT NULL,   -- email | slack | teams | webhook
+        event       TEXT NOT NULL,   -- assigned | at_risk | breached | resolved | digest
+        sent_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS review_notifications_tenant_idx ON review_notifications (tenant_id, event);
+    `,
+  },
 ];
 
 export async function runMigrations(pool: Pool): Promise<string[]> {

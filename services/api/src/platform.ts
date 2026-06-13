@@ -12,6 +12,7 @@ import {
   EscalationStore,
   EvidenceStore,
   MandateStore,
+  ReviewNotifier,
   TenantStore,
   VerdictCache,
   WormStore,
@@ -22,6 +23,7 @@ import {
 import { OidcVerifier, type OidcIssuerConfig } from "@pharos/identity";
 import { loadDefaultRegistry, type ModelRegistry } from "@pharos/judge";
 import { VerdictCascade, DEFAULT_PACK_BINDINGS } from "@pharos/cascade";
+import { ReviewSlaService } from "./reviewSla.js";
 
 /**
  * The composition root: build the durable platform spine from configuration.
@@ -47,6 +49,8 @@ export interface Platform {
   accessAudit: AccessAuditLog;
   mandates: MandateStore;
   escalations: EscalationStore;
+  notifier: ReviewNotifier;
+  reviewSla: ReviewSlaService;
   oidc: OidcVerifier;
   close: () => Promise<void>;
 }
@@ -112,6 +116,15 @@ export async function buildPlatform(
   const accessAudit = new AccessAuditLog(pool);
   const mandates = new MandateStore(pool);
   const escalations = new EscalationStore(pool);
+  const notifier = new ReviewNotifier(pool, {
+    queuePolicy: {
+      "treasury-control": ["email", "slack"],
+      "privacy-office": ["email"],
+      "registered-principal": ["email", "teams"],
+    },
+    defaultChannels: ["email"],
+  });
+  const reviewSla = new ReviewSlaService({ tenants, escalations, notifier });
   const oidcIssuers = options.oidcIssuers ?? (config.oidc as OidcIssuerConfig[]);
   const oidc = new OidcVerifier(oidcIssuers);
 
@@ -131,9 +144,12 @@ export async function buildPlatform(
     accessAudit,
     mandates,
     escalations,
+    notifier,
+    reviewSla,
     oidc,
     close: async () => {
       integrity.stop();
+      reviewSla.stop();
       await cache.close().catch(() => {});
       await pool.end();
     },

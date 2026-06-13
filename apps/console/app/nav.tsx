@@ -15,6 +15,7 @@ const SECTIONS = [
     items: [
       { href: "/beam/verdicts", label: "Verdicts" },
       { href: "/beam/policies", label: "Policy packs" },
+      { href: "/beam/review", label: "Review ops" },
     ],
   },
   {
