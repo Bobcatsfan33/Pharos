@@ -245,6 +245,24 @@ export class EvidenceStore {
     return res.rows.map((r) => r.tenant_id);
   }
 
+  /** Count recorded actions in an optional [from, to) window — the metered billing quantity. */
+  async countInPeriod(tenantId: string, fromIso?: string, toIso?: string): Promise<number> {
+    return this.withTenant(tenantId, async (client) => {
+      const conds = ["tenant_id = $1"];
+      const params: unknown[] = [tenantId];
+      if (fromIso) {
+        params.push(fromIso);
+        conds.push(`created_at >= $${params.length}`);
+      }
+      if (toIso) {
+        params.push(toIso);
+        conds.push(`created_at < $${params.length}`);
+      }
+      const res = await client.query<{ n: string }>(`SELECT count(*)::text AS n FROM action_records WHERE ${conds.join(" AND ")}`, params);
+      return Number(res.rows[0]?.n ?? 0);
+    });
+  }
+
   async count(tenantId: string): Promise<number> {
     const res = await this.withTenant(tenantId, (client) =>
       client.query<{ n: string }>(`SELECT count(*)::text AS n FROM action_records WHERE tenant_id = $1`, [tenantId]),

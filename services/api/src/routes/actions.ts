@@ -65,6 +65,11 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
 
     const record = await platform.store.append({ tenantId: body.tenantId, action, verdict, liability });
 
+    // Observability: verdict + seal metrics.
+    platform.metrics.verdicts.inc({ decision: verdict.decision, tier: String(verdict.tierReached) });
+    platform.metrics.recordsSealed.inc();
+    platform.metrics.verdictLatency.observe(verdict.latency.totalMs);
+
     // Workflow continuation: an escalate verdict parks the action, routed to a queue.
     let escalation = null;
     if (verdict.decision === "escalate") {
@@ -87,6 +92,7 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
         fourEyes: routing.fourEyes,
       });
       await platform.notifier.fire({ tenantId: body.tenantId, event: "assigned", escalationId: escalation.id, queue: routing.queue });
+      platform.metrics.escalations.inc({ queue: routing.queue });
     }
 
     return reply.status(201).send({

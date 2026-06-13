@@ -51,6 +51,8 @@ importers:
 
   packages/assurance: {}
 
+  packages/billing: {}
+
   packages/cascade:
     dependencies:
       '@pharos/core':
@@ -102,6 +104,8 @@ importers:
         specifier: workspace:*
         version: link:../sdk-ts
 
+  packages/observability: {}
+
   packages/policy:
     dependencies:
       '@pharos/core':
@@ -142,6 +146,9 @@ importers:
       '@pharos/assurance':
         specifier: workspace:*
         version: link:../../packages/assurance
+      '@pharos/billing':
+        specifier: workspace:*
+        version: link:../../packages/billing
       '@pharos/cascade':
         specifier: workspace:*
         version: link:../../packages/cascade
@@ -160,6 +167,9 @@ importers:
       '@pharos/judge':
         specifier: workspace:*
         version: link:../../packages/judge
+      '@pharos/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
       '@pharos/policy':
         specifier: workspace:*
         version: link:../../packages/policy

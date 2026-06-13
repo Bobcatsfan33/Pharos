@@ -1,0 +1,6 @@
+apiVersion: v2
+name: pharos
+description: Pharos — the trust control plane for enterprise AI agents (customer-hosted).
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

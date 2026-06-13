@@ -1,0 +1,63 @@
+# Pharos — hardened customer-hosted deployment (Compose).
+# Zero default credentials: every secret is required from the environment (no fallbacks).
+# CPU-only judge inference; airgap-tolerant (no outbound calls required at runtime).
+#
+#   cp deploy/.env.prod.example .env.prod && edit it
+#   docker compose -f deploy/docker-compose.prod.yml --env-file .env.prod up -d
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PHAROS_PG_USER:?set PHAROS_PG_USER}
+      POSTGRES_PASSWORD: ${PHAROS_PG_PASSWORD:?set PHAROS_PG_PASSWORD}
+      POSTGRES_DB: ${PHAROS_PG_DB:?set PHAROS_PG_DB}
+    volumes:
+      - pharos_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${PHAROS_REDIS_PASSWORD:?set PHAROS_REDIS_PASSWORD}"]
+    volumes:
+      - pharos_redis:/data
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: ${PHAROS_S3_ACCESS_KEY:?set PHAROS_S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${PHAROS_S3_SECRET_KEY:?set PHAROS_S3_SECRET_KEY}
+    volumes:
+      - pharos_minio:/data
+
+  api:
+    image: ${PHAROS_IMAGE:-pharos/api:latest}
+    restart: unless-stopped
+    depends_on: [postgres, redis, minio]
+    environment:
+      PHAROS_ENV: prod
+      PHAROS_PG_URL: postgres://${PHAROS_PG_USER}:${PHAROS_PG_PASSWORD}@postgres:5432/${PHAROS_PG_DB}
+      PHAROS_REDIS_URL: redis://:${PHAROS_REDIS_PASSWORD}@redis:6379
+      PHAROS_S3_ENDPOINT: http://minio:9000
+      PHAROS_S3_REGION: ${PHAROS_S3_REGION:-us-east-1}
+      PHAROS_S3_BUCKET: ${PHAROS_S3_BUCKET:-pharos-evidence}
+      PHAROS_S3_ACCESS_KEY: ${PHAROS_S3_ACCESS_KEY}
+      PHAROS_S3_SECRET_KEY: ${PHAROS_S3_SECRET_KEY}
+      PHAROS_S3_FORCE_PATH_STYLE: "true"
+      PHAROS_KMS_PROVIDER: ${PHAROS_KMS_PROVIDER:-local-kms}
+      PHAROS_ADMIN_TOKEN: ${PHAROS_ADMIN_TOKEN:?set PHAROS_ADMIN_TOKEN}
+      PHAROS_ALLOWED_ORIGINS: ${PHAROS_ALLOWED_ORIGINS:-}
+    ports:
+      - "${PHAROS_API_PORT:-4000}:4000"
+
+volumes:
+  pharos_pg:
+  pharos_redis:
+  pharos_minio:

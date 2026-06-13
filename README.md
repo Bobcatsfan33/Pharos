@@ -69,7 +69,9 @@ Built sprint-by-sprint against [the roadmap](docs/ROADMAP.md). Sequence and proo
 
 **Sprint 7 (Beam Count) — complete.** Operationalized trust mathematics: a continuous assurance engine sampling verdicts into human audits and reporting a **measured Wilson-score verified-accuracy lower bound** (no modeled placeholder), a unified **risk profile v2** (autonomy rate, irreversible mix, policy-failure rate, blast radius, oversight coverage + escalation/disagreement/assurance signals → composite grade), a **readiness gate** that blocks external release on a failing check with an owner-exception workflow, and a versioned, consent-gated **underwriter feed**. Verified accuracy computes from 1,000+ real audits; the readiness gate blocks the feed on a mandate-coverage failure until an exception is granted. See [docs/assurance-and-risk.md](docs/assurance-and-risk.md).
 
-141 TS tests + 10 Python tests green (adds assurance + Beam Count integration against real Postgres / S3 WORM / Redis).
+**Sprint 8 (Granite) — complete.** Buyable by a bank: **observability** (Prometheus `/metrics`, OTel-style tracing, alerting runbooks), **resilience** (multi-AZ, documented RPO/RTO, a region-failover exercise with **zero evidence loss** and the chain re-verifying green on the recovered region), **customer-hosted GA** (hardened Compose + Helm chart + install-from-docs, CPU-only judge), and **metering/billing** for the three-part model with invoices that **reconcile to recorded usage exactly**. SOC 2 control mapping, SIG/CAIQ answer pack, and DPA templates prepared. See [docs/operations.md](docs/operations.md), [deploy/INSTALL.md](deploy/INSTALL.md), and [docs/compliance/soc2-and-procurement.md](docs/compliance/soc2-and-procurement.md).
+
+148 TS tests + 10 Python tests green (adds billing + Granite failover/metering/metrics integration against real Postgres / S3 WORM / Redis).
 
 ## Monorepo layout
 

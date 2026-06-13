@@ -29,6 +29,7 @@ import { OidcVerifier, type OidcIssuerConfig } from "@pharos/identity";
 import { loadDefaultRegistry, type ModelRegistry } from "@pharos/judge";
 import { VerdictCascade, DEFAULT_PACK_BINDINGS } from "@pharos/cascade";
 import { SHIPPED_PACKS, type PolicyArtifact } from "@pharos/policy";
+import { MetricsRegistry, Tracer } from "@pharos/observability";
 import { ReviewSlaService } from "./reviewSla.js";
 
 /**
@@ -55,6 +56,8 @@ export interface Platform {
   assurance: AssuranceStore;
   /** Active policy artifacts for a tenant (shipped packs + active custom policies). */
   activePolicyArtifacts: (tenantId: string) => Promise<PolicyArtifact[]>;
+  metrics: MetricsRegistry;
+  tracer: Tracer;
   /** Independent timestamp authority (separate keys) for trusted-time anchoring. */
   tsa: SigningProvider;
   /** Anchor a tenant's current chain head with a trusted timestamp. */
@@ -130,6 +133,8 @@ export async function buildPlatform(
   });
   const policyStore = new PolicyStore(pool);
   const assurance = new AssuranceStore(pool);
+  const metrics = new MetricsRegistry();
+  const tracer = new Tracer();
   const activePolicyArtifacts = async (tenantId: string): Promise<PolicyArtifact[]> => [
     ...shippedArtifacts,
     ...((await policyStore.getActiveArtifacts(tenantId)) as PolicyArtifact[]),
@@ -193,6 +198,8 @@ export async function buildPlatform(
     policyStore,
     assurance,
     activePolicyArtifacts,
+    metrics,
+    tracer,
     tsa,
     anchorHead,
     tenants,

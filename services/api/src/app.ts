@@ -9,6 +9,7 @@ import { registerReviewRoutes } from "./routes/review.js";
 import { registerSealRoutes } from "./routes/seal.js";
 import { registerPolicyRoutes } from "./routes/policies.js";
 import { registerAssuranceRoutes } from "./routes/assurance.js";
+import { registerBillingRoutes } from "./routes/billing.js";
 
 /**
  * Build the Fastify app over a wired platform. Kept separate from the server
@@ -31,6 +32,12 @@ export async function buildApp(platform: Platform): Promise<FastifyInstance> {
     return { status: "ok", env: platform.config.env, redis: redisOk };
   });
 
+  // Prometheus metrics exposition (scraped by the observability stack).
+  app.get("/metrics", async (_request, reply) => {
+    reply.header("content-type", "text/plain; version=0.0.4");
+    return platform.metrics.render();
+  });
+
   registerActionRoutes(app, platform);
   registerAdminRoutes(app, platform);
   registerMandateRoutes(app, platform);
@@ -39,6 +46,7 @@ export async function buildApp(platform: Platform): Promise<FastifyInstance> {
   registerSealRoutes(app, platform);
   registerPolicyRoutes(app, platform);
   registerAssuranceRoutes(app, platform);
+  registerBillingRoutes(app, platform);
 
   return app;
 }

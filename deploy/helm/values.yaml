@@ -1,0 +1,32 @@
+# Pharos Helm values. Multi-AZ via replicaCount + podAntiAffinity (set by your platform).
+image:
+  repository: pharos/api
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+replicaCount: 3 # multi-AZ; spread with topologySpreadConstraints in production
+
+api:
+  port: 4000
+
+# All secrets are required (no defaults). Provide via a Kubernetes Secret named pharos-secrets.
+secretName: pharos-secrets
+
+config:
+  env: prod
+  s3Bucket: pharos-evidence
+  s3Region: us-east-1
+  s3ForcePathStyle: "true"
+  kmsProvider: aws-kms # use a managed KMS in production
+  allowedOrigins: ""
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "512Mi"
+  limits:
+    cpu: "2"
+    memory: "2Gi"
+
+# Postgres / Redis / object storage are provided by the customer (managed RDS / ElastiCache /
+# S3) and referenced via pharos-secrets. The chart does not bundle stateful stores in prod.
