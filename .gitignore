@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.next/
+out/
+*.tsbuildinfo
+coverage/
+.env
+.env.local
+*.log
+.DS_Store
+.pharos-keystore/
+.turbo/

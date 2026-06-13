@@ -37,41 +37,65 @@ The name carries the architecture: the Pharos of Alexandria both guided ships in
 
 Every consequential agent action flows through a single ingestion surface — one SDK call, or a no-code MCP/gateway proxy. The verdict cascade evaluates it across tiers (deterministic rules, statistical risk scoring, then a served distilled judge model) within an 800ms envelope, with deterministic short-circuiting and engineered fail-open / fail-closed paths.
 
-The verdict response and the sealed evidence record are two outputs of the same transaction. The universal ActionRecord event carries both the verdict context (tier reached, rule citations, risk score, fail-mode) and the liability context (mandate ID and scope, oversight mode, blast radius, reversibility, model metadata) — signed once, chained once.
+The verdict response and the sealed evidence record are two outputs of the same transaction. The universal `ActionRecord` event carries both the verdict context (tier reached, rule citations, risk score, fail-mode) and the liability context (mandate ID and scope, oversight mode, blast radius, reversibility, model metadata) — signed once, chained once.
 
 ### Architecture at a glance
 
 - **Operational state** — Postgres (policies, mandates, queues, tenants)
 - **Evidence chain** — WORM object storage (S3 Object Lock), hash-chained and continuously verified
 - **Verdict caches** — Redis, deadline-bound
-- **Signing** — KMS/HSM-backed per-tenant keys with rotation and chain continuity
+- **Signing** — KMS/HSM-backed keys with rotation and chain continuity
 - **Deployment** — SaaS (multi-tenant), dedicated VPC, and customer-hosted (Helm/Compose)
 
-## Who it's for
-
-- **Primary buyers:** Chief Compliance Officer, General Counsel (financial services first, healthcare second)
-- **Economic influencers:** Chief Risk Officer, CISO
-- **Channel:** insurance brokers and AI-liability underwriters who consume Pharos risk profiles and specify Pharos into policies
-- **Implementers:** platform engineering
-
-## Capabilities
-
-- **Real-time verdicts** — tiered cascade with rule-citation explanations written for an examiner, not a developer
-- **Mandates** — scope, limits, grantor, expiry; evaluated as a first-class verdict input and sealed into every record
-- **Workflow continuation** — escalated actions park with full context and resume, rewrite, or cancel the agent's pending step after a human verdict, with exactly-once guarantees
-- **Review operations** — routed queues with SLAs, reviewer workspace, analytics, and a human-feedback loop that turns disagreements into draft policy rules
-- **Admissible evidence** — RFC 3161 trusted timestamps, external anchoring, field-level redaction, litigation hold, and offline-verifiable claims packs
-- **Regulation packs** — citation-level FINRA and HIPAA content, plus a policy compiler and full draft → shadow → dry-run → active → rollback lifecycle
-- **Regulatory exports** — FINRA examination, EU AI Act Article 12, and SR 11-7 model-risk formats
-- **Risk profile & underwriter feed** — continuous, sampling-based assurance with Wilson-score confidence bounds, exported to carriers as a consent-gated risk signal
-
-## Integrations
-
-Production Python and TypeScript SDKs, first-class middlewares for LangChain/LangGraph, CrewAI, the OpenAI Agents SDK, the Anthropic SDK, and the Microsoft Agent Framework, plus an MCP/HTTP-egress gateway proxy that governs agents with zero code changes.
+See [docs/architecture.md](docs/architecture.md) for the implemented design.
 
 ## Status
 
-Pharos is under active development on a milestone-gated roadmap. Sequence and proof are the contract: no external claim ships before its proof exists, and every milestone is a live demo with measured exit criteria — not a document.
+Built sprint-by-sprint against [the roadmap](docs/ROADMAP.md). Sequence and proof are the contract: no external claim ships before its proof exists, and every milestone is a live demo with measured exit criteria — not a document.
+
+**Sprint 0 (Bedrock) — complete.** A single deployable platform where an agent action receives a verdict and produces a sealed, durable, externally-verifiable evidence record — surviving restarts, verifiable genesis-to-head. M0 exit criteria all pass; 31 tests green (unit + durability integration against real Postgres / S3 WORM / Redis).
+
+## Monorepo layout
+
+```
+packages/core      domain: ActionRecord schema v1, hashing, sealing, chain verify, KMS signing, verdict engine, migration
+packages/config    fail-fast environment configuration
+packages/storage   Postgres + S3 WORM + Redis; transactional write path; chain-integrity service
+services/api       Fastify ingestion API + composition root
+apps/console       Next.js console (Beam / Ledger IA)
+scripts            durability demo + standalone external verifier
+docs               architecture, frozen schema, external-verification walkthrough, audits, roadmap
+```
+
+## Quickstart
+
+```bash
+pnpm install
+pnpm infra:up                     # Postgres + Redis + MinIO (S3 WORM) via docker compose
+cp .env.example .env
+
+pnpm test                         # unit tests (+ durability integration test if infra is up)
+
+pnpm demo:durability              # submit demo actions, seal records
+pnpm demo:durability --verify     # cold restart: records persist, chain verifies genesis→head
+
+pnpm api:dev                      # serve the ingestion API on :4000
+pnpm verify:external demo-tenant  # third-party offline, zero-trust verification
+
+pnpm --filter @pharos/console dev # the console on :3000
+```
+
+## The unified event
+
+One `ActionRecord` carries the Beam verdict context and the Ledger liability context, signed once and chained once. See [docs/schema-v1.md](docs/schema-v1.md).
+
+```
+POST /v1/actions  →  { verdict, record }     # two outputs of one transaction
+```
+
+## Verification
+
+The evidence chain is verifiable by any third party with only the exported records and the published public keyset — no Pharos infrastructure required. See [docs/external-verification.md](docs/external-verification.md).
 
 ---
 

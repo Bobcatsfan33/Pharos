@@ -1,0 +1,46 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pharos
+          POSTGRES_PASSWORD: pharos_local_dev
+          POSTGRES_DB: pharos
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U pharos" --health-interval 3s
+          --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6380:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 3s
+          --health-timeout 3s --health-retries 20
+      minio:
+        image: bitnami/minio:latest
+        env:
+          MINIO_ROOT_USER: pharos
+          MINIO_ROOT_PASSWORD: pharos_local_dev
+        ports: ["9010:9000"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r typecheck
+      - name: test
+        run: pnpm test
+        env:
+          PHAROS_S3_ENDPOINT: http://localhost:9010

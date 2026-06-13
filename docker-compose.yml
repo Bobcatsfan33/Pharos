@@ -1,0 +1,59 @@
+# Pharos local infrastructure — operational state, evidence WORM store, and verdict cache.
+# These are the three storage tiers from the target architecture (Sprint 0 Bedrock):
+#   postgres -> operational state (policies, mandates, tenants, queues, chained action_records)
+#   minio    -> S3-compatible WORM object storage with Object Lock for the evidence chain
+#   redis    -> deadline-bound verdict caches
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pharos-postgres
+    environment:
+      POSTGRES_USER: pharos
+      POSTGRES_PASSWORD: pharos_local_dev
+      POSTGRES_DB: pharos
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pharos"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - pharos_pg:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: pharos-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - pharos_redis:/data
+
+  minio:
+    image: minio/minio:latest
+    container_name: pharos-minio
+    command: ["server", "/data", "--console-address", ":9011"]
+    environment:
+      MINIO_ROOT_USER: pharos
+      MINIO_ROOT_PASSWORD: pharos_local_dev
+    ports:
+      - "9010:9000"
+      - "9011:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - pharos_minio:/data
+
+volumes:
+  pharos_pg:
+  pharos_redis:
+  pharos_minio:
