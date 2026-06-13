@@ -10,6 +10,7 @@ import { createTimestamp } from "@pharos/evidence";
 import {
   AccessAuditLog,
   ApiKeyStore,
+  AssuranceStore,
   ChainIntegrityService,
   EscalationStore,
   EvidenceOpsStore,
@@ -51,6 +52,7 @@ export interface Platform {
   integrity: ChainIntegrityService;
   evidenceOps: EvidenceOpsStore;
   policyStore: PolicyStore;
+  assurance: AssuranceStore;
   /** Active policy artifacts for a tenant (shipped packs + active custom policies). */
   activePolicyArtifacts: (tenantId: string) => Promise<PolicyArtifact[]>;
   /** Independent timestamp authority (separate keys) for trusted-time anchoring. */
@@ -127,6 +129,7 @@ export async function buildPlatform(
     policyArtifacts: shippedArtifacts, // citation-level rules by default; per-call override adds tenant policies
   });
   const policyStore = new PolicyStore(pool);
+  const assurance = new AssuranceStore(pool);
   const activePolicyArtifacts = async (tenantId: string): Promise<PolicyArtifact[]> => [
     ...shippedArtifacts,
     ...((await policyStore.getActiveArtifacts(tenantId)) as PolicyArtifact[]),
@@ -188,6 +191,7 @@ export async function buildPlatform(
     integrity,
     evidenceOps,
     policyStore,
+    assurance,
     activePolicyArtifacts,
     tsa,
     anchorHead,

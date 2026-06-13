@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
+    "@pharos/assurance": "workspace:*",
     "@pharos/cascade": "workspace:*",
     "@pharos/config": "workspace:*",
     "@pharos/core": "workspace:*",

@@ -33,3 +33,4 @@ export {
   type ClaimsPackRow,
 } from "./evidenceOpsStore.js";
 export { PolicyStore, type PolicyVersion, type PolicyStatus } from "./policyStore.js";
+export { AssuranceStore, type AssuranceAudit, type AssuranceStats } from "./assuranceStore.js";

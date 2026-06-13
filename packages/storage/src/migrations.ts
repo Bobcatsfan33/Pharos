@@ -276,6 +276,37 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS policies_status_idx ON policies (tenant_id, status);
     `,
   },
+  {
+    version: "0008_beam_count",
+    sql: /* sql */ `
+      -- Assurance: sampled verdicts routed to human audit; the upheld fraction yields the
+      -- measured Wilson-score accuracy bound (replacing the modeled placeholder).
+      CREATE TABLE IF NOT EXISTS assurance_audits (
+        id               UUID PRIMARY KEY,
+        tenant_id        TEXT NOT NULL,
+        record_sequence  BIGINT NOT NULL,
+        pack             TEXT,
+        machine_decision TEXT,
+        upheld           BOOLEAN,
+        status           TEXT NOT NULL DEFAULT 'pending', -- pending | audited
+        audited_by       TEXT,
+        created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+        audited_at       TIMESTAMPTZ,
+        UNIQUE (tenant_id, record_sequence)
+      );
+      CREATE INDEX IF NOT EXISTS assurance_audits_idx ON assurance_audits (tenant_id, status, pack);
+
+      -- Readiness-gate exceptions: owner-granted overrides for a failing check.
+      CREATE TABLE IF NOT EXISTS readiness_exceptions (
+        tenant_id  TEXT NOT NULL,
+        check_id   TEXT NOT NULL,
+        owner      TEXT NOT NULL,
+        reason     TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (tenant_id, check_id)
+      );
+    `,
+  },
 ];
 
 export async function runMigrations(pool: Pool): Promise<string[]> {

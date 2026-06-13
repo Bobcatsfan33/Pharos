@@ -49,6 +49,8 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  packages/assurance: {}
+
   packages/cascade:
     dependencies:
       '@pharos/core':
@@ -137,6 +139,9 @@ importers:
       '@fastify/cors':
         specifier: ^10.0.1
         version: 10.1.0
+      '@pharos/assurance':
+        specifier: workspace:*
+        version: link:../../packages/assurance
       '@pharos/cascade':
         specifier: workspace:*
         version: link:../../packages/cascade

@@ -67,7 +67,9 @@ Built sprint-by-sprint against [the roadmap](docs/ROADMAP.md). Sequence and proo
 
 **Sprint 6 (Codex) — complete.** Citation-level **FINRA pack v2** (2210/3110/2150) and **HIPAA pack v2** (minimum-necessary, PHI-in-context, authorization-state, breach triggers) as versioned artifacts — every rule names its clause and renders an examiner-readable explanation. A natural-language **policy compiler** and a full **policy lifecycle**: compile → dry-run (impact dashboard) → shadow (with divergence) → active → **rollback in under a minute** (chain undisturbed). A compiled policy's dry-run prediction matches observed verdicts after activation. See [docs/regulation-packs-and-policy.md](docs/regulation-packs-and-policy.md).
 
-130 TS tests + 10 Python tests green (adds policy + Codex lifecycle integration against real Postgres / S3 WORM / Redis).
+**Sprint 7 (Beam Count) — complete.** Operationalized trust mathematics: a continuous assurance engine sampling verdicts into human audits and reporting a **measured Wilson-score verified-accuracy lower bound** (no modeled placeholder), a unified **risk profile v2** (autonomy rate, irreversible mix, policy-failure rate, blast radius, oversight coverage + escalation/disagreement/assurance signals → composite grade), a **readiness gate** that blocks external release on a failing check with an owner-exception workflow, and a versioned, consent-gated **underwriter feed**. Verified accuracy computes from 1,000+ real audits; the readiness gate blocks the feed on a mandate-coverage failure until an exception is granted. See [docs/assurance-and-risk.md](docs/assurance-and-risk.md).
+
+141 TS tests + 10 Python tests green (adds assurance + Beam Count integration against real Postgres / S3 WORM / Redis).
 
 ## Monorepo layout
 
