@@ -1,0 +1,20 @@
+{
+  "name": "@pharos/middleware",
+  "version": "0.1.0",
+  "description": "Pharos framework middlewares — govern agent tool calls across LangChain/LangGraph, OpenAI Agents, and the Anthropic SDK.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@pharos/sdk": "workspace:*"
+  }
+}

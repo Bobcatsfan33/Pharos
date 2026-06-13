@@ -22,6 +22,10 @@ const SubmitBodySchema = z.object({
     emittedAt: z.string().datetime().optional(),
   }),
   liability: LiabilityContextSchema,
+  /** Optional: bind a stored mandate by id (resolved server-side and sealed into the record). */
+  mandateId: z.string().optional(),
+  /** Optional idempotency key for the escalation parked on an escalate verdict. */
+  idempotencyKey: z.string().optional(),
 });
 
 export function registerActionRoutes(app: FastifyInstance, platform: Platform): void {
@@ -45,21 +49,38 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
       emittedAt: body.action.emittedAt ?? new Date().toISOString(),
     };
 
-    const verdict = await platform.cascade.evaluate(
-      { tenantId: body.tenantId, action, liability: body.liability },
-      new Date(),
-    );
+    // Resolve a stored mandate, if referenced, and seal it into the record.
+    let liability = body.liability;
+    if (body.mandateId) {
+      const mandate = await platform.mandates.getActive(body.tenantId, body.mandateId);
+      if (!mandate) {
+        return reply.status(400).send({ success: false, data: null, error: { code: "mandate_not_found", mandateId: body.mandateId } });
+      }
+      liability = { ...liability, mandate };
+    }
 
-    const record = await platform.store.append({
-      tenantId: body.tenantId,
-      action,
-      verdict,
-      liability: body.liability,
-    });
+    const verdict = await platform.cascade.evaluate({ tenantId: body.tenantId, action, liability }, new Date());
+
+    const record = await platform.store.append({ tenantId: body.tenantId, action, verdict, liability });
+
+    // Workflow continuation: an escalate verdict parks the action for a human verdict.
+    let escalation = null;
+    if (verdict.decision === "escalate") {
+      escalation = await platform.escalations.create({
+        tenantId: body.tenantId,
+        recordSequence: record.content.sequence,
+        idempotencyKey: body.idempotencyKey ?? record.content.id,
+        context: { action, liability, verdict, recordId: record.content.id },
+      });
+    }
 
     return reply.status(201).send({
       success: true,
-      data: { verdict: record.content.verdict, record: ActionRecordSchema.parse(record) },
+      data: {
+        verdict: record.content.verdict,
+        record: ActionRecordSchema.parse(record),
+        escalation: escalation ? { id: escalation.id, status: escalation.status } : null,
+      },
       error: null,
     });
   });

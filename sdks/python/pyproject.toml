@@ -1,0 +1,18 @@
+[project]
+name = "pharos-sdk"
+version = "0.1.0"
+description = "Pharos SDK — submit agent actions for a real-time policy verdict and sealed evidence."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["pharos_sdk"]

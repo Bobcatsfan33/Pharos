@@ -11,6 +11,9 @@ importers:
       '@types/node':
         specifier: ^22.10.0
         version: 22.19.21
+      fastify:
+        specifier: ^5.2.0
+        version: 5.8.5
       jose:
         specifier: ^5.9.6
         version: 5.10.0
@@ -82,6 +85,14 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/middleware:
+    dependencies:
+      '@pharos/sdk':
+        specifier: workspace:*
+        version: link:../sdk-ts
+
+  packages/sdk-ts: {}
+
   packages/storage:
     dependencies:
       '@aws-sdk/client-s3':
@@ -133,6 +144,15 @@ importers:
       zod:
         specifier: ^3.24.1
         version: 3.25.76
+
+  services/gateway:
+    dependencies:
+      '@pharos/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk-ts
+      fastify:
+        specifier: ^5.2.0
+        version: 5.8.5
 
 packages:
 

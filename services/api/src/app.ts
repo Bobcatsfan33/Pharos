@@ -3,6 +3,8 @@ import cors from "@fastify/cors";
 import type { Platform } from "./platform.js";
 import { registerActionRoutes } from "./routes/actions.js";
 import { registerAdminRoutes } from "./routes/admin.js";
+import { registerMandateRoutes } from "./routes/mandates.js";
+import { registerEscalationRoutes } from "./routes/escalations.js";
 
 /**
  * Build the Fastify app over a wired platform. Kept separate from the server
@@ -27,6 +29,8 @@ export async function buildApp(platform: Platform): Promise<FastifyInstance> {
 
   registerActionRoutes(app, platform);
   registerAdminRoutes(app, platform);
+  registerMandateRoutes(app, platform);
+  registerEscalationRoutes(app, platform);
 
   return app;
 }

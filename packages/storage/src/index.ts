@@ -12,3 +12,10 @@ export {
   type AccessAuditVerification,
   type AccessAction,
 } from "./accessAudit.js";
+export { MandateStore } from "./mandateStore.js";
+export {
+  EscalationStore,
+  type Escalation,
+  type EscalationStatus,
+  type ResolutionDecision,
+} from "./escalationStore.js";

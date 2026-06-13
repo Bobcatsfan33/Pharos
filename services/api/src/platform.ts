@@ -9,7 +9,9 @@ import {
   AccessAuditLog,
   ApiKeyStore,
   ChainIntegrityService,
+  EscalationStore,
   EvidenceStore,
+  MandateStore,
   TenantStore,
   VerdictCache,
   WormStore,
@@ -43,6 +45,8 @@ export interface Platform {
   tenants: TenantStore;
   apiKeys: ApiKeyStore;
   accessAudit: AccessAuditLog;
+  mandates: MandateStore;
+  escalations: EscalationStore;
   oidc: OidcVerifier;
   close: () => Promise<void>;
 }
@@ -106,6 +110,8 @@ export async function buildPlatform(
   const tenants = new TenantStore(pool);
   const apiKeys = new ApiKeyStore(pool);
   const accessAudit = new AccessAuditLog(pool);
+  const mandates = new MandateStore(pool);
+  const escalations = new EscalationStore(pool);
   const oidcIssuers = options.oidcIssuers ?? (config.oidc as OidcIssuerConfig[]);
   const oidc = new OidcVerifier(oidcIssuers);
 
@@ -123,6 +129,8 @@ export async function buildPlatform(
     tenants,
     apiKeys,
     accessAudit,
+    mandates,
+    escalations,
     oidc,
     close: async () => {
       integrity.stop();

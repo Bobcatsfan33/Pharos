@@ -59,7 +59,9 @@ Built sprint-by-sprint against [the roadmap](docs/ROADMAP.md). Sequence and proo
 
 **Sprint 2 (Lantern) — complete.** A real tiered decision cascade (Tier 1 deterministic rules → Tier 2 statistical risk → Tier 3 served distilled judge models with a versioned registry), a hard 800ms deadline manager with engineered fail-open/fail-closed semantics, and a reproducibility (replay) harness. Measured: **p99 3.7ms at ~5,400 verdicts/sec** (budget 800ms; [benchmark](docs/benchmarks/latency.md)). Semantic evaluation is learned models, **zero regex**. See [docs/decision-cascade.md](docs/decision-cascade.md).
 
-76 tests green (unit + durability + Gatehouse + Lantern integration against real Postgres / S3 WORM / Redis).
+**Sprint 3 (Causeway) — complete.** Production SDKs (TypeScript + Python — deadline-aware, retries, local fail-mode), framework middlewares for LangChain/LangGraph, OpenAI Agents, Anthropic SDK, CrewAI, and the MS Agent Framework (all passing one conformance contract), a zero-code HTTP egress **gateway**, programmatic **mandates** (a $25k mandate blocks a $30k action at Tier 1), and **workflow continuation** — an escalated action parks, a human verdict seals a tier-`human` record, and the agent resumes **exactly once**. An unmodified agent is governed purely via the gateway. See [docs/sdks-and-integration.md](docs/sdks-and-integration.md).
+
+103 TS tests + 10 Python tests green (unit + durability + Gatehouse + Lantern + Causeway + gateway integration against real Postgres / S3 WORM / Redis).
 
 ## Monorepo layout
 

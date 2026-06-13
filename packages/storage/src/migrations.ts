@@ -135,6 +135,44 @@ export const MIGRATIONS: Migration[] = [
         GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO pharos_app;
     `,
   },
+  {
+    version: "0004_causeway",
+    sql: /* sql */ `
+      -- Programmatic mandates: scope, limits, grantor, expiry, versioned. A verdict
+      -- evaluates mandate scope as a Tier-1 input and seals the mandate into the record.
+      CREATE TABLE IF NOT EXISTS mandates (
+        tenant_id   TEXT NOT NULL,
+        mandate_id  TEXT NOT NULL,
+        version     INTEGER NOT NULL,
+        scope       TEXT NOT NULL,
+        limits      JSONB NOT NULL DEFAULT '{}',
+        grantor     TEXT NOT NULL,
+        expires_at  TIMESTAMPTZ,
+        status      TEXT NOT NULL DEFAULT 'active', -- active | revoked
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (tenant_id, mandate_id, version)
+      );
+
+      -- Workflow continuation: escalated actions park here with full context until a human
+      -- verdict resumes (approve/modify/reject) the agent's pending step. resumed_at is
+      -- claimed atomically to guarantee exactly-once side effects.
+      CREATE TABLE IF NOT EXISTS escalations (
+        id              UUID PRIMARY KEY,
+        tenant_id       TEXT NOT NULL,
+        record_sequence BIGINT NOT NULL,
+        status          TEXT NOT NULL DEFAULT 'pending', -- pending | approved | modified | rejected | cancelled
+        context         JSONB NOT NULL,
+        resolution      JSONB,
+        resolved_by     TEXT,
+        idempotency_key TEXT NOT NULL,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        resolved_at     TIMESTAMPTZ,
+        resumed_at      TIMESTAMPTZ,
+        UNIQUE (tenant_id, idempotency_key)
+      );
+      CREATE INDEX IF NOT EXISTS escalations_tenant_status_idx ON escalations (tenant_id, status);
+    `,
+  },
 ];
 
 export async function runMigrations(pool: Pool): Promise<string[]> {
