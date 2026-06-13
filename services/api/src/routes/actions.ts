@@ -60,7 +60,8 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
       liability = { ...liability, mandate };
     }
 
-    const verdict = await platform.cascade.evaluate({ tenantId: body.tenantId, action, liability }, new Date());
+    const policyArtifacts = await platform.activePolicyArtifacts(body.tenantId);
+    const verdict = await platform.cascade.evaluate({ tenantId: body.tenantId, action, liability }, new Date(), policyArtifacts);
 
     const record = await platform.store.append({ tenantId: body.tenantId, action, verdict, liability });
 
@@ -176,6 +177,7 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
       const replayed = await platform.cascade.evaluate(
         { tenantId, action: record.content.action, liability: record.content.liability },
         new Date(record.content.action.emittedAt),
+        await platform.activePolicyArtifacts(tenantId),
       );
       const originalFp = fingerprintVerdict(record.content.verdict);
       const replayedFp = fingerprintVerdict(replayed);

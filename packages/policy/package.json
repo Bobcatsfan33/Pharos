@@ -1,5 +1,5 @@
 {
-  "name": "@pharos/cascade",
+  "name": "@pharos/policy",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,8 +14,6 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@pharos/core": "workspace:*",
-    "@pharos/judge": "workspace:*",
-    "@pharos/policy": "workspace:*"
+    "@pharos/core": "workspace:*"
   }
 }

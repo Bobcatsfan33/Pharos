@@ -7,6 +7,7 @@ import { registerMandateRoutes } from "./routes/mandates.js";
 import { registerEscalationRoutes } from "./routes/escalations.js";
 import { registerReviewRoutes } from "./routes/review.js";
 import { registerSealRoutes } from "./routes/seal.js";
+import { registerPolicyRoutes } from "./routes/policies.js";
 
 /**
  * Build the Fastify app over a wired platform. Kept separate from the server
@@ -35,6 +36,7 @@ export async function buildApp(platform: Platform): Promise<FastifyInstance> {
   registerEscalationRoutes(app, platform);
   registerReviewRoutes(app, platform);
   registerSealRoutes(app, platform);
+  registerPolicyRoutes(app, platform);
 
   return app;
 }

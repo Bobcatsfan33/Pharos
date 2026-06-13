@@ -23,6 +23,7 @@
     "@pharos/evidence": "workspace:*",
     "@pharos/identity": "workspace:*",
     "@pharos/judge": "workspace:*",
+    "@pharos/policy": "workspace:*",
     "@pharos/review": "workspace:*",
     "@pharos/storage": "workspace:*",
     "fastify": "^5.2.0",

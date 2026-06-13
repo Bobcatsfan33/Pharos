@@ -254,6 +254,28 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS claims_packs_tenant_idx ON claims_packs (tenant_id, status);
     `,
   },
+  {
+    version: "0007_codex",
+    sql: /* sql */ `
+      -- Policy lifecycle: versioned, per-tenant compiled policies with draft/shadow/active
+      -- states and one-click rollback. Shipped regulation packs (FINRA/HIPAA) live in code;
+      -- this table holds tenant-authored policies compiled from natural language.
+      CREATE TABLE IF NOT EXISTS policies (
+        id           UUID PRIMARY KEY,
+        tenant_id    TEXT NOT NULL,
+        name         TEXT NOT NULL,
+        version      INTEGER NOT NULL,
+        status       TEXT NOT NULL DEFAULT 'draft', -- draft | shadow | active | rolled_back | archived
+        artifact     JSONB NOT NULL,
+        source_text  TEXT,
+        changelog    TEXT,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        activated_at TIMESTAMPTZ,
+        UNIQUE (tenant_id, name, version)
+      );
+      CREATE INDEX IF NOT EXISTS policies_status_idx ON policies (tenant_id, status);
+    `,
+  },
 ];
 
 export async function runMigrations(pool: Pool): Promise<string[]> {

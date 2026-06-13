@@ -70,7 +70,7 @@ beforeAll(async () => {
       agentId: "unmodified-agent",
       target: targetUrl,
       mapAction: (req) => ({
-        action: { type: "email.send", payload: req.body as Record<string, unknown> },
+        action: { type: "message.send", payload: req.body as Record<string, unknown> },
         liability: { mandate: null, oversightMode: "human_on_loop", blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" }, modelMetadata: null },
       }),
     });

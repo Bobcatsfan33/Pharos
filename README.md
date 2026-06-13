@@ -65,7 +65,9 @@ Built sprint-by-sprint against [the roadmap](docs/ROADMAP.md). Sequence and proo
 
 **Sprint 5 (Seal) — complete.** Legally-usable evidence: independent trusted-time anchoring, **field-level redaction via selective disclosure** (a redacted pack verifies cryptographically; the unredacted original stays intact), litigation hold (which disables redaction on held records), audience-scoped **claims packs** (draft→sealed→released) that a third party **verifies offline using only the bundle**, the FINRA / EU AI Act Art. 12 / SR 11-7 regulatory exports, and a consent-gated, access-audited exchange portal. The full incident drill — declare → hold → assemble → seal → release → offline-verify — passes end to end. See [docs/evidence-seal.md](docs/evidence-seal.md) and the [admissibility white paper](docs/legal/admissibility.md).
 
-121 TS tests + 10 Python tests green (adds evidence + Seal incident-drill integration against real Postgres / S3 WORM / Redis).
+**Sprint 6 (Codex) — complete.** Citation-level **FINRA pack v2** (2210/3110/2150) and **HIPAA pack v2** (minimum-necessary, PHI-in-context, authorization-state, breach triggers) as versioned artifacts — every rule names its clause and renders an examiner-readable explanation. A natural-language **policy compiler** and a full **policy lifecycle**: compile → dry-run (impact dashboard) → shadow (with divergence) → active → **rollback in under a minute** (chain undisturbed). A compiled policy's dry-run prediction matches observed verdicts after activation. See [docs/regulation-packs-and-policy.md](docs/regulation-packs-and-policy.md).
+
+130 TS tests + 10 Python tests green (adds policy + Codex lifecycle integration against real Postgres / S3 WORM / Redis).
 
 ## Monorepo layout
 

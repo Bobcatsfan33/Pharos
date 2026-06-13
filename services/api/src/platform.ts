@@ -15,6 +15,7 @@ import {
   EvidenceOpsStore,
   EvidenceStore,
   MandateStore,
+  PolicyStore,
   ReviewNotifier,
   TenantStore,
   VerdictCache,
@@ -26,6 +27,7 @@ import {
 import { OidcVerifier, type OidcIssuerConfig } from "@pharos/identity";
 import { loadDefaultRegistry, type ModelRegistry } from "@pharos/judge";
 import { VerdictCascade, DEFAULT_PACK_BINDINGS } from "@pharos/cascade";
+import { SHIPPED_PACKS, type PolicyArtifact } from "@pharos/policy";
 import { ReviewSlaService } from "./reviewSla.js";
 
 /**
@@ -48,6 +50,9 @@ export interface Platform {
   cascade: VerdictCascade;
   integrity: ChainIntegrityService;
   evidenceOps: EvidenceOpsStore;
+  policyStore: PolicyStore;
+  /** Active policy artifacts for a tenant (shipped packs + active custom policies). */
+  activePolicyArtifacts: (tenantId: string) => Promise<PolicyArtifact[]>;
   /** Independent timestamp authority (separate keys) for trusted-time anchoring. */
   tsa: SigningProvider;
   /** Anchor a tenant's current chain head with a trusted timestamp. */
@@ -113,12 +118,19 @@ export async function buildPlatform(
   const store = new EvidenceStore({ pool, worm, signer, resolveKeyName });
   const engine = new VerdictEngine({ deadlineMs: config.api.verdictDeadlineMs });
   const registry = loadDefaultRegistry();
+  const shippedArtifacts = Object.values(SHIPPED_PACKS);
   const cascade = new VerdictCascade({
     engine,
     registry,
     deadlineMs: config.api.verdictDeadlineMs,
     packs: DEFAULT_PACK_BINDINGS,
+    policyArtifacts: shippedArtifacts, // citation-level rules by default; per-call override adds tenant policies
   });
+  const policyStore = new PolicyStore(pool);
+  const activePolicyArtifacts = async (tenantId: string): Promise<PolicyArtifact[]> => [
+    ...shippedArtifacts,
+    ...((await policyStore.getActiveArtifacts(tenantId)) as PolicyArtifact[]),
+  ];
   const integrity = new ChainIntegrityService({
     store,
     signer,
@@ -175,6 +187,8 @@ export async function buildPlatform(
     cascade,
     integrity,
     evidenceOps,
+    policyStore,
+    activePolicyArtifacts,
     tsa,
     anchorHead,
     tenants,

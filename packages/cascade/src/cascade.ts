@@ -6,6 +6,7 @@ import {
   VerdictEngine,
 } from "@pharos/core";
 import { type ModelRegistry, type JudgeResult } from "@pharos/judge";
+import { type PolicyArtifact, evaluateArtifact } from "@pharos/policy";
 import { scoreRisk } from "./riskScorer.js";
 import { DeadlineExceeded, withDeadline } from "./deadline.js";
 
@@ -43,6 +44,12 @@ export interface CascadeDeps {
   registry: ModelRegistry;
   deadlineMs: number;
   packs: JudgePackBinding[];
+  /**
+   * Active, versioned policy artifacts (Sprint 6). When provided, Tier-3 decisions come from
+   * data-driven citation-level rules instead of the built-in bindings; the bindings still
+   * drive which judge models run (to produce the probabilities the rules test).
+   */
+  policyArtifacts?: PolicyArtifact[];
   /** Test hook: inject Tier-3 faults (failure / slowness) to exercise fail modes. */
   faults?: CascadeFaults;
 }
@@ -50,10 +57,11 @@ export interface CascadeDeps {
 export class VerdictCascade {
   constructor(private readonly deps: CascadeDeps) {}
 
-  async evaluate(req: VerdictRequest, now: Date): Promise<VerdictContext> {
+  async evaluate(req: VerdictRequest, now: Date, policyOverride?: PolicyArtifact[]): Promise<VerdictContext> {
     const perTier: Record<string, number> = {};
+    const artifacts = policyOverride ?? this.deps.policyArtifacts;
     try {
-      return await withDeadline(this.deps.deadlineMs, this.run(req, now, perTier));
+      return await withDeadline(this.deps.deadlineMs, this.run(req, now, perTier, artifacts));
     } catch (err) {
       if (err instanceof DeadlineExceeded || isJudgeFault(err)) {
         return this.failMode(req, perTier, err as Error);
@@ -62,7 +70,12 @@ export class VerdictCascade {
     }
   }
 
-  private async run(req: VerdictRequest, now: Date, perTier: Record<string, number>): Promise<VerdictContext> {
+  private async run(
+    req: VerdictRequest,
+    now: Date,
+    perTier: Record<string, number>,
+    policyArtifacts: PolicyArtifact[] | undefined,
+  ): Promise<VerdictContext> {
     const citations: RuleCitation[] = [];
     let decision: VerdictDecision = "allow";
     let riskScore = 0;
@@ -112,24 +125,40 @@ export class VerdictCascade {
         judgeVersion = r.judgeVersion;
       }
     }
-    // Cite the judge that DROVE the decision (most severe onFlag, tiebreak by probability).
-    let decidingSeverity = -1;
-    let decidingProb = -1;
-    for (const binding of this.deps.packs) {
-      const result = judgeResults.find((r) => r.packId === binding.packId);
-      if (!result || !result.flagged) continue;
-      if (binding.requireNoMandate && req.liability.mandate !== null) continue;
-      decision = mostSevere(decision, binding.onFlag);
-      riskScore = Math.max(riskScore, result.probability);
-      citations.push({
-        ...binding.citation,
-        description: `Tier-3 judge ${result.judgeVersion} flagged "${result.concern}" (p=${result.probability.toFixed(2)}).`,
-      });
-      const sev = SEVERITY[binding.onFlag];
-      if (sev > decidingSeverity || (sev === decidingSeverity && result.probability > decidingProb)) {
-        decidingSeverity = sev;
-        decidingProb = result.probability;
-        judgeVersion = result.judgeVersion;
+    if (policyArtifacts && policyArtifacts.length > 0) {
+      // Sprint 6: data-driven citation-level pack rules over judge probabilities + fields.
+      const judgeProbabilities: Record<string, number> = {};
+      for (const r of judgeResults) {
+        riskScore = Math.max(riskScore, r.probability);
+        judgeProbabilities[r.packId] = r.probability;
+      }
+      const evalCtx = { request: req, judgeProbabilities };
+      for (const artifact of policyArtifacts) {
+        for (const m of evaluateArtifact(artifact, evalCtx)) {
+          decision = mostSevere(decision, m.decision);
+          citations.push(m.citation);
+        }
+      }
+    } else {
+      // Built-in bindings (default cascade): cite the judge that drove the decision.
+      let decidingSeverity = -1;
+      let decidingProb = -1;
+      for (const binding of this.deps.packs) {
+        const result = judgeResults.find((r) => r.packId === binding.packId);
+        if (!result || !result.flagged) continue;
+        if (binding.requireNoMandate && req.liability.mandate !== null) continue;
+        decision = mostSevere(decision, binding.onFlag);
+        riskScore = Math.max(riskScore, result.probability);
+        citations.push({
+          ...binding.citation,
+          description: `Tier-3 judge ${result.judgeVersion} flagged "${result.concern}" (p=${result.probability.toFixed(2)}).`,
+        });
+        const sev = SEVERITY[binding.onFlag];
+        if (sev > decidingSeverity || (sev === decidingSeverity && result.probability > decidingProb)) {
+          decidingSeverity = sev;
+          decidingProb = result.probability;
+          judgeVersion = result.judgeVersion;
+        }
       }
     }
 

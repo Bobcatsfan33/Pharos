@@ -32,3 +32,4 @@ export {
   type ChainAnchor,
   type ClaimsPackRow,
 } from "./evidenceOpsStore.js";
+export { PolicyStore, type PolicyVersion, type PolicyStatus } from "./policyStore.js";
