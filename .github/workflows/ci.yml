@@ -48,7 +48,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r typecheck
       - name: test
-        run: pnpm test
+        run: pnpm exec vitest run --reporter=default --reporter=json --outputFile.json=vitest-report.json
         env:
           PHAROS_ENV: local
           PHAROS_PG_URL: postgres://pharos:pharos_local_dev@localhost:5433/pharos
@@ -59,6 +59,20 @@ jobs:
           PHAROS_S3_ACCESS_KEY: pharos
           PHAROS_S3_SECRET_KEY: pharos_local_dev
           PHAROS_S3_FORCE_PATH_STYLE: "true"
+      - name: integration tests must run, not skip
+        if: always()
+        run: |
+          node -e '
+            const r = require("./vitest-report.json");
+            const skipped = (r.numPendingTests ?? 0) + (r.numTodoTests ?? 0);
+            console.log(`passed=${r.numPassedTests} failed=${r.numFailedTests} skipped=${skipped}`);
+            if (r.numFailedTests > 0) process.exit(1);
+            if (skipped > 0) {
+              console.error("Integration tests skipped — the flagship guarantees (durability, seal, causeway, ...) were not exercised. CI provisions Postgres/Redis/MinIO, so skips mean the services were unreachable.");
+              process.exit(1);
+            }
+          '
+
 
   python-sdk:
     runs-on: ubuntu-latest
