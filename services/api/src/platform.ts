@@ -83,7 +83,12 @@ export function buildSigner(config: PharosConfig): SigningProvider {
     return new LocalKms(new FileKeystore(config.kms.keystoreDir));
   }
   // aws-kms wiring is introduced in a later sprint; fail explicitly until then.
-  throw new Error(`KMS provider not yet supported: ${config.kms.provider}`);
+  throw new Error(
+    `PHAROS_KMS_PROVIDER=${config.kms.provider} is not implemented yet: only "local-kms" ` +
+    `ships today. Set PHAROS_KMS_PROVIDER=local-kms and persist ` +
+    `PHAROS_KMS_KEYSTORE_DIR (${config.kms.keystoreDir}) on a durable volume — ` +
+    `these keys sign every evidence record.`,
+  );
 }
 
 /** The timestamp authority uses an INDEPENDENT keystore so anchors don't trust platform keys. */
@@ -91,7 +96,10 @@ export function buildTsa(config: PharosConfig): SigningProvider {
   if (config.kms.provider === "local-kms") {
     return new LocalKms(new FileKeystore(`${config.kms.keystoreDir}-tsa`));
   }
-  throw new Error(`KMS provider not yet supported: ${config.kms.provider}`);
+  throw new Error(
+    `PHAROS_KMS_PROVIDER=${config.kms.provider} is not implemented yet: only "local-kms" ` +
+    `ships today (the TSA keystore lives at \`\${PHAROS_KMS_KEYSTORE_DIR}-tsa\`).`,
+  );
 }
 
 export async function buildPlatform(

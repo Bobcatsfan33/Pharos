@@ -17,7 +17,11 @@ config:
   s3Bucket: pharos-evidence
   s3Region: us-east-1
   s3ForcePathStyle: "true"
-  kmsProvider: aws-kms # use a managed KMS in production
+  # NOTE: only local-kms is implemented today; aws-kms is a config enum
+  # placeholder and the API refuses to boot with it. With local-kms you MUST
+  # give the keystore a persistent volume (PHAROS_KMS_KEYSTORE_DIR) — the
+  # keys sign every evidence record.
+  kmsProvider: local-kms
   allowedOrigins: ""
 
 resources:
