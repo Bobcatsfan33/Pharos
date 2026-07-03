@@ -307,6 +307,16 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    version: "0009_seal_sig_version",
+    sql: /* sql */ `
+      -- Seal signature v2: the signature binds {sequence, prevHash, contentHash}.
+      -- The operational copy rebuilds the seal from columns, so the version must
+      -- be persisted or v2 records would be verified as legacy v1 and fail.
+      -- NULL = legacy v1 seal.
+      ALTER TABLE action_records ADD COLUMN IF NOT EXISTS sig_version SMALLINT;
+    `,
+  },
 ];
 
 export async function runMigrations(pool: Pool): Promise<string[]> {

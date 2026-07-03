@@ -22,6 +22,9 @@ export {
   makeKeyId,
   parseKeyId,
   signingMessage,
+  signingMessageV2,
+  sealSigningMessage,
+  SEAL_SIGNATURE_VERSION,
 } from "./signing/provider.js";
 export { type KeystoreBackend, type StoredKey, FileKeystore } from "./signing/keystore.js";
 export { LocalKms } from "./signing/localKms.js";
