@@ -106,8 +106,8 @@ export class EvidenceStore {
         `INSERT INTO action_records
            (tenant_id, sequence, id, content_hash, prev_hash, algorithm, key_id, signature,
             content, worm_key, worm_version_id, decision, sealed_at,
-            disclosure_root, disclosure_sig, salts, commitments)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+            disclosure_root, disclosure_sig, salts, commitments, sig_version)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
         [
           input.tenantId,
           sequence,
@@ -126,6 +126,7 @@ export class EvidenceStore {
           disclosureSig,
           JSON.stringify(disclosures.salts),
           JSON.stringify(disclosures.commitments),
+          record.seal.sigVersion ?? null,
         ],
       );
       await client.query(
@@ -153,6 +154,8 @@ export class EvidenceStore {
         algorithm: row.algorithm as "ed25519",
         keyId: row.key_id,
         signature: row.signature,
+        // NULL column = legacy v1 seal (sigVersion absent).
+        ...(row.sig_version != null ? { sigVersion: row.sig_version as 1 | 2 } : {}),
       },
     };
   }
@@ -285,6 +288,7 @@ interface RecordRow {
   worm_version_id: string | null;
   decision: string;
   sealed_at: string;
+  sig_version: number | null;
   disclosure_root: string | null;
   disclosure_sig: string | null;
   salts: unknown;

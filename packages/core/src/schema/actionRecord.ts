@@ -166,6 +166,14 @@ export const RecordSealSchema = z.object({
   keyId: z.string().min(1),
   /** Base64 signature over `contentHash` bytes. */
   signature: z.string().min(1),
+  /**
+   * Seal signature version. Absent = legacy v1 (signature over contentHash
+   * only). 2 = signature over the domain-separated {sequence, prevHash,
+   * contentHash} message, binding the record to its chain position.
+   * The seal is not part of contentHash, so this is hash-compatible with
+   * existing chains.
+   */
+  sigVersion: z.union([z.literal(1), z.literal(2)]).optional(),
 });
 export type RecordSeal = z.infer<typeof RecordSealSchema>;
 

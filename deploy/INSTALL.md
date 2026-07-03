@@ -49,8 +49,22 @@ kubectl rollout status deploy/pharos-api
 kubectl port-forward svc/pharos-api 4000:80 & curl -sf localhost:4000/healthz
 ```
 
-Use managed Postgres (multi-AZ RDS), Redis (ElastiCache), S3 with Object Lock enabled, and a
-managed KMS (`PHAROS_KMS_PROVIDER=aws-kms`) in production.
+Use managed Postgres (multi-AZ RDS), Redis (ElastiCache), and S3 with Object Lock enabled in
+production.
+
+## Key management (read this before production)
+
+Only `PHAROS_KMS_PROVIDER=local-kms` is implemented today — `aws-kms` is a configuration
+placeholder and the API refuses to start with it. local-kms stores Ed25519 signing keys as
+files under `PHAROS_KMS_KEYSTORE_DIR` (the TSA keystore is the sibling `<dir>-tsa`). Those
+keys sign every evidence record, so:
+
+* Persist the keystore on a durable volume (the prod compose file mounts `pharos_keys`;
+  the provided Dockerfile defaults the dir to `/var/lib/pharos/keys/keystore`).
+* Back the volume up; losing the keys breaks external verification of prior records.
+* Restrict access to the volume — the key files are plaintext JSON (0600).
+
+A managed-KMS provider is planned; until then treat the keystore volume as an HSM boundary.
 
 ## Upgrades & migrations
 

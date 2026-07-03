@@ -8,6 +8,7 @@ import {
   sha256Hex,
   verifyChain,
   verifyRedactedView,
+  sealSigningMessage,
 } from "@pharos/core";
 import { type TrustedTimestamp, verifyTimestamp } from "./timestamp.js";
 
@@ -65,7 +66,7 @@ export interface ClaimsPackBundle {
 }
 
 const PROCEDURE = [
-  "1. For each FULL record: recompute sha256(canonical(content)) == seal.contentHash; verify seal.signature over contentHash with keyset[keyId]; check seal.prevHash links to the previous record.",
+  "1. For each FULL record: recompute sha256(canonical(content)) == seal.contentHash; verify seal.signature with keyset[keyId] — over 'pharos:record-seal:v2\\n<sequence>\\n<prevHash>\\n<contentHash>' when seal.sigVersion == 2, or over contentHash bytes for legacy v1 seals; check seal.prevHash links to the previous record.",
   "2. For each REDACTED record: for every shown field recompute sha256(salt|canonical(value)) == commitment; recompute the disclosureRoot from all commitments; verify the disclosure signature over sha256({disclosureRoot, contentHash}) with keyset[keyId]; check prevHash links to the previous record.",
   "3. Verify each anchor: it is signed by the TSA keyset over sha256({hash, time}); the final record's contentHash appears among the anchored hashes.",
   "4. Recompute the bundle hash over (meta, records, anchors) and confirm custody.bundleHash matches.",
@@ -163,7 +164,7 @@ export function verifyClaimsPack(bundle: ClaimsPackBundle): ClaimsPackVerificati
       fullRecords.push(r);
       const recomputedHash = sha256Hex(r.content);
       if (recomputedHash !== r.seal.contentHash) out.errors.push(`seq ${entry.sequence}: content hash mismatch`);
-      if (!verify(r.seal.keyId, Buffer.from(r.seal.contentHash, "utf8"), r.seal.signature)) {
+      if (!verify(r.seal.keyId, sealSigningMessage(r.seal, r.content.sequence), r.seal.signature)) {
         out.errors.push(`seq ${entry.sequence}: signature invalid`);
       }
       if (expectedPrev !== null && r.seal.prevHash !== expectedPrev) out.errors.push(`seq ${entry.sequence}: chain link broken`);

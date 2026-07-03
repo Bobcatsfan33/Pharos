@@ -1,0 +1,15 @@
+.git
+node_modules
+**/node_modules
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+.pharos-keystore*
+docs
+examples
+test
+scripts
+deploy
+sdks/python
+vitest-report.json

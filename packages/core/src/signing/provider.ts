@@ -57,7 +57,39 @@ export function parseKeyId(keyId: string): { keyName: string; version: number } 
   return { keyName, version };
 }
 
-/** Bytes that are actually signed for a record: the ASCII of its 64-char hex contentHash. */
+/** Bytes signed for a LEGACY (v1) record seal: the ASCII of its 64-char hex contentHash. */
 export function signingMessage(contentHash: string): Buffer {
   return Buffer.from(contentHash, "utf8");
+}
+
+/**
+ * Seal signature v2 — the signature covers the chain position, not just the
+ * content. v1 signed only contentHash, so a signed record could be spliced
+ * into a different chain position (or another tenant's chain) and its
+ * prevHash rewritten without invalidating the signature; only the unsigned
+ * chain-link check would notice. v2 signs a domain-separated message binding
+ * {sequence, prevHash, contentHash}.
+ */
+export const SEAL_SIGNATURE_VERSION = 2 as const;
+
+export function signingMessageV2(params: {
+  contentHash: string;
+  prevHash: string;
+  sequence: number;
+}): Buffer {
+  return Buffer.from(
+    `pharos:record-seal:v2\n${params.sequence}\n${params.prevHash}\n${params.contentHash}`,
+    "utf8",
+  );
+}
+
+/** The bytes a seal's signature must verify against, dispatching on its sigVersion. */
+export function sealSigningMessage(
+  seal: { contentHash: string; prevHash: string; sigVersion?: number },
+  sequence: number,
+): Buffer {
+  if ((seal.sigVersion ?? 1) >= 2) {
+    return signingMessageV2({ contentHash: seal.contentHash, prevHash: seal.prevHash, sequence });
+  }
+  return signingMessage(seal.contentHash);
 }

@@ -4,7 +4,7 @@ import {
   ActionRecordContentSchema,
   type RecordSeal,
 } from "../schema/actionRecord.js";
-import { type SigningProvider, signingMessage } from "../signing/provider.js";
+import { SEAL_SIGNATURE_VERSION, type SigningProvider, signingMessageV2 } from "../signing/provider.js";
 import { sha256Hex } from "./canonical.js";
 
 /**
@@ -22,13 +22,17 @@ export async function sealRecord(params: {
 }): Promise<ActionRecord> {
   const content = ActionRecordContentSchema.parse(params.content);
   const contentHash = sha256Hex(content);
-  const signature = await params.signer.sign(params.keyId, signingMessage(contentHash));
+  const signature = await params.signer.sign(
+    params.keyId,
+    signingMessageV2({ contentHash, prevHash: params.prevHash, sequence: content.sequence }),
+  );
   const seal: RecordSeal = {
     contentHash,
     prevHash: params.prevHash,
     algorithm: "ed25519",
     keyId: params.keyId,
     signature,
+    sigVersion: SEAL_SIGNATURE_VERSION,
   };
   return { content, seal };
 }

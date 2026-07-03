@@ -52,12 +52,19 @@ services:
       PHAROS_S3_SECRET_KEY: ${PHAROS_S3_SECRET_KEY}
       PHAROS_S3_FORCE_PATH_STYLE: "true"
       PHAROS_KMS_PROVIDER: ${PHAROS_KMS_PROVIDER:-local-kms}
+      # local-kms signing keys MUST outlive the container: they sign every
+      # evidence record, and losing them breaks external verification of
+      # prior records. Keep this pinned to the pharos_keys volume below.
+      PHAROS_KMS_KEYSTORE_DIR: /var/lib/pharos/keys/keystore
       PHAROS_ADMIN_TOKEN: ${PHAROS_ADMIN_TOKEN:?set PHAROS_ADMIN_TOKEN}
       PHAROS_ALLOWED_ORIGINS: ${PHAROS_ALLOWED_ORIGINS:-}
     ports:
       - "${PHAROS_API_PORT:-4000}:4000"
+    volumes:
+      - pharos_keys:/var/lib/pharos/keys
 
 volumes:
   pharos_pg:
   pharos_redis:
   pharos_minio:
+  pharos_keys:

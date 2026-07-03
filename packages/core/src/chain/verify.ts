@@ -3,7 +3,7 @@ import {
   ActionRecordSchema,
   GENESIS_HASH,
 } from "../schema/actionRecord.js";
-import { type PublicKeyEntry, signingMessage } from "../signing/provider.js";
+import { type PublicKeyEntry, sealSigningMessage } from "../signing/provider.js";
 import { sha256Hex } from "./canonical.js";
 import { verify as edVerify, createPublicKey } from "node:crypto";
 
@@ -31,7 +31,7 @@ export interface ChainVerification {
 
 /** Verify a single record's content hash and signature against a public keyset. */
 function verifySignatureWithKeyset(
-  contentHash: string,
+  message: Buffer,
   signature: string,
   keyId: string,
   keyset: Map<string, PublicKeyEntry>,
@@ -44,7 +44,7 @@ function verifySignatureWithKeyset(
       format: "der",
       type: "spki",
     });
-    const ok = edVerify(null, signingMessage(contentHash), publicKey, Buffer.from(signature, "base64"));
+    const ok = edVerify(null, message, publicKey, Buffer.from(signature, "base64"));
     return { ok, error: ok ? undefined : "signature mismatch" };
   } catch (err) {
     return { ok: false, error: `signature verification error: ${(err as Error).message}` };
@@ -86,7 +86,14 @@ export function verifyRecord(
   const contentHashMatches = recomputed === record.seal.contentHash;
   if (!contentHashMatches) errors.push(`content hash mismatch: recomputed ${recomputed} != sealed ${record.seal.contentHash}`);
 
-  const sig = verifySignatureWithKeyset(record.seal.contentHash, record.seal.signature, record.seal.keyId, keyset);
+  // Dispatch on seal.sigVersion: v2 signatures bind {sequence, prevHash,
+  // contentHash}; legacy v1 covered contentHash only.
+  const sig = verifySignatureWithKeyset(
+    sealSigningMessage(record.seal, record.content.sequence),
+    record.seal.signature,
+    record.seal.keyId,
+    keyset,
+  );
   if (!sig.ok) errors.push(`signature invalid: ${sig.error}`);
 
   const chainLinkValid = record.seal.prevHash === prevHash;
