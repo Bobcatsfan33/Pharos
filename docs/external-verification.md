@@ -44,6 +44,23 @@ pnpm api:dev &                  # serve the API
 pnpm verify:external demo-tenant
 ```
 
+If counsel, an auditor, or an insurer receives an out-of-band evidence bundle,
+they can verify it with no Pharos service running:
+
+```bash
+pnpm verify:bundle ./evidence-bundle.json
+```
+
+The offline bundle format is intentionally small:
+
+```json
+{
+  "tenantId": "tenant-a",
+  "records": ["<ActionRecord>", "..."],
+  "keyset": ["<PublicKeyEntry>", "..."]
+}
+```
+
 Expected output:
 
 ```
@@ -59,7 +76,8 @@ Chain verification: PASS ✅ — admissible
 ```
 
 The verifier script ([`scripts/external-verify.ts`](../scripts/external-verify.ts))
-fetches the bundle over HTTP only for convenience; the verification itself calls
+fetches the bundle over HTTP only for convenience when `--bundle` is not provided;
+the verification itself calls
 `verifyChain(records, keyset)` from `@pharos/core` and touches nothing else. Tamper with
 any record body and re-run: the corresponding line flips to `hash:BAD` and the chain
 fails — demonstrated by the `core.seal-verify` and `integration.durability` test suites.
