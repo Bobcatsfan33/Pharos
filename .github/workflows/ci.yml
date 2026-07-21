@@ -85,3 +85,28 @@ jobs:
       - name: python conformance
         working-directory: sdks/python
         run: PYTHONPATH=. python -m pytest tests/ -q
+
+  dco:
+    # Every commit in a PR must be signed off (git commit -s) per the DCO. See CONTRIBUTING.md.
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: DCO sign-off check
+        run: |
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          missing=0
+          for c in $(git rev-list "$base".."$head"); do
+            if ! git show -s --format=%B "$c" | grep -qiE '^Signed-off-by: .+ <.+@.+>'; then
+              echo "::error::commit $(git show -s --format='%h %s' "$c") is missing a Signed-off-by line"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Every commit must be signed off with 'git commit -s'. See CONTRIBUTING.md."
+            exit 1
+          fi
+          echo "All commits are signed off (DCO)."

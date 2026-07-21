@@ -1,0 +1,10 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/Bobcatsfan33/Pharos/security/advisories/new
+    about: >-
+      Do NOT open a public issue for security vulnerabilities. Report privately
+      through GitHub Security Advisories. See SECURITY.md for our disclosure policy.
+  - name: 💬 Questions & discussion
+    url: https://github.com/Bobcatsfan33/Pharos/discussions
+    about: Ask questions, share ideas, or get help using Pharos.

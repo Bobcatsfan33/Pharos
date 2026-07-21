@@ -1,0 +1,37 @@
+name: Feature request
+description: Propose a new capability or an improvement.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Pharos is built against a versioned [roadmap](../blob/main/docs/ROADMAP.md).
+        If your request maps to an existing roadmap task, please reference its ID.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what is getting in the way?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What you'd like to happen. Include the packages/files you think it touches.
+    validations:
+      required: true
+  - type: input
+    id: roadmap
+    attributes:
+      label: Related roadmap task (optional)
+      description: A task ID like `S8-T4`, if applicable.
+      placeholder: S?-T?
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
