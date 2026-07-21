@@ -1,5 +1,4 @@
 import type { FastifyInstance } from "fastify";
-import { z } from "zod";
 import { summarize, draftRuleCandidates, type ReviewRecord, type ResolvedItem } from "@pharos/review";
 import type { Escalation } from "@pharos/storage";
 import type { Platform } from "../platform.js";

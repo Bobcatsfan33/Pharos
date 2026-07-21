@@ -4,6 +4,27 @@ on:
     branches: [main]
   pull_request:
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: eslint (blocking)
+        run: pnpm lint
+      - name: prettier format check (non-blocking report)
+        continue-on-error: true
+        run: pnpm format:check
+      - name: pnpm audit (non-blocking report)
+        continue-on-error: true
+        run: pnpm audit --audit-level=high
+
   test:
     runs-on: ubuntu-latest
     services:
