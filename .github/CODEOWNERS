@@ -1,0 +1,9 @@
+# Code owners for Pharos.
+#
+# These paths hold the trust core — crypto, storage/seal path, and identity/tenancy.
+# Changes here require review from the tech lead (see CONTRIBUTING.md and roadmap §2).
+# Order matters: the last matching pattern wins.
+
+/packages/core/       @Bobcatsfan33
+/packages/storage/    @Bobcatsfan33
+/packages/identity/   @Bobcatsfan33
