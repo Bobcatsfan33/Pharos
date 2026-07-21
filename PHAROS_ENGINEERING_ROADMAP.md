@@ -1,6 +1,6 @@
 # Pharos — Enterprise Engineering Roadmap
 
-**Version 1.0 · July 2026 · Owner: Engineering Lead**
+**Version 1.1 · July 2026 · Owner: Engineering Lead** *(amended after Sprint 1 — see §7 Amendment log)*
 **Audience: the implementation team (junior–mid level developers). Read this whole document before writing any code.**
 
 ---
@@ -13,7 +13,7 @@ Assumptions:
 
 - Team of 4 developers plus 1 tech lead. Two-week sprints. Sprints 1–12 (~6 months) get us to pilot-ready; Phase 5 runs external gates (audits, pen test) that are not pure engineering.
 - Every task has an ID like `S3-T2` (Sprint 3, Task 2). Use these IDs in branch names (`s3-t2-aws-kms-provider`), PR titles, and commit messages so work is traceable back to this document.
-- If a task turns out to be wrong or impossible as written, do not silently improvise. Write up what you found, propose an alternative, and get the tech lead to amend this document. The roadmap is versioned; changes to it are PRs like anything else.
+- If a task turns out to be wrong or impossible as written, do not silently improvise. Write up what you found, propose an alternative, and get the tech lead to amend this document. The roadmap is versioned; changes to it are PRs like anything else (see §7 for amendments made so far).
 
 The prime directive for this codebase: **Pharos sells trust. Anything that makes a claim the code cannot back is a bug, even if it's in a README and not in a `.ts` file.** You will see several tasks that are "just docs." They are not optional garnish; they are the product.
 
@@ -31,16 +31,16 @@ Pharos is a governance layer for AI agents. Every consequential agent action is 
 | `packages/storage` | Postgres (operational state + chain heads), S3 Object Lock WORM (`wormStore.ts`), Redis cache, migrations, escalation/policy/tenant/evidence stores | Solid design. Per-tenant chain head serializes appends — a known throughput ceiling addressed in Phase 4. |
 | `packages/cascade` | The tiered verdict cascade (`cascade.ts`), deadline manager, risk scorer, replay harness | Structure is good; Tier 3 behind it is the weak point (see judge). |
 | `packages/judge` | "Distilled judge models" — **actually bag-of-words unigram/bigram logistic regression** (`src/model.ts`, `src/featurize.ts`) trained on a few dozen hand-written examples in `data/` | The biggest gap in the product. Replaced in Phase 2. The registry/content-hash versioning (`registry.ts`, `modelVersion()`) is good and stays. |
-| `packages/policy` | Rule DSL (`rules.ts`), "NL policy compiler" (**actually ~5 regex patterns**, `compiler.ts`), FINRA/HIPAA packs, dry-run simulator | Lifecycle (compile → dry-run → shadow → active → rollback) is good. Compiler honesty fixed in Sprint 1; interop in Phase 3. |
+| `packages/policy` | Rule DSL (`rules.ts`), constrained-grammar policy compiler v1 (~5 patterns, `compiler.ts`), FINRA/HIPAA packs, dry-run simulator | Lifecycle (compile → dry-run → shadow → active → rollback) is good. Interop in Phase 3. |
 | `packages/identity` | OIDC verification (jose), API keys, deny-by-default RBAC | Good bones. |
 | `packages/evidence` | Timestamp "anchoring" (`timestamp.ts` — **a simulated TSA, not real RFC 3161**), claims packs, exports | Real TSA in Phase 1. |
 | `packages/assurance`, `review`, `billing`, `observability`, `middleware`, `pdp-spec`, `config` | Assurance sampling/Wilson bound, review queues/SLA, metering, Prometheus/tracing, framework adapters + conformance, open PDP spec, Zod config | Reasonable for their stage. |
 | `services/api` | Fastify ingestion API, composition root (`platform.ts`), routes | Fine. |
 | `services/gateway` | Zero-code HTTP egress proxy | **Holds escalated requests in an in-memory `Map`** (`gateway.ts`) and strips almost all headers when forwarding. Hardened in Phase 3. Note: server-side escalations (`packages/storage/src/escalationStore.ts`) ARE durable in Postgres — it's only the gateway's held request bodies that evaporate on restart. |
-| `sdks/python`, `packages/sdk-ts` | Python + TS SDKs (`pharos-sdk`, `@pharos/sdk`) with a shared conformance contract | Good; unpublished. |
+| `sdks/python`, `packages/sdk-ts` | Python + TS SDKs (`pharos-sdk`, `@pharos/sdk`) with a shared conformance contract | Good; unpublished (Sprint 2). |
 | `apps/console` | Next.js console | Thin; not a roadmap focus until Phase 5. |
-| `test/` (154 TS tests), `sdks/python/tests` | Unit + integration against real Postgres/Redis/MinIO | The CI gate in `.github/workflows/ci.yml` **fails the build if integration tests skip**. Never weaken this. |
-| `deploy/` | Compose (prod), Helm chart, INSTALL.md | Helm values honestly admit `aws-kms` is a non-functional enum. |
+| `test/` (157 TS tests at v0.1.0 — treat counts as floors, not fixed numbers), `sdks/python/tests` (10) | Unit + integration against real Postgres/Redis/MinIO | The CI gate in `.github/workflows/ci.yml` **fails the build if integration tests skip**. Never weaken this. |
+| `deploy/` | Compose (prod), Helm chart, INSTALL.md | Honest about the KMS placeholder until S3-T1 lands. |
 
 ### 1.2 Running it locally
 
@@ -48,9 +48,11 @@ Pharos is a governance layer for AI agents. Every consequential agent action is 
 pnpm install
 pnpm infra:up          # Postgres + Redis + MinIO via docker compose
 cp .env.example .env
-pnpm test              # all 154 tests must pass before you start ANY task
+pnpm test              # the full suite (157 TS at v0.1.0, 0 skips) must pass before you start ANY task
 pnpm api:dev           # API on :4000
 ```
+
+See `docs/ONBOARDING.md` (added in S1-T6) for the verified clean-machine transcript, including the two-terminal `api:dev` + `verify:external` sequence.
 
 If `pnpm test` is not fully green on your machine on day one, stop and fix your environment with the tech lead before doing anything else.
 
@@ -73,11 +75,13 @@ If `pnpm test` is not fully green on your machine on day one, stop and fix your 
 3. **No crypto invention.** You may *call* crypto (KMS SDKs, `jose`, `node:crypto`); you may not *design* crypto (new signing schemes, new canonicalization, new chain formats) without an RFC approved by the tech lead.
 4. **The frozen schema stays frozen.** `ActionRecord` v1 doesn't change. New fields go through the schema-version machinery (`packages/core/src/schema/version.ts`) with migration adapters, behind an RFC.
 5. **Every behavior claim gets a test.** If a doc says "restart-safe," there is a test that restarts the thing.
-6. **Honest docs.** When you complete a task, update any doc your change makes false. Overclaiming in docs is a P1 bug in this product.
+6. **Honest docs.** When you complete a task, update any doc your change makes false. Overclaiming in docs is a P1 bug in this product. When doing a truth pass, always re-read summary/"remaining work" statements too — a summary can contradict a corrected detail (this bit us once; see §7, amendment 4).
 7. **Secrets never in the repo.** `.env` files are local; CI uses GitHub secrets; anything that looks like a credential in a PR fails review.
 8. **Ask early.** Thirty minutes stuck → write down what you tried → ask in the team channel. Two hours stuck silently is the only way to actually fail here.
 
 Definition of Done (all tasks): acceptance criteria met · tests added/updated and green · typecheck green · docs updated · PR reviewed by one peer + tech lead for anything touching `core`, `storage`, or `identity` · task ID in the merge commit.
+
+Note on CODEOWNERS: `.github/CODEOWNERS` routes `core`/`storage`/`identity` to the tech lead, but GitHub *required-review* branch protection stays **off** until the repo has a second maintainer — with a single owner it would deadlock all merges. Review is enforced by process (this section), not by the platform, for now.
 
 ---
 
@@ -98,69 +102,73 @@ Dependencies: Phase 1 blocks nothing else (parallel-safe). Phase 2 Sprint 5 (eva
 
 ## PHASE 0 — Foundation (Sprints 1–2)
 
-Nothing in this phase is algorithmically hard. All of it is what makes the difference between "a repo" and "a product an enterprise is allowed to evaluate." Verified facts as of this writing: the repo has **no LICENSE, no SECURITY.md, no CONTRIBUTING.md, no eslint config despite a `lint` script, nothing published to npm/PyPI, no releases, no SBOM, and a README that overclaims in specific places.**
+Nothing in this phase is algorithmically hard. All of it is what makes the difference between "a repo" and "a product an enterprise is allowed to evaluate." *Historical note: the gaps listed below were the verified state before Sprint 1 (no LICENSE, no SECURITY.md, no CONTRIBUTING.md, no eslint config despite a `lint` script, nothing published to npm/PyPI, no releases, no SBOM, an overclaiming README). Sprint 1 closed the repo-hygiene and honesty items on 2026-07-21; Sprint 2 covers the publishing items.*
 
-### Sprint 1 — "Make it real open source, and make the words true"
+### Sprint 1 — "Make it real open source, and make the words true" ✅ COMPLETE (2026-07-21)
+
+**Delivered via PRs #4, #5, #6, #7, #19, #21, #22; tag `v0.1.0` + release published. Final report accepted by the tech lead; amendments recorded in §7.** The task specs below are kept for the record.
 
 **Sprint goal:** the repo becomes legally usable, contributable, and honest. Zero product-behavior changes.
 
-**S1-T1 · License and legal scaffolding.**
-Add `LICENSE` (Apache-2.0, exact standard text) and `NOTICE` ("Pharos — copyright the Pharos authors"). SPDX headers per file are NOT required (skip; noise). Add a `license` field to every `package.json` (root, all `packages/*`, `services/*`, `apps/*`) and `license = "Apache-2.0"` in `sdks/python/pyproject.toml`.
+**S1-T1 · License and legal scaffolding.** *(done — PR #4)*
+Add `LICENSE` (Apache-2.0, exact standard text) and `NOTICE`. SPDX per-file headers NOT required (skip; noise). Add a `license` field to every `package.json` (root, all `packages/*`, `services/*`, `apps/*`) and Apache-2.0 in `sdks/python/pyproject.toml`.
 *AC:* `ls LICENSE NOTICE` succeeds; `grep -L '"license"' packages/*/package.json services/*/package.json` returns nothing; GitHub UI shows "Apache-2.0" on the repo page.
 
-**S1-T2 · Community and security files.**
-Add `SECURITY.md` (private disclosure via GitHub security advisories; 90-day disclosure window; supported-versions table), `CONTRIBUTING.md` (dev setup = §1.2 of this doc, PR rules = §2, DCO sign-off required — `git commit -s`), `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `.github/CODEOWNERS` (`packages/core/ packages/storage/ packages/identity/` → tech lead), `.github/pull_request_template.md` (task ID, AC checkboxes, "docs updated?" checkbox), and issue templates (bug / feature / security-redirect).
-*AC:* all files exist; opening a PR shows the template; a commit without `Signed-off-by` fails the new DCO check (use the `dco` GitHub app or a 10-line CI step).
+**S1-T2 · Community and security files.** *(done — PR #5)*
+Add `SECURITY.md` (private disclosure via GitHub security advisories; 90-day disclosure window; supported-versions table), `CONTRIBUTING.md` (dev setup = §1.2, PR rules = §2, DCO sign-off — `git commit -s`), `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `.github/CODEOWNERS`, `.github/pull_request_template.md`, issue templates (bug / feature / security-redirect), DCO CI check.
+*AC:* all files exist; opening a PR shows the template; a commit without `Signed-off-by` fails the DCO check.
 
-**S1-T3 · README/docs truth pass.**
-This is the most senior-judgment task of the sprint; pair with the tech lead. Fix, at minimum:
-1. "Served distilled judge models" → state plainly they are currently **linear bag-of-words classifiers** standing in for transformer judges (the code's own comments in `packages/judge/src/model.ts` already admit this — the README doesn't). The "zero regex" boast is removed.
-2. The p99 3.7ms / 5,400 verdicts/sec benchmark gets a caveat: measured with the linear judges; will be re-benchmarked with transformer judges (Phase 2). Update `docs/benchmarks/latency.md` to say the same.
-3. KMS: README's "KMS/HSM-backed keys" → "local KMS today (Ed25519 on disk); AWS KMS is Sprint-3 work" (the Helm values already admit this; the README must too).
-4. "Independent trusted-time anchoring" → "simulated TSA today; RFC 3161 is Sprint-4 work" (see `packages/evidence/src/timestamp.ts` — the comment says "standing in for an RFC 3161 TSA").
-5. "Natural-language policy compiler" → "constrained-grammar compiler (v1)".
-6. Add `docs/LIMITATIONS.md` — the single honest list of every known gap, each linking to its roadmap task ID. Link it from the README's Status section.
-*AC:* a reviewer can't find a README claim contradicted by the code; `docs/LIMITATIONS.md` exists and lists ≥ the five items above plus the gateway in-memory held-request limitation.
+**S1-T3 · README/docs truth pass.** *(done — PRs #6 + #22)*
+The six corrections (judges → linear bag-of-words classifiers, "zero regex" removed; benchmark caveated pending S7-T1; KMS → local-only today, AWS = S3-T1; TSA → simulated, RFC 3161 = S4-T1; compiler → constrained-grammar v1; `docs/LIMITATIONS.md` created and linked from Status), **plus item 7 added by amendment: reconcile the Status section's "remaining work" summary so it doesn't contradict LIMITATIONS.md** (caught on final read; fixed in #22).
+*AC:* a reviewer can't find a README claim contradicted by the code; `docs/LIMITATIONS.md` lists ≥ the five items above plus the gateway in-memory held-request limitation.
 
-**S1-T4 · Make lint real; CI hardening.**
-The root `lint` script calls eslint, but eslint isn't installed and there's no config — it has never run. Add eslint 9 flat config + `typescript-eslint` (recommended, not stylistic — don't create a 4,000-line diff), `prettier` check, fix or explicitly disable violations, add a `lint` job to `.github/workflows/ci.yml`, plus `pnpm audit --audit-level=high` (non-blocking report step) and GitHub Dependabot config for npm + pip + actions.
-*AC:* `pnpm lint` passes locally and in CI; CI has jobs: lint, typecheck+test (existing), python-sdk (existing); `.github/dependabot.yml` exists.
+**S1-T4 · Make lint real; CI hardening.** *(done — PR #7; prettier resolution in §7, amendment 2 → task S2-T6)*
+ESLint 9 flat config + `typescript-eslint` recommended (not stylistic), prettier check, lint job in CI, `pnpm audit` report step, Dependabot config for npm + pip + actions.
+*AC:* `pnpm lint` passes locally and in CI; CI has jobs: lint, typecheck+test, python-sdk; `.github/dependabot.yml` exists.
 
-**S1-T5 · Versioning and changelog machinery.**
-Adopt Changesets (`@changesets/cli`) across the workspace. Every future PR that touches a publishable package needs a changeset (CI-enforced, with a skip label for docs-only). Create `CHANGELOG.md` seeded with a 0.1.0 entry summarizing the ten prototype sprints. Tag `v0.1.0`.
-*AC:* `pnpm changeset version` bumps correctly in a dry run; CI fails a PR touching `packages/sdk-ts` without a changeset; tag `v0.1.0` exists with release notes.
+**S1-T5 · Versioning and changelog machinery.** *(done — PR #19)*
+Changesets across the workspace; changeset-required CI gate with `no-changeset` label escape; `CHANGELOG.md` seeded at 0.1.0; tag `v0.1.0` with release notes.
+*AC:* `pnpm changeset version` bumps correctly; CI fails an un-changeset'd publishable-package PR; tag exists.
 
-**S1-T6 · Clean-machine onboarding proof.**
-On a fresh clone in a clean container (no local state), follow README quickstart exactly. Fix everything that breaks or is missing (undocumented env vars, port collisions, MinIO bucket setup, `.env` gaps). Record the working transcript as `docs/ONBOARDING.md`, including expected output of `pnpm demo:durability --verify`.
+**S1-T6 · Clean-machine onboarding proof.** *(done — PR #21)*
+Fresh-clone quickstart run; fixed the `verify:external` two-terminal gap; `docs/ONBOARDING.md` with real transcripts.
 *AC:* a second team member reproduces the transcript start-to-finish in under 30 minutes without asking anyone anything.
-
-**Sprint 1 demo:** repo page shows license; a PR walks through template + DCO + lint + changeset gates; README diff presented side-by-side with the code it now truthfully describes; fresh-clone quickstart run live.
 
 ### Sprint 2 — "Artifacts someone can consume"
 
 **Sprint goal:** Pharos is installable from published, signed artifacts, not from a git clone.
 
+**Day-1 human dependencies (tech lead, flag at sprint planning):** npm org + PyPI trusted-publisher credentials as repo secrets (blocks S2-T1); name-availability check for `@pharos/sdk` / `pharos-sdk`.
+
+**S2-T0 · Dependabot triage policy + first sweep.** *(added by amendment — see §7, amendment 5)*
+Dependabot went live mid-Sprint-1 and immediately opened 12 PRs (#8–#18, #20), several of them **majors** (zod 3→4, jose 5→6, Next 15→16, @fastify/cors 10→11, GitHub Actions majors). Do not blind-merge majors. Write the policy into `CONTRIBUTING.md`: patch/minor dev-deps → merge when CI is green; runtime-dep minors → merge with a skim of the changelog; **majors → one PR at a time, read the migration notes, full suite green, and a human decision** (zod 4 and jose 6 touch validation and token verification — the trust path; Next 16 touches only the out-of-scope console). Tune `dependabot.yml` grouping (group actions majors; group dev-deps, already partly done) to cut PR noise. Then execute the first sweep.
+*AC:* policy merged in CONTRIBUTING.md; every currently-open Dependabot PR is merged or closed-with-reason; open Dependabot PR count is 0 at sprint end; `dependabot.yml` grouping updated.
+
 **S2-T1 · Publish the SDKs.**
-Publish `@pharos/sdk` to npm and `pharos-sdk` to PyPI (⚠ check name availability day 1; if taken, decide fallback names with the tech lead immediately — this is a hard external dependency). Set up a `release.yml` workflow: on version tag → build, run tests, publish with provenance (`npm publish --provenance`, PyPI trusted publishing/OIDC). Needs org npm/PyPI accounts + repo secrets from the tech lead (flag this in sprint planning, day 1).
-*AC:* `npm install @pharos/sdk` and `pip install pharos-sdk` work from a clean machine; both packages show provenance/trusted-publisher badges; the example in `examples/langgraph-agent.ts` runs against the published package.
+Publish `@pharos/sdk` to npm and `pharos-sdk` to PyPI (⚠ check name availability day 1; if taken, decide fallback names with the tech lead immediately). `release.yml` workflow: on version tag → build, test, publish with provenance (`npm publish --provenance`, PyPI trusted publishing/OIDC).
+*AC:* `npm install @pharos/sdk` and `pip install pharos-sdk` work from a clean machine; both packages show provenance/trusted-publisher badges; `examples/langgraph-agent.ts` runs against the published package.
 
 **S2-T2 · Signed container images + SBOM.**
-CI builds the API image from the existing `Dockerfile` on tags, pushes to GHCR, signs with cosign (keyless/OIDC), attaches an SBOM (syft, SPDX-JSON) as an attestation. Document verification (`cosign verify ...`) in `deploy/INSTALL.md`, and update the Helm chart default `image.repository` to the GHCR path.
-*AC:* `cosign verify` succeeds against the published image per the documented command; SBOM attestation downloadable; Helm install pulls the signed image.
+CI builds the API image from the existing `Dockerfile` on tags, pushes to GHCR, signs with cosign (keyless/OIDC), attaches an SBOM (syft, SPDX-JSON) as an attestation. Document verification (`cosign verify ...`) in `deploy/INSTALL.md`; update the Helm chart default `image.repository` to GHCR.
+*AC:* `cosign verify` succeeds per the documented command; SBOM attestation downloadable; Helm install pulls the signed image.
 
 **S2-T3 · Static analysis + secret hygiene.**
 Enable CodeQL (JS/TS + Python) and gitleaks in CI; triage every finding to fixed / dismissed-with-reason.
 *AC:* both run on PRs; zero untriaged findings on main.
 
 **S2-T4 · Open-core boundary ADR.**
-With the tech lead, write `docs/adr/0001-open-core-boundary.md`: open = PDP spec, SDKs, gateway, core/seal/verify, reference decision engine; commercial-candidate = regulation packs, console, assurance/underwriter feed. This ADR governs where future code lands; juniors draft, lead decides.
+With the tech lead, write `docs/adr/0001-open-core-boundary.md`: open = PDP spec, SDKs, gateway, core/seal/verify, reference decision engine; commercial-candidate = regulation packs, console, assurance/underwriter feed. Juniors draft, lead decides.
 *AC:* ADR merged; repo layout section of README references it.
 
 **S2-T5 · Seed the contributor funnel.**
-File 15–20 well-specified `good-first-issue`s from this roadmap's small items (each with context, files, AC — copy the style of this document). Add labels, a project board mirroring roadmap phases, and issue links from `docs/LIMITATIONS.md` items to their tracking issues.
+File 15–20 well-specified `good-first-issue`s from this roadmap's small items (each with context, files, AC). Labels, a project board mirroring roadmap phases, and issue links from `docs/LIMITATIONS.md` items to their tracking issues.
 *AC:* board exists; every LIMITATIONS entry links to an open issue with a task ID.
 
-**Sprint 2 demo:** `pip install pharos-sdk` + `npm install @pharos/sdk` live; `cosign verify` live; the project board tour.
+**S2-T6 · One-time prettier normalization; flip the gate to blocking.** *(added by amendment — see §7, amendment 2)*
+A single, purely mechanical PR: `pnpm format:write` across the repo, then flip the CI `format:check` step from report-only to blocking. Formatting is not a crypto *design* change, so `packages/core` is included — but the PR must **prove** it is whitespace/format-only: `git diff -w` over the PR is empty (byte-level changes are whitespace/punctuation reflow only), full suite green, typecheck green, zero manual edits mixed in. No other work rides along in this PR.
+*AC:* `pnpm format:check` passes repo-wide and is a blocking CI step; `git diff -w main...HEAD` on the PR is empty; suite green.
+
+**Sprint 2 demo:** `pip install pharos-sdk` + `npm install @pharos/sdk` live; `cosign verify` live; the project board tour; Dependabot queue at zero with the triage policy shown.
 
 ---
 
@@ -368,12 +376,14 @@ Engineering builds the scaffolding; humans (tech lead / founders) execute the ex
 | 6 | Cedar interop can't express existing packs | Med | Med | ADR + explicit unsupported-list; homegrown DSL remains the default engine |
 | 7 | Scope creep from the console/UI | High | Low | Console is explicitly out of scope until Phase 5 |
 | 8 | Solo-founder history: undocumented intent in subtle code | Med | Med | When intent is unclear, write a characterization test of current behavior BEFORE changing it |
+| 9 | Unattended dependency majors (zod, jose, fastify ecosystem) drift the trust path | Med | Med | S2-T0 triage policy; majors reviewed one at a time with migration notes; jose/zod treated as trust-path changes |
 
 ## 6. What NOT to do (read twice)
 
 - Do not "improve" the canonicalization, hashing, chain, or seal formats opportunistically. RFC or leave it.
 - Do not add a queue/buffer that lets a verdict return before its record is durably sealed. That trades away the product.
 - Do not weaken, skip-list, or conditionalize the CI "integration tests must run" gate to get a PR green.
+- Do not blind-merge Dependabot majors — see S2-T0. `jose` and `zod` sit on the token-verification and validation paths.
 - Do not train on, or even open, the eval datasets while working on models. Metrics you can't trust are worse than no metrics.
 - Do not add heavyweight dependencies (an ORM, a message broker, a service mesh) without an ADR. The dependency-light posture is part of why customer-hosted works.
 - Do not touch `apps/console` except where a task explicitly says so.
@@ -381,4 +391,14 @@ Engineering builds the scaffolding; humans (tech lead / founders) execute the ex
 
 ---
 
-*Companion file: `SPRINT1_KICKOFF_PROMPT.md` — the Claude Code prompt that executes Sprint 1 against this document.*
+## 7. Amendment log
+
+Amendments proposed in the Sprint 1 final report, ruled on by the tech lead, plus one finding from post-sprint verification. Per §0, this is the record of every deviation from v1.0.
+
+1. **Test-count baseline (accepted).** The v1.0 snapshot said 154 TS tests; main had advanced two PRs (#1–#2) before Sprint 1 started, so the true baseline was 157 TS + 10 Python. §1.1/§1.2 now quote 157 *as of v0.1.0* and treat counts as floors. Lesson: the roadmap quotes point-in-time facts; verify them against HEAD at sprint start.
+2. **Prettier enforcement (accepted, scheduled).** Sprint 1 shipped prettier as a non-blocking report — correct call: a repo-wide reformat mixed into a feature sprint would have been an unreviewable diff across crypto files. The one-time normalization + gate flip is now **S2-T6**, as a standalone mechanical PR whose whitespace-only nature is proven by `git diff -w` being empty.
+3. **CODEOWNERS branch protection (accepted, deferred).** Required-review protection with a single maintainer would deadlock all merges. Noted in §2; enable when a second maintainer exists.
+4. **Truth-pass summary reconciliation (accepted, fixed in #22).** The S1-T3 checklist corrected six claims but missed the Status section's own "remaining items are not code" summary, which the new LIMITATIONS.md contradicted. Ground rule 6 now says: truth passes must re-read summary statements, not just itemized claims.
+5. **Dependabot triage (new, from post-sprint verification).** Enabling Dependabot in S1-T4 immediately opened 12 PRs (#8–#18, #20), including majors on trust-path libraries (`zod` 3→4, `jose` 5→6). Added **S2-T0** (triage policy + first sweep) and risk-register item 9. Lesson: any task that turns on an automated PR source must include its triage policy in the same task.
+
+*Sprint kickoff prompts are supplied by the tech lead per sprint (Sprint 1's `SPRINT1_KICKOFF_PROMPT.md` was delivered outside the repo); each prompt executes one sprint of this document.*
