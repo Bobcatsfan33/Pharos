@@ -100,16 +100,27 @@ pnpm install
 pnpm infra:up                     # Postgres + Redis + MinIO (S3 WORM) via docker compose
 cp .env.example .env
 
-pnpm test                         # unit tests (+ durability integration test if infra is up)
+pnpm test                         # 157 tests against real Postgres/Redis/MinIO (needs infra:up)
 
 pnpm demo:durability              # submit demo actions, seal records
 pnpm demo:durability --verify     # cold restart: records persist, chain verifies genesis→head
-
-pnpm api:dev                      # serve the ingestion API on :4000
-pnpm verify:external demo-tenant  # third-party offline, zero-trust verification
-
-pnpm --filter @pharos/console dev # the console on :3000
 ```
+
+The API and the offline verifier run in **two terminals** — `verify:external` fetches the
+exported bundle from the running API:
+
+```bash
+# terminal 1 — leave this running
+pnpm api:dev                      # serve the ingestion API on :4000
+
+# terminal 2
+pnpm verify:external demo-tenant  # third-party offline, zero-trust verification (needs api:dev)
+
+pnpm --filter @pharos/console dev # (optional) the Next.js console on :3000
+```
+
+For a step-by-step, clean-machine walkthrough with expected output, see
+[docs/ONBOARDING.md](docs/ONBOARDING.md).
 
 ## The unified event
 
