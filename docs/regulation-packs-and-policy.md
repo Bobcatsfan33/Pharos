@@ -25,12 +25,17 @@ Minimum-necessary (164.502(b)), PHI-in-context via the Tier-3 judge, authorizati
 Every shipped rule carries its clause and renders an examiner-readable explanation into the
 verdict (verified in `test/policy.test.ts`).
 
-## Policy compiler v1
+## Constrained-grammar policy compiler (v1)
 
-Natural-language policy documents compile to candidate rule sets with confidence flags
-([`compiler.ts`](../packages/policy/src/compiler.ts)). Compilation **never auto-activates**:
-output is candidate rules requiring human approval, and the lifecycle requires a dry-run and
-shadow pass before enforcement.
+This is a **constrained-grammar compiler**, not a general natural-language compiler: a
+line-oriented grammar of a handful of plain-English patterns (block/escalate promissory or
+PHI language; block/escalate/modify a subject over an amount; require human review for a
+subject; block/escalate a subject when a field contains a phrase) maps to candidate rule sets
+with confidence flags ([`compiler.ts`](../packages/policy/src/compiler.ts)). Statements
+outside those patterns are returned as `unparsed` for a human to encode by hand. Compilation
+**never auto-activates**: output is candidate rules requiring human approval, and the
+lifecycle requires a dry-run and shadow pass before enforcement. See
+[docs/LIMITATIONS.md](LIMITATIONS.md).
 
 ## Policy lifecycle
 
