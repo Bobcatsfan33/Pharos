@@ -1,0 +1,9 @@
+node_modules
+**/dist
+**/.next
+**/coverage
+pnpm-lock.yaml
+LICENSE
+NOTICE
+.pharos-keystore
+*.md
