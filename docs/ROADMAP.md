@@ -38,7 +38,8 @@ One platform, one domain model, one event pipeline with two consumers.
   (tier, citations, risk, fail-mode) and liability fields (mandate, oversight, blast
   radius, reversibility, model metadata), signed once, chained once.
 - **Storage tiers** — Postgres (operational), S3 Object-Lock WORM (evidence chain), Redis
-  (verdict cache), KMS/HSM per-tenant signing keys with rotation.
+  (verdict cache), per-tenant signing keys with rotation via a KMS abstraction (local KMS
+  today; AWS KMS/HSM is roadmap task S3-T1).
 - **Two surfaces** — Beam (policy packs, compiler, dry-run, cascade, review ops); Ledger
   (evidence explorer, risk profile, readiness gate, claims packs, exchange portal). One
   login, one RBAC model, one tenant boundary.
@@ -61,7 +62,7 @@ One platform, one domain model, one event pipeline with two consumers.
 |--------|------|-----------|-------------------|
 | 0 | **Bedrock** | One platform, durable by default | Verdict + sealed record survive restart; chain verifies genesis→head; zero in-memory stores; keys in KMS; schema v1 frozen; legacy datasets migrate |
 | 1 | **Gatehouse** | Identity, tenancy, access audit | Two-tenant isolation suite zero crossings + pen test clean; chained access audit; SSO vs Okta+Entra; key rotation mid-stream no dropped records |
-| 2 | **Lantern** | Real decision engine + measured latency | p99 < 800ms @ 1k verdicts/s for 1h; real Tier-3 served judge (zero regex); chaos-proven fail modes; 10 verdicts replay bit-identical |
+| 2 | **Lantern** | Real decision engine + measured latency | p99 < 800ms @ 1k verdicts/s for 1h (measured with the current linear judges; re-benchmarked with transformer judges in Phase 2 / S7-T1); real Tier-3 served judge — today linear bag-of-words classifiers, model-scored not pattern-matched, transformers in Phase 2; chaos-proven fail modes; 10 verdicts replay bit-identical |
 | 3 | **Causeway** | SDKs, gateway, escalation round trip | Reference + unmodified agent both block→escalate→human verdict→resume exactly-once; middlewares pass conformance; $25k mandate blocks $30k; 3 design partners |
 | 4 | **Watchroom** | Review operations OS | 500-escalation drill within SLA; reviewer verdicts sealed as evidence; disagreement dashboard live + 1 policy improvement shipped |
 | 5 | **Seal** | Legally-usable evidence + exchange portal | Incident drill offline-verified by third party; counsel-reviewed admissibility white paper; 3 regulatory exports; redacted packs verify |
