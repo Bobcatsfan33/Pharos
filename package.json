@@ -1,6 +1,7 @@
 {
   "name": "pharos",
   "version": "0.1.0",
+  "license": "Apache-2.0",
   "private": true,
   "description": "Pharos — the trust control plane for enterprise AI agents. Pharos decides. Pharos proves.",
   "type": "module",
