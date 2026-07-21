@@ -107,6 +107,30 @@ jobs:
         working-directory: sdks/python
         run: PYTHONPATH=. python -m pytest tests/ -q
 
+  changeset:
+    # Any PR that changes a publishable (non-private) package must include a changeset.
+    # Add the `no-changeset` label to skip (docs-only / internal-only changes).
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'pull_request' &&
+      !contains(github.event.pull_request.labels.*.name, 'no-changeset')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: require a changeset for publishable-package changes
+        run: |
+          git fetch origin '${{ github.event.pull_request.base.ref }}' --depth=1
+          pnpm exec changeset status --since="origin/${{ github.event.pull_request.base.ref }}"
+
   dco:
     # Every commit in a PR must be signed off (git commit -s) per the DCO. See CONTRIBUTING.md.
     runs-on: ubuntu-latest
