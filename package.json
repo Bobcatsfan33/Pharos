@@ -28,6 +28,7 @@
     "bench:latency": "tsx --env-file=.env scripts/bench-latency.ts"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.1",
     "@eslint/js": "^9.39.5",
     "@types/node": "^22.10.0",
     "eslint": "^9.39.5",
