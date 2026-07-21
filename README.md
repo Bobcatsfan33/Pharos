@@ -79,7 +79,10 @@ Built sprint-by-sprint against [the roadmap](docs/ROADMAP.md). Sequence and proo
 
 ---
 
-**All ten sprints (Bedrock → Signal) are code-complete and milestone-verified.** Every milestone's exit criteria are exercised by passing tests against real infrastructure. The remaining items are explicitly external/human gates — outside-counsel and consultant reviews, SOC 2 attestation, a commissioned penetration test, design-partner/pilot/production-customer signatures, carrier feed confirmations, and publishing the SDKs to PyPI/npm — none of which are code. See [docs/ROADMAP.md](docs/ROADMAP.md).
+**All ten prototype sprints (Bedrock → Signal) are code-complete and milestone-verified** against [docs/ROADMAP.md](docs/ROADMAP.md) — every exit criterion is exercised by passing tests against real infrastructure. Two kinds of work remain:
+
+- **Production-hardening engineering.** Several sprint deliverables ship today as honest stand-ins — linear judges, local KMS, a simulated TSA, in-memory gateway held-request state — whose production implementations are tracked as **code** tasks in the enterprise roadmap (real KMS, transformer judges, RFC 3161, durable gateway). Every one is enumerated in **[docs/LIMITATIONS.md](docs/LIMITATIONS.md)**.
+- **External/human gates.** Outside-counsel and consultant reviews, SOC 2 attestation, a commissioned penetration test, design-partner/pilot/production-customer signatures, carrier feed confirmations, and publishing the SDKs to PyPI/npm — none of which are code.
 
 ## Monorepo layout
 
