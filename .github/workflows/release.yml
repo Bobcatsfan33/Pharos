@@ -1,0 +1,64 @@
+name: release
+# Publishes the SDKs from signed, versioned artifacts.
+#   @pharos/sdk -> npm  (with provenance)
+#   pharos-sdk  -> PyPI (with trusted publishing / OIDC)
+#
+# Triggers on a version tag (v*), or manually via workflow_dispatch for the first publish.
+# Requires (set up by a maintainer — see docs/PUBLISHING.md):
+#   - npm org "pharos" + repo secret NPM_TOKEN (automation token), OR npm trusted publishing.
+#   - PyPI project "pharos-sdk" with a Trusted Publisher pointing at this workflow (no secret).
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  npm-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for npm provenance
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: typecheck
+        run: pnpm -r typecheck
+      - name: build SDK
+        run: pnpm --filter @pharos/sdk build
+      - name: publish @pharos/sdk to npm (with provenance)
+        run: pnpm --filter @pharos/sdk publish --provenance --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  pypi-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # required for PyPI trusted publishing
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: hermetic SDK tests
+        working-directory: sdks/python
+        run: |
+          pip install pytest
+          PYTHONPATH=. python -m pytest tests/ -q
+      - name: build sdist + wheel
+        working-directory: sdks/python
+        run: |
+          pip install build
+          python -m build
+      - name: publish pharos-sdk to PyPI (trusted publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: sdks/python/dist
