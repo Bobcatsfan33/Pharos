@@ -17,7 +17,7 @@ export const LighthouseVerdictSchema = z.object({
   verdict_id: z.string(),
   agent: z.string(),
   action_type: z.string(),
-  action_payload: z.record(z.unknown()).default({}),
+  action_payload: z.record(z.string(), z.unknown()).default({}),
   decision: z.enum(["allow", "deny", "review", "transform"]),
   tier: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal("human")]),
   citations: z
@@ -36,12 +36,12 @@ export const FlightlineEventSchema = z.object({
   tenant: z.string(),
   agent_id: z.string(),
   operation: z.string(),
-  params: z.record(z.unknown()).default({}),
+  params: z.record(z.string(), z.unknown()).default({}),
   mandate: z
     .object({
       mandate_id: z.string(),
       scope: z.string().default(""),
-      ceiling: z.record(z.unknown()).default({}),
+      ceiling: z.record(z.string(), z.unknown()).default({}),
       granted_by: z.string().default("unknown"),
       expires: z.string().nullable().default(null),
     })

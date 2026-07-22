@@ -15,7 +15,7 @@ import { requireAuth } from "../auth.js";
 const ResolveSchema = z.object({
   decision: z.enum(["approve", "modify", "reject"]),
   rationale: z.string().min(1),
-  modifiedAction: z.record(z.unknown()).optional(),
+  modifiedAction: z.record(z.string(), z.unknown()).optional(),
 });
 
 const DECISION_TO_VERDICT: Record<"approve" | "modify" | "reject", VerdictDecision> = {
