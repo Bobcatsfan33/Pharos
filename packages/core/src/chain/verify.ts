@@ -1,8 +1,4 @@
-import {
-  type ActionRecord,
-  ActionRecordSchema,
-  GENESIS_HASH,
-} from "../schema/actionRecord.js";
+import { type ActionRecord, ActionRecordSchema, GENESIS_HASH } from "../schema/actionRecord.js";
 import { type PublicKeyEntry, sealSigningMessage } from "../signing/provider.js";
 import { sha256Hex } from "./canonical.js";
 import { verify as edVerify, createPublicKey } from "node:crypto";
@@ -64,7 +60,11 @@ export function keysetVerifier(
     const entry = map.get(keyId);
     if (!entry) return false;
     try {
-      const publicKey = createPublicKey({ key: Buffer.from(entry.publicKey, "base64"), format: "der", type: "spki" });
+      const publicKey = createPublicKey({
+        key: Buffer.from(entry.publicKey, "base64"),
+        format: "der",
+        type: "spki",
+      });
       return edVerify(null, message, publicKey, Buffer.from(signature, "base64"));
     } catch {
       return false;
@@ -80,11 +80,15 @@ export function verifyRecord(
   const errors: string[] = [];
   const parsed = ActionRecordSchema.safeParse(record);
   const schemaValid = parsed.success;
-  if (!schemaValid) errors.push(`schema invalid: ${parsed.error.issues.map((i) => i.message).join("; ")}`);
+  if (!schemaValid)
+    errors.push(`schema invalid: ${parsed.error.issues.map((i) => i.message).join("; ")}`);
 
   const recomputed = sha256Hex(record.content);
   const contentHashMatches = recomputed === record.seal.contentHash;
-  if (!contentHashMatches) errors.push(`content hash mismatch: recomputed ${recomputed} != sealed ${record.seal.contentHash}`);
+  if (!contentHashMatches)
+    errors.push(
+      `content hash mismatch: recomputed ${recomputed} != sealed ${record.seal.contentHash}`,
+    );
 
   // Dispatch on seal.sigVersion: v2 signatures bind {sequence, prevHash,
   // contentHash}; legacy v1 covered contentHash only.
@@ -97,7 +101,8 @@ export function verifyRecord(
   if (!sig.ok) errors.push(`signature invalid: ${sig.error}`);
 
   const chainLinkValid = record.seal.prevHash === prevHash;
-  if (!chainLinkValid) errors.push(`chain link broken: prevHash ${record.seal.prevHash} != expected ${prevHash}`);
+  if (!chainLinkValid)
+    errors.push(`chain link broken: prevHash ${record.seal.prevHash} != expected ${prevHash}`);
 
   return {
     ok: schemaValid && contentHashMatches && sig.ok && chainLinkValid,
@@ -119,8 +124,7 @@ export function verifyChain(
   records: ActionRecord[],
   keyset: PublicKeyEntry[] | Map<string, PublicKeyEntry>,
 ): ChainVerification {
-  const keyMap =
-    keyset instanceof Map ? keyset : new Map(keyset.map((k) => [k.keyId, k]));
+  const keyMap = keyset instanceof Map ? keyset : new Map(keyset.map((k) => [k.keyId, k]));
   const out: ChainVerification = {
     ok: true,
     tenantId: records[0]?.content.tenantId ?? null,

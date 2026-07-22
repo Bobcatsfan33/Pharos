@@ -42,7 +42,11 @@ class FakeGovernor implements Governor {
   }
 
   async awaitResolution(_t: string, id: string): Promise<Escalation> {
-    return { id, status: this.resolutionStatus, resolution: { decision: "approve", rationale: "ok", modifiedAction: null } };
+    return {
+      id,
+      status: this.resolutionStatus,
+      resolution: { decision: "approve", rationale: "ok", modifiedAction: null },
+    };
   }
 
   async claim(_t: string, id: string): Promise<ClaimResult> {
@@ -65,15 +69,18 @@ const FRAMEWORKS: Array<{
 }> = [
   {
     name: "langchain/langgraph (tool)",
-    make: (gov, tool) => langchainTool(gov, { tenantId: "t", agentId: "a", toolName: "pay" }, tool).invoke,
+    make: (gov, tool) =>
+      langchainTool(gov, { tenantId: "t", agentId: "a", toolName: "pay" }, tool).invoke,
   },
   {
     name: "openai-agents",
-    make: (gov, tool) => openaiAgentTool(gov, { tenantId: "t", agentId: "a", toolName: "pay" }, tool).execute,
+    make: (gov, tool) =>
+      openaiAgentTool(gov, { tenantId: "t", agentId: "a", toolName: "pay" }, tool).execute,
   },
   {
     name: "anthropic (tool_use)",
-    make: (gov, tool) => anthropicToolHandlers(gov, { tenantId: "t", agentId: "a" }, { pay: tool }).pay,
+    make: (gov, tool) =>
+      anthropicToolHandlers(gov, { tenantId: "t", agentId: "a" }, { pay: tool }).pay,
   },
   {
     name: "langgraph (node)",

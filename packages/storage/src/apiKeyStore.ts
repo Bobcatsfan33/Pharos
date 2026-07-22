@@ -43,7 +43,11 @@ interface KeyRow {
 export class ApiKeyStore {
   constructor(private readonly pool: Pool) {}
 
-  async create(tenantId: string, name: string, scopes: Permission[]): Promise<{ record: ApiKeyRecord; plaintext: string }> {
+  async create(
+    tenantId: string,
+    name: string,
+    scopes: Permission[],
+  ): Promise<{ record: ApiKeyRecord; plaintext: string }> {
     const generated: GeneratedApiKey = generateApiKey();
     const res = await this.pool.query<KeyRow>(
       `INSERT INTO api_keys (key_id, tenant_id, name, secret_hash, scopes)
@@ -57,20 +61,32 @@ export class ApiKeyStore {
   async verify(plaintext: string): Promise<VerifiedApiKey | null> {
     const parsed = parseApiKey(plaintext);
     if (!parsed) return null;
-    const res = await this.pool.query<KeyRow>(`SELECT * FROM api_keys WHERE key_id = $1`, [parsed.keyId]);
+    const res = await this.pool.query<KeyRow>(`SELECT * FROM api_keys WHERE key_id = $1`, [
+      parsed.keyId,
+    ]);
     const row = res.rows[0];
     if (!row || row.status !== "active") return null;
     if (!verifySecret(parsed.secret, row.secret_hash)) return null;
-    await this.pool.query(`UPDATE api_keys SET last_used_at = now() WHERE key_id = $1`, [parsed.keyId]);
-    return { keyId: row.key_id, tenantId: row.tenant_id, scopes: this.scopesOf(row), name: row.name };
+    await this.pool.query(`UPDATE api_keys SET last_used_at = now() WHERE key_id = $1`, [
+      parsed.keyId,
+    ]);
+    return {
+      keyId: row.key_id,
+      tenantId: row.tenant_id,
+      scopes: this.scopesOf(row),
+      name: row.name,
+    };
   }
 
   /** Rotate: mint a new key for the same tenant/scopes. The old key stays active. */
-  async rotate(tenantId: string, oldKeyId: string): Promise<{ record: ApiKeyRecord; plaintext: string } | null> {
-    const res = await this.pool.query<KeyRow>(`SELECT * FROM api_keys WHERE key_id = $1 AND tenant_id = $2`, [
-      oldKeyId,
-      tenantId,
-    ]);
+  async rotate(
+    tenantId: string,
+    oldKeyId: string,
+  ): Promise<{ record: ApiKeyRecord; plaintext: string } | null> {
+    const res = await this.pool.query<KeyRow>(
+      `SELECT * FROM api_keys WHERE key_id = $1 AND tenant_id = $2`,
+      [oldKeyId, tenantId],
+    );
     const old = res.rows[0];
     if (!old) return null;
     return this.create(tenantId, `${old.name} (rotated)`, this.scopesOf(old));

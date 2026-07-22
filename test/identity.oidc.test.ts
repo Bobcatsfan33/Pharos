@@ -15,7 +15,11 @@ interface FakeIdp {
   claims: OidcIssuerConfig["claims"];
 }
 
-async function makeIdp(issuer: string, audience: string, claims: OidcIssuerConfig["claims"]): Promise<FakeIdp> {
+async function makeIdp(
+  issuer: string,
+  audience: string,
+  claims: OidcIssuerConfig["claims"],
+): Promise<FakeIdp> {
   const { publicKey, privateKey } = await generateKeyPair("RS256", { extractable: true });
   const jwk = await exportJWK(publicKey);
   jwk.kid = `${issuer}-kid`;
@@ -41,19 +45,36 @@ describe("OIDC verification (Okta + Entra)", () => {
   let verifier: OidcVerifier;
 
   beforeAll(async () => {
-    okta = await makeIdp("https://acme.okta.com", "pharos", { tenant: "pharos_tenant", roles: "pharos_roles" });
+    okta = await makeIdp("https://acme.okta.com", "pharos", {
+      tenant: "pharos_tenant",
+      roles: "pharos_roles",
+    });
     entra = await makeIdp("https://login.microsoftonline.com/acme", "api://pharos", {
       tenant: "tid",
       roles: "roles",
     });
     verifier = new OidcVerifier([
-      { issuer: okta.issuer, audience: okta.audience, jwks: { keys: [okta.jwk] }, claims: okta.claims },
-      { issuer: entra.issuer, audience: entra.audience, jwks: { keys: [entra.jwk] }, claims: entra.claims },
+      {
+        issuer: okta.issuer,
+        audience: okta.audience,
+        jwks: { keys: [okta.jwk] },
+        claims: okta.claims,
+      },
+      {
+        issuer: entra.issuer,
+        audience: entra.audience,
+        jwks: { keys: [entra.jwk] },
+        claims: entra.claims,
+      },
     ]);
   });
 
   it("verifies an Okta token and maps tenant + roles", async () => {
-    const token = await mintToken(okta, { sub: "okta-user", pharos_tenant: "acme-bank", pharos_roles: ["reviewer"] });
+    const token = await mintToken(okta, {
+      sub: "okta-user",
+      pharos_tenant: "acme-bank",
+      pharos_roles: ["reviewer"],
+    });
     const principal = await verifier.verifyBearer(token);
     expect(principal.kind).toBe("user");
     expect(principal.tenantId).toBe("acme-bank");
@@ -62,7 +83,11 @@ describe("OIDC verification (Okta + Entra)", () => {
   });
 
   it("verifies an Entra token with different claim names", async () => {
-    const token = await mintToken(entra, { sub: "entra-user", tid: "contoso", roles: ["tenant_admin", "bogus_role"] });
+    const token = await mintToken(entra, {
+      sub: "entra-user",
+      tid: "contoso",
+      roles: ["tenant_admin", "bogus_role"],
+    });
     const principal = await verifier.verifyBearer(token);
     expect(principal.tenantId).toBe("contoso");
     // Unknown roles are filtered out.
@@ -70,14 +95,25 @@ describe("OIDC verification (Okta + Entra)", () => {
   });
 
   it("rejects a token from an untrusted issuer", async () => {
-    const rogue = await makeIdp("https://evil.example.com", "pharos", { tenant: "pharos_tenant", roles: "pharos_roles" });
-    const token = await mintToken(rogue, { sub: "x", pharos_tenant: "acme-bank", pharos_roles: ["tenant_admin"] });
+    const rogue = await makeIdp("https://evil.example.com", "pharos", {
+      tenant: "pharos_tenant",
+      roles: "pharos_roles",
+    });
+    const token = await mintToken(rogue, {
+      sub: "x",
+      pharos_tenant: "acme-bank",
+      pharos_roles: ["tenant_admin"],
+    });
     await expect(verifier.verifyBearer(token)).rejects.toThrow(/untrusted issuer/);
   });
 
   it("rejects a token signed by the wrong key (forgery)", async () => {
     // Mint with Entra's key but claim Okta's issuer → signature won't verify against Okta JWKS.
-    const forged = await new SignJWT({ sub: "x", pharos_tenant: "acme-bank", pharos_roles: ["tenant_admin"] })
+    const forged = await new SignJWT({
+      sub: "x",
+      pharos_tenant: "acme-bank",
+      pharos_roles: ["tenant_admin"],
+    })
       .setProtectedHeader({ alg: "RS256", kid: okta.jwk.kid })
       .setIssuer(okta.issuer)
       .setAudience(okta.audience)
@@ -94,7 +130,11 @@ describe("OIDC verification (Okta + Entra)", () => {
   });
 
   it("rejects a wrong-audience token", async () => {
-    const token = await new SignJWT({ sub: "x", pharos_tenant: "acme-bank", pharos_roles: ["reviewer"] })
+    const token = await new SignJWT({
+      sub: "x",
+      pharos_tenant: "acme-bank",
+      pharos_roles: ["reviewer"],
+    })
       .setProtectedHeader({ alg: "RS256", kid: okta.jwk.kid })
       .setIssuer(okta.issuer)
       .setAudience("some-other-api")

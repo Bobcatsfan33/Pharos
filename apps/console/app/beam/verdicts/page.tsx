@@ -37,7 +37,10 @@ export default async function VerdictsPage() {
   return (
     <div>
       <h1 style={{ fontSize: 24 }}>Verdicts</h1>
-      <p style={{ color: "#9ca3af" }}>Every verdict shows the tier reached, decision, risk score, and rule citations — written for an examiner.</p>
+      <p style={{ color: "#9ca3af" }}>
+        Every verdict shows the tier reached, decision, risk score, and rule citations — written for
+        an examiner.
+      </p>
       {records.length === 0 ? (
         <Empty />
       ) : (
@@ -61,16 +64,35 @@ export default async function VerdictsPage() {
                 <td style={{ padding: 8, color: "#6b7280" }}>{r.content.sequence}</td>
                 <td style={{ padding: 8 }}>{r.content.action.type}</td>
                 <td style={{ padding: 8, color: "#9ca3af" }}>{r.content.action.agentId}</td>
-                <td style={{ padding: 8, color: COLORS[r.content.verdict.decision] ?? "#e5e7eb", fontWeight: 600 }}>
+                <td
+                  style={{
+                    padding: 8,
+                    color: COLORS[r.content.verdict.decision] ?? "#e5e7eb",
+                    fontWeight: 600,
+                  }}
+                >
                   {r.content.verdict.decision}
                 </td>
                 <td style={{ padding: 8 }}>{r.content.verdict.tierReached}</td>
                 <td style={{ padding: 8 }}>{r.content.verdict.riskScore.toFixed(2)}</td>
-                <td style={{ padding: 8, color: "#9ca3af", fontFamily: "ui-monospace, monospace", fontSize: 11 }}>
+                <td
+                  style={{
+                    padding: 8,
+                    color: "#9ca3af",
+                    fontFamily: "ui-monospace, monospace",
+                    fontSize: 11,
+                  }}
+                >
                   {r.content.verdict.judgeVersion ?? "—"}
                 </td>
-                <td style={{ padding: 8, color: r.content.verdict.latency.deadlineBreached ? "#f87171" : "#9ca3af" }}>
-                  {r.content.verdict.latency.totalMs.toFixed(2)}/{r.content.verdict.latency.deadlineMs}ms
+                <td
+                  style={{
+                    padding: 8,
+                    color: r.content.verdict.latency.deadlineBreached ? "#f87171" : "#9ca3af",
+                  }}
+                >
+                  {r.content.verdict.latency.totalMs.toFixed(2)}/
+                  {r.content.verdict.latency.deadlineMs}ms
                   {r.content.verdict.failMode ? ` · ${r.content.verdict.failMode}` : ""}
                 </td>
                 <td style={{ padding: 8, color: "#9ca3af" }}>
@@ -88,7 +110,8 @@ export default async function VerdictsPage() {
 function Empty() {
   return (
     <p style={{ color: "#6b7280", marginTop: 24 }}>
-      No verdicts yet. Start the API and run <code>pnpm demo:durability</code> to seal some demo records.
+      No verdicts yet. Start the API and run <code>pnpm demo:durability</code> to seal some demo
+      records.
     </p>
   );
 }

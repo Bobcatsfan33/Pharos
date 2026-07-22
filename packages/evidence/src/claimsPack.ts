@@ -132,7 +132,12 @@ export function assembleClaimsPack(params: {
     keyset: params.keyset,
     tsaKeyset: params.tsaKeyset,
     anchors: params.anchors,
-    custody: { sealedBy: params.sealedBy, sealedAt: params.sealedAt, bundleHash, procedure: PROCEDURE },
+    custody: {
+      sealedBy: params.sealedBy,
+      sealedAt: params.sealedAt,
+      bundleHash,
+      procedure: PROCEDURE,
+    },
   };
 }
 
@@ -146,12 +151,22 @@ export interface ClaimsPackVerification {
 
 /** Verify a claims pack OFFLINE using only the bundle and its embedded public keysets. */
 export function verifyClaimsPack(bundle: ClaimsPackBundle): ClaimsPackVerification {
-  const out: ClaimsPackVerification = { ok: true, recordsChecked: 0, redactedRecords: 0, anchorsVerified: 0, errors: [] };
+  const out: ClaimsPackVerification = {
+    ok: true,
+    recordsChecked: 0,
+    redactedRecords: 0,
+    anchorsVerified: 0,
+    errors: [],
+  };
   const verify = keysetVerifier(bundle.keyset);
   const verifyTsa = keysetVerifier(bundle.tsaKeyset);
 
   // Bundle integrity.
-  const recomputed = sha256Hex({ meta: bundle.meta, records: bundle.records, anchors: bundle.anchors });
+  const recomputed = sha256Hex({
+    meta: bundle.meta,
+    records: bundle.records,
+    anchors: bundle.anchors,
+  });
   if (recomputed !== bundle.custody.bundleHash) out.errors.push("bundle hash mismatch");
 
   // Records.
@@ -163,17 +178,21 @@ export function verifyClaimsPack(bundle: ClaimsPackBundle): ClaimsPackVerificati
       const r = entry.record;
       fullRecords.push(r);
       const recomputedHash = sha256Hex(r.content);
-      if (recomputedHash !== r.seal.contentHash) out.errors.push(`seq ${entry.sequence}: content hash mismatch`);
+      if (recomputedHash !== r.seal.contentHash)
+        out.errors.push(`seq ${entry.sequence}: content hash mismatch`);
       if (!verify(r.seal.keyId, sealSigningMessage(r.seal, r.content.sequence), r.seal.signature)) {
         out.errors.push(`seq ${entry.sequence}: signature invalid`);
       }
-      if (expectedPrev !== null && r.seal.prevHash !== expectedPrev) out.errors.push(`seq ${entry.sequence}: chain link broken`);
+      if (expectedPrev !== null && r.seal.prevHash !== expectedPrev)
+        out.errors.push(`seq ${entry.sequence}: chain link broken`);
       expectedPrev = r.seal.contentHash;
     } else {
       out.redactedRecords += 1;
       const rv = verifyRedactedView(entry.redactedView, verify);
-      if (!rv.ok) out.errors.push(`seq ${entry.sequence}: redacted view invalid (${rv.errors.join("; ")})`);
-      if (expectedPrev !== null && entry.prevHash !== expectedPrev) out.errors.push(`seq ${entry.sequence}: chain link broken`);
+      if (!rv.ok)
+        out.errors.push(`seq ${entry.sequence}: redacted view invalid (${rv.errors.join("; ")})`);
+      if (expectedPrev !== null && entry.prevHash !== expectedPrev)
+        out.errors.push(`seq ${entry.sequence}: chain link broken`);
       expectedPrev = entry.redactedView.contentHash;
     }
   }
@@ -195,7 +214,8 @@ export function verifyClaimsPack(bundle: ClaimsPackBundle): ClaimsPackVerificati
       out.errors.push(`anchor for ${anchor.hash.slice(0, 12)} has an invalid TSA signature`);
     }
   }
-  if (bundle.anchors.length > 0 && !headAnchored) out.errors.push("no anchor covers the head record");
+  if (bundle.anchors.length > 0 && !headAnchored)
+    out.errors.push("no anchor covers the head record");
 
   out.ok = out.errors.length === 0;
   return out;

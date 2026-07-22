@@ -21,7 +21,9 @@ export const LighthouseVerdictSchema = z.object({
   decision: z.enum(["allow", "deny", "review", "transform"]),
   tier: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal("human")]),
   citations: z
-    .array(z.object({ rule: z.string(), source: z.string().optional(), note: z.string().optional() }))
+    .array(
+      z.object({ rule: z.string(), source: z.string().optional(), note: z.string().optional() }),
+    )
     .default([]),
   score: z.number().min(0).max(1),
   fallback_mode: z.enum(["open", "closed"]).nullable().default(null),

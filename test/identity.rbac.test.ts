@@ -42,7 +42,13 @@ describe("RBAC + deny-by-default", () => {
   });
 
   it("API keys are limited to their granted scopes, not roles", () => {
-    const key: Principal = { subject: "k1", tenantId: "t1", kind: "api_key", roles: ["tenant_admin"], scopes: ["actions:write"] };
+    const key: Principal = {
+      subject: "k1",
+      tenantId: "t1",
+      kind: "api_key",
+      roles: ["tenant_admin"],
+      scopes: ["actions:write"],
+    };
     // Even though roles lists tenant_admin, an api_key resolves to scopes only.
     expect(can(key, "actions:write")).toBe(true);
     expect(can(key, "keys:manage")).toBe(false);

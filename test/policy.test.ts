@@ -11,12 +11,33 @@ import {
   type PolicyArtifact,
 } from "@pharos/policy";
 
-function ctx(over: Partial<{ type: string; amount: number; mandate: unknown; judges: Record<string, number> }> = {}): EvalContext {
+function ctx(
+  over: Partial<{
+    type: string;
+    amount: number;
+    mandate: unknown;
+    judges: Record<string, number>;
+  }> = {},
+): EvalContext {
   return {
     request: {
       tenantId: "t",
-      action: { type: over.type ?? "payment.transfer", agentId: "a", payload: {}, emittedAt: "2026-06-01T00:00:00.000Z" },
-      liability: { mandate: (over.mandate as never) ?? null, oversightMode: "autonomous", blastRadius: { financialAmount: over.amount ?? 0, currency: "USD", reversibility: "reversible" }, modelMetadata: null },
+      action: {
+        type: over.type ?? "payment.transfer",
+        agentId: "a",
+        payload: {},
+        emittedAt: "2026-06-01T00:00:00.000Z",
+      },
+      liability: {
+        mandate: (over.mandate as never) ?? null,
+        oversightMode: "autonomous",
+        blastRadius: {
+          financialAmount: over.amount ?? 0,
+          currency: "USD",
+          reversibility: "reversible",
+        },
+        modelMetadata: null,
+      },
     },
     judgeProbabilities: over.judges ?? {},
   };
@@ -33,8 +54,13 @@ describe("shipped regulation packs (citation-level)", () => {
   });
 
   it("FINRA blocks promissory language (judge-driven)", () => {
-    const matches = evaluateArtifact(FINRA_PACK_V2, ctx({ type: "email.send", judges: { "finra-promissory": 0.9 } }));
-    expect(matches.some((m) => m.citation.ruleId === "finra-2210-promissory" && m.decision === "block")).toBe(true);
+    const matches = evaluateArtifact(
+      FINRA_PACK_V2,
+      ctx({ type: "email.send", judges: { "finra-promissory": 0.9 } }),
+    );
+    expect(
+      matches.some((m) => m.citation.ruleId === "finra-2210-promissory" && m.decision === "block"),
+    ).toBe(true);
   });
 
   it("FINRA escalates large transfers (field-driven)", () => {
@@ -43,7 +69,10 @@ describe("shipped regulation packs (citation-level)", () => {
   });
 
   it("HIPAA escalates PHI in context", () => {
-    const d = decideWith(HIPAA_PACK_V2, ctx({ type: "message.send", judges: { "phi-in-context": 0.7 } }));
+    const d = decideWith(
+      HIPAA_PACK_V2,
+      ctx({ type: "message.send", judges: { "phi-in-context": 0.7 } }),
+    );
     expect(d).toBe("escalate");
   });
 });
@@ -60,7 +89,12 @@ describe("policy compiler", () => {
     const result = compilePolicy("acme", "1", "Acme", text);
     expect(result.rules.length).toBe(3);
     expect(result.unparsed.length).toBe(1);
-    const artifact: PolicyArtifact = { packId: "acme", version: "1", title: "Acme", rules: result.rules };
+    const artifact: PolicyArtifact = {
+      packId: "acme",
+      version: "1",
+      title: "Acme",
+      rules: result.rules,
+    };
     // The compiled "block payments over 50k" fires on a 60k payment.
     expect(decideWith(artifact, ctx({ type: "payment.transfer", amount: 60000 }))).toBe("block");
     // ...and not on a 10k payment.
@@ -68,15 +102,35 @@ describe("policy compiler", () => {
   });
 
   it("flags low-confidence / unrecognized lines for human review", () => {
-    const result = compilePolicy("acme", "1", "Acme", "Block emails when subject mentions \"merger\"\ngibberish line");
+    const result = compilePolicy(
+      "acme",
+      "1",
+      "Acme",
+      'Block emails when subject mentions "merger"\ngibberish line',
+    );
     expect(result.warnings.length).toBeGreaterThan(0);
   });
 });
 
 describe("dry-run impact + divergence", () => {
   const artifact: PolicyArtifact = {
-    packId: "acme", version: "1", title: "Acme",
-    rules: [{ ruleId: "acme-r1", pack: "acme", description: "Block payments over 25k for the impact demo.", when: { all: [{ field: "action.type", op: "startsWith", value: "payment." }, { field: "liability.blastRadius.financialAmount", op: "gt", value: 25000 }] }, decision: "block" }],
+    packId: "acme",
+    version: "1",
+    title: "Acme",
+    rules: [
+      {
+        ruleId: "acme-r1",
+        pack: "acme",
+        description: "Block payments over 25k for the impact demo.",
+        when: {
+          all: [
+            { field: "action.type", op: "startsWith", value: "payment." },
+            { field: "liability.blastRadius.financialAmount", op: "gt", value: 25000 },
+          ],
+        },
+        decision: "block",
+      },
+    ],
   };
   const contexts = [
     ctx({ type: "payment.transfer", amount: 30000 }),
@@ -97,6 +151,8 @@ describe("dry-run impact + divergence", () => {
     const empty: PolicyArtifact = { packId: "none", version: "1", title: "none", rules: [] };
     const d = divergence(empty, artifact, contexts);
     expect(d.diverged).toBe(2); // 2 allow->block changes
-    expect(d.changes.some((c) => c.from === "allow" && c.to === "block" && c.count === 2)).toBe(true);
+    expect(d.changes.some((c) => c.from === "allow" && c.to === "block" && c.count === 2)).toBe(
+      true,
+    );
   });
 });

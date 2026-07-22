@@ -20,7 +20,9 @@ interface RuleCandidate {
 
 export default async function ReviewOpsPage() {
   const analytics = await api<Analytics>(`/v1/tenants/${DEMO_TENANT}/review/analytics`);
-  const disagreements = await api<{ ruleCandidates: RuleCandidate[] }>(`/v1/tenants/${DEMO_TENANT}/review/disagreements`);
+  const disagreements = await api<{ ruleCandidates: RuleCandidate[] }>(
+    `/v1/tenants/${DEMO_TENANT}/review/disagreements`,
+  );
 
   return (
     <div>
@@ -32,15 +34,26 @@ export default async function ReviewOpsPage() {
 
       {!analytics ? (
         <p style={{ color: "#6b7280", marginTop: 24 }}>
-          API unreachable or no review traffic yet (a read-scoped <code>PHAROS_CONSOLE_API_KEY</code> is required).
+          API unreachable or no review traffic yet (a read-scoped{" "}
+          <code>PHAROS_CONSOLE_API_KEY</code> is required).
         </p>
       ) : (
         <>
           <div style={{ display: "flex", gap: 12, marginTop: 20, flexWrap: "wrap" }}>
             <Stat label="Resolved" value={String(analytics.resolved)} />
-            <Stat label="Median review time" value={`${(analytics.medianReviewTimeMs / 1000).toFixed(1)}s`} />
-            <Stat label="SLA attainment" value={`${(analytics.slaAttainment * 100).toFixed(1)}%`} good={analytics.slaAttainment >= 0.95} />
-            <Stat label="Disagreement rate" value={`${(analytics.disagreementRate * 100).toFixed(1)}%`} />
+            <Stat
+              label="Median review time"
+              value={`${(analytics.medianReviewTimeMs / 1000).toFixed(1)}s`}
+            />
+            <Stat
+              label="SLA attainment"
+              value={`${(analytics.slaAttainment * 100).toFixed(1)}%`}
+              good={analytics.slaAttainment >= 0.95}
+            />
+            <Stat
+              label="Disagreement rate"
+              value={`${(analytics.disagreementRate * 100).toFixed(1)}%`}
+            />
           </div>
 
           <h2 style={{ fontSize: 16, marginTop: 28 }}>Queue depth (pending)</h2>
@@ -48,16 +61,28 @@ export default async function ReviewOpsPage() {
             {Object.entries(analytics.queueDepth ?? {}).map(([q, n]) => (
               <Stat key={q} label={q} value={String(n)} />
             ))}
-            {Object.keys(analytics.queueDepth ?? {}).length === 0 && <span style={{ color: "#6b7280" }}>queues empty</span>}
+            {Object.keys(analytics.queueDepth ?? {}).length === 0 && (
+              <span style={{ color: "#6b7280" }}>queues empty</span>
+            )}
           </div>
 
           <h2 style={{ fontSize: 16, marginTop: 28 }}>Draft rule candidates (feedback loop)</h2>
           {disagreements && disagreements.ruleCandidates.length > 0 ? (
             <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
               {disagreements.ruleCandidates.map((c) => (
-                <div key={c.ruleId} style={{ border: "1px solid #1f2937", borderRadius: 10, padding: 14, fontSize: 14 }}>
+                <div
+                  key={c.ruleId}
+                  style={{
+                    border: "1px solid #1f2937",
+                    borderRadius: 10,
+                    padding: 14,
+                    fontSize: 14,
+                  }}
+                >
                   <strong>{c.ruleId}</strong>{" "}
-                  <span style={{ color: c.direction === "loosen" ? "#fbbf24" : "#60a5fa" }}>[{c.direction}]</span>{" "}
+                  <span style={{ color: c.direction === "loosen" ? "#fbbf24" : "#60a5fa" }}>
+                    [{c.direction}]
+                  </span>{" "}
                   <span style={{ color: "#6b7280" }}>· {c.disagreements} disagreements</span>
                   <div style={{ color: "#9ca3af", marginTop: 4 }}>{c.rationale}</div>
                 </div>
@@ -74,9 +99,21 @@ export default async function ReviewOpsPage() {
 
 function Stat({ label, value, good }: { label: string; value: string; good?: boolean }) {
   return (
-    <div style={{ border: "1px solid #1f2937", borderRadius: 10, padding: "12px 16px", minWidth: 120 }}>
-      <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 1 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: good === undefined ? "#e5e7eb" : good ? "#34d399" : "#f87171" }}>{value}</div>
+    <div
+      style={{ border: "1px solid #1f2937", borderRadius: 10, padding: "12px 16px", minWidth: 120 }}
+    >
+      <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 1 }}>
+        {label}
+      </div>
+      <div
+        style={{
+          fontSize: 22,
+          fontWeight: 700,
+          color: good === undefined ? "#e5e7eb" : good ? "#34d399" : "#f87171",
+        }}
+      >
+        {value}
+      </div>
     </div>
   );
 }

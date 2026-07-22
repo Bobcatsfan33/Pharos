@@ -29,7 +29,12 @@ export class ReviewSlaService {
     for (const tenant of tenants) {
       const breaches = await this.deps.escalations.findNewBreaches(tenant.tenantId, nowIso);
       for (const b of breaches) {
-        await this.deps.notifier.fire({ tenantId: tenant.tenantId, event: "breached", escalationId: b.id, queue: b.queue });
+        await this.deps.notifier.fire({
+          tenantId: tenant.tenantId,
+          event: "breached",
+          escalationId: b.id,
+          queue: b.queue,
+        });
         fired += 1;
       }
     }
@@ -39,7 +44,9 @@ export class ReviewSlaService {
   start(intervalMs: number): void {
     if (this.timer) return;
     this.timer = setInterval(() => {
-      void this.sweep().catch((err) => console.error("[review-sla] sweep failed", (err as Error).message));
+      void this.sweep().catch((err) =>
+        console.error("[review-sla] sweep failed", (err as Error).message),
+      );
     }, intervalMs);
     this.timer.unref?.();
   }

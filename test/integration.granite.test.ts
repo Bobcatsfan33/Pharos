@@ -41,7 +41,14 @@ beforeAll(async () => {
     platform = await buildPlatform();
     app = await buildApp(platform);
     await platform.tenants.createTenant({ tenantId: TENANT, displayName: "Granite" });
-    auth["x-api-key"] = (await platform.apiKeys.create(TENANT, "gr", ["actions:write", "records:read", "audit:read", "tenants:manage"])).plaintext;
+    auth["x-api-key"] = (
+      await platform.apiKeys.create(TENANT, "gr", [
+        "actions:write",
+        "records:read",
+        "audit:read",
+        "tenants:manage",
+      ])
+    ).plaintext;
   } catch (err) {
     console.warn("[granite] infrastructure unavailable, skipping:", (err as Error).message);
     available = false;
@@ -57,7 +64,21 @@ describe("Granite — observability, billing, region failover", () => {
   it("exports Prometheus metrics for verdicts and seals", async (ctx) => {
     if (!available || !platform) return ctx.skip();
     for (let i = 0; i < N; i++) {
-      await app!.inject({ method: "POST", url: "/v1/actions", headers: auth, payload: { tenantId: TENANT, action: { type: "email.send", agentId: "a", payload: { i } }, liability: { mandate: null, oversightMode: "autonomous", blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" }, modelMetadata: null } } });
+      await app!.inject({
+        method: "POST",
+        url: "/v1/actions",
+        headers: auth,
+        payload: {
+          tenantId: TENANT,
+          action: { type: "email.send", agentId: "a", payload: { i } },
+          liability: {
+            mandate: null,
+            oversightMode: "autonomous",
+            blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" },
+            modelMetadata: null,
+          },
+        },
+      });
     }
     const metrics = await app!.inject({ method: "GET", url: "/metrics" });
     expect(metrics.statusCode).toBe(200);
@@ -72,14 +93,21 @@ describe("Granite — observability, billing, region failover", () => {
   it("generates an invoice that reconciles to recorded usage exactly", async (ctx) => {
     if (!available || !platform) return ctx.skip();
     const recorded = await platform.store.count(TENANT);
-    const res = await app!.inject({ method: "POST", url: `/v1/tenants/${TENANT}/billing/invoice`, headers: auth, payload: {} });
+    const res = await app!.inject({
+      method: "POST",
+      url: `/v1/tenants/${TENANT}/billing/invoice`,
+      headers: auth,
+      payload: {},
+    });
     expect(res.statusCode).toBe(200);
     const { invoice, reconciliation } = res.json().data;
     expect(reconciliation.ok).toBe(true);
     expect(reconciliation.invoicedActions).toBe(recorded);
     expect(reconciliation.discrepancy).toBe(0);
     // The metered line bills exactly the recorded actions.
-    expect(invoice.lines.find((l: { type: string }) => l.type === "metered_actions").quantity).toBe(recorded);
+    expect(invoice.lines.find((l: { type: string }) => l.type === "metered_actions").quantity).toBe(
+      recorded,
+    );
     expect(invoice.total).toBeGreaterThan(0);
   });
 

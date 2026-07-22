@@ -45,7 +45,9 @@ describe("PDP open spec v1.0 conformance", () => {
           decision: reversible ? "allow" : "escalate",
           tierReached: 1,
           riskScore: 0.5,
-          ruleCitations: [{ ruleId: reversible ? "deadline-fail-open" : "deadline-fail-closed", pack: "core" }],
+          ruleCitations: [
+            { ruleId: reversible ? "deadline-fail-open" : "deadline-fail-closed", pack: "core" },
+          ],
           failMode: reversible ? "fail_open" : "fail_closed",
           judgeVersion: null,
           latency: { totalMs: 0, deadlineMs, deadlineBreached: true },
@@ -54,11 +56,29 @@ describe("PDP open spec v1.0 conformance", () => {
       const v = await cascade.evaluate(
         {
           tenantId: "conformance",
-          action: { type: req.action.type, agentId: req.action.agentId, payload: req.action.payload ?? {}, emittedAt: new Date(0).toISOString() },
+          action: {
+            type: req.action.type,
+            agentId: req.action.agentId,
+            payload: req.action.payload ?? {},
+            emittedAt: new Date(0).toISOString(),
+          },
           liability: {
-            mandate: req.liability.mandate ? { id: req.liability.mandate.id, scope: "", limits: req.liability.mandate.limits ?? {}, grantor: "", expiresAt: null, version: "1" } : null,
+            mandate: req.liability.mandate
+              ? {
+                  id: req.liability.mandate.id,
+                  scope: "",
+                  limits: req.liability.mandate.limits ?? {},
+                  grantor: "",
+                  expiresAt: null,
+                  version: "1",
+                }
+              : null,
             oversightMode: req.liability.oversightMode,
-            blastRadius: { financialAmount: req.liability.blastRadius.financialAmount ?? 0, currency: req.liability.blastRadius.currency ?? "USD", reversibility: req.liability.blastRadius.reversibility },
+            blastRadius: {
+              financialAmount: req.liability.blastRadius.financialAmount ?? 0,
+              currency: req.liability.blastRadius.currency ?? "USD",
+              reversibility: req.liability.blastRadius.reversibility,
+            },
             modelMetadata: null,
           },
         },
@@ -72,7 +92,11 @@ describe("PDP open spec v1.0 conformance", () => {
         ruleCitations: v.ruleCitations,
         failMode: v.failMode,
         judgeVersion: v.judgeVersion,
-        latency: { totalMs: v.latency.totalMs, deadlineMs, deadlineBreached: v.latency.deadlineBreached },
+        latency: {
+          totalMs: v.latency.totalMs,
+          deadlineMs,
+          deadlineBreached: v.latency.deadlineBreached,
+        },
       };
     };
 

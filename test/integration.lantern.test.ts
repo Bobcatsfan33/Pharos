@@ -30,7 +30,12 @@ let platform: Platform | null = null;
 let key = "";
 
 async function submit(app: import("fastify").FastifyInstance, payload: Record<string, unknown>) {
-  return app.inject({ method: "POST", url: "/v1/actions", headers: { "x-api-key": key }, payload: { tenantId: TENANT, ...payload } });
+  return app.inject({
+    method: "POST",
+    url: "/v1/actions",
+    headers: { "x-api-key": key },
+    payload: { tenantId: TENANT, ...payload },
+  });
 }
 
 beforeAll(async () => {
@@ -38,7 +43,11 @@ beforeAll(async () => {
     const { buildPlatform } = await import("../services/api/src/platform.js");
     platform = await buildPlatform();
     await platform.tenants.createTenant({ tenantId: TENANT, displayName: "Lantern" });
-    const created = await platform.apiKeys.create(TENANT, "ln", ["actions:write", "records:read", "chain:verify"]);
+    const created = await platform.apiKeys.create(TENANT, "ln", [
+      "actions:write",
+      "records:read",
+      "chain:verify",
+    ]);
     key = created.plaintext;
   } catch (err) {
     console.warn("[lantern] infrastructure unavailable, skipping:", (err as Error).message);
@@ -56,8 +65,17 @@ describe("Lantern — served cascade over the API", () => {
     const { buildApp } = await import("../services/api/src/app.js");
     const app = await buildApp(platform);
     const res = await submit(app, {
-      action: { type: "email.send", agentId: "sales", payload: { body: "We guarantee a 20% return with no risk — guaranteed profits!" } },
-      liability: { mandate: null, oversightMode: "autonomous", blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" }, modelMetadata: null },
+      action: {
+        type: "email.send",
+        agentId: "sales",
+        payload: { body: "We guarantee a 20% return with no risk — guaranteed profits!" },
+      },
+      liability: {
+        mandate: null,
+        oversightMode: "autonomous",
+        blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" },
+        modelMetadata: null,
+      },
     });
     expect(res.statusCode).toBe(201);
     const body = res.json();
@@ -85,12 +103,25 @@ describe("Lantern — served cascade over the API", () => {
       const p = payloads[i % payloads.length]!;
       const res = await submit(app, {
         action: { type: p.type, agentId: "a", payload: { body: p.body, amount: p.amount } },
-        liability: { mandate: null, oversightMode: "autonomous", blastRadius: { financialAmount: p.amount ?? 0, currency: "USD", reversibility: "reversible" }, modelMetadata: null },
+        liability: {
+          mandate: null,
+          oversightMode: "autonomous",
+          blastRadius: {
+            financialAmount: p.amount ?? 0,
+            currency: "USD",
+            reversibility: "reversible",
+          },
+          modelMetadata: null,
+        },
       });
       seqs.push(res.json().data.record.content.sequence);
     }
     for (const seq of seqs) {
-      const replay = await app.inject({ method: "GET", url: `/v1/replay/${TENANT}/${seq}`, headers: { "x-api-key": key } });
+      const replay = await app.inject({
+        method: "GET",
+        url: `/v1/replay/${TENANT}/${seq}`,
+        headers: { "x-api-key": key },
+      });
       expect(replay.statusCode).toBe(200);
       expect(replay.json().data.identical).toBe(true);
     }
@@ -112,7 +143,8 @@ describe("Lantern — served cascade over the API", () => {
   it("CHAOS: a judge fault fails closed (irreversible) and seals an explaining record", async (ctx) => {
     if (!available || !platform) return ctx.skip();
     const { buildApp } = await import("../services/api/src/app.js");
-    const { VerdictCascade, DEFAULT_PACK_BINDINGS } = await import("../packages/cascade/src/index.js");
+    const { VerdictCascade, DEFAULT_PACK_BINDINGS } =
+      await import("../packages/cascade/src/index.js");
     const { VerdictEngine } = await import("../packages/core/src/index.js");
     // Swap in a cascade whose Tier-3 judge always faults.
     platform.cascade = new VerdictCascade({
@@ -126,7 +158,12 @@ describe("Lantern — served cascade over the API", () => {
 
     const irreversible = await submit(app, {
       action: { type: "payment.transfer", agentId: "a", payload: { amount: 500 } },
-      liability: { mandate: null, oversightMode: "human_in_loop", blastRadius: { financialAmount: 500, currency: "USD", reversibility: "irreversible" }, modelMetadata: null },
+      liability: {
+        mandate: null,
+        oversightMode: "human_in_loop",
+        blastRadius: { financialAmount: 500, currency: "USD", reversibility: "irreversible" },
+        modelMetadata: null,
+      },
     });
     expect(irreversible.statusCode).toBe(201);
     const ir = irreversible.json().data;
@@ -136,7 +173,12 @@ describe("Lantern — served cascade over the API", () => {
 
     const reversible = await submit(app, {
       action: { type: "email.send", agentId: "a", payload: { body: "hi" } },
-      liability: { mandate: null, oversightMode: "autonomous", blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" }, modelMetadata: null },
+      liability: {
+        mandate: null,
+        oversightMode: "autonomous",
+        blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" },
+        modelMetadata: null,
+      },
     });
     expect(reversible.json().data.verdict.failMode).toBe("fail_open");
     await app.close();
@@ -160,7 +202,12 @@ describe("Lantern — served cascade over the API", () => {
       payload: {
         tenantId: TENANT + "-x",
         action: { type: "email.send", agentId: "a", payload: {} },
-        liability: { mandate: null, oversightMode: "autonomous", blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" }, modelMetadata: null },
+        liability: {
+          mandate: null,
+          oversightMode: "autonomous",
+          blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" },
+          modelMetadata: null,
+        },
       },
     });
     // No partial record: the request fails rather than returning an unsealed verdict.

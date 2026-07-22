@@ -54,19 +54,27 @@ export function createGatewayApp(opts: GatewayOptions): FastifyInstance {
     const res = await fetchImpl(`${opts.target}${req.path}`, {
       method: req.method,
       headers: { "content-type": "application/json" },
-      body: req.method === "GET" || req.method === "HEAD" ? undefined : JSON.stringify(req.body ?? {}),
+      body:
+        req.method === "GET" || req.method === "HEAD" ? undefined : JSON.stringify(req.body ?? {}),
     });
     const body = await res.json().catch(() => ({}));
     return { status: res.status, body };
   }
 
-  function actionFor(req: HeldRequest): { action: ActionInput; liability: LiabilityInput; mandateId?: string } {
+  function actionFor(req: HeldRequest): {
+    action: ActionInput;
+    liability: LiabilityInput;
+    mandateId?: string;
+  } {
     const mapped = opts.mapAction?.(req) ?? {};
     return {
       action: {
         type: mapped.action?.type ?? `egress.${req.method.toLowerCase()}`,
         agentId: mapped.action?.agentId ?? opts.agentId,
-        payload: (mapped.action?.payload ?? { path: req.path, ...(typeof req.body === "object" ? req.body : { body: req.body }) }) as Record<string, unknown>,
+        payload: (mapped.action?.payload ?? {
+          path: req.path,
+          ...(typeof req.body === "object" ? req.body : { body: req.body }),
+        }) as Record<string, unknown>,
       },
       liability: mapped.liability ?? DEFAULT_LIABILITY,
       mandateId: mapped.mandateId,
@@ -79,7 +87,8 @@ export function createGatewayApp(opts: GatewayOptions): FastifyInstance {
     const req = held.get(id);
     if (!req) return reply.code(404).send({ error: "no held request for escalation" });
     const claim = await opts.client.claim(opts.tenantId, id);
-    if (!claim.claimed) return reply.code(409).send({ error: "not claimable (rejected or already resumed)" });
+    if (!claim.claimed)
+      return reply.code(409).send({ error: "not claimable (rejected or already resumed)" });
     held.delete(id);
     const forwarded = await forward(req);
     return reply.code(forwarded.status).send({ resumed: true, response: forwarded.body });
@@ -93,7 +102,12 @@ export function createGatewayApp(opts: GatewayOptions): FastifyInstance {
       headers: {},
     };
     const { action, liability, mandateId } = actionFor(req);
-    const submitted = await opts.client.submit({ tenantId: opts.tenantId, action, liability, mandateId });
+    const submitted = await opts.client.submit({
+      tenantId: opts.tenantId,
+      action,
+      liability,
+      mandateId,
+    });
     const decision = submitted.verdict.decision;
 
     if (decision === "allow" || decision === "modify") {

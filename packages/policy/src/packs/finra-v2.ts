@@ -9,7 +9,8 @@ export const FINRA_PACK_V2: PolicyArtifact = {
   packId: "finra",
   version: "2.0.0",
   title: "FINRA communications & supervision",
-  changelog: "v2: citation-level 2210 promissory/disclosure rules; 3110 supervision; funds-movement.",
+  changelog:
+    "v2: citation-level 2210 promissory/disclosure rules; 3110 supervision; funds-movement.",
   rules: [
     {
       ruleId: "finra-2210-promissory",
@@ -35,7 +36,12 @@ export const FINRA_PACK_V2: PolicyArtifact = {
       clause: "FINRA Rule 3110 (supervision) / 2150 (funds handling)",
       description:
         "Movement of customer funds requires supervisory review. Unmandated funds-movement intent is escalated to a registered principal under Rule 3110 supervision.",
-      when: { all: [{ judge: "funds-movement-intent", gte: 0.5 }, { field: "liability.mandate", op: "eq", value: null }] },
+      when: {
+        all: [
+          { judge: "funds-movement-intent", gte: 0.5 },
+          { field: "liability.mandate", op: "eq", value: null },
+        ],
+      },
       decision: "escalate",
     },
     {
@@ -44,7 +50,12 @@ export const FINRA_PACK_V2: PolicyArtifact = {
       clause: "FINRA Rule 2150",
       description:
         "Large funds transfers require principal approval. Transfers above the threshold are escalated for registered-principal sign-off.",
-      when: { all: [{ field: "action.type", op: "startsWith", value: "payment." }, { field: "liability.blastRadius.financialAmount", op: "gte", value: 50000 }] },
+      when: {
+        all: [
+          { field: "action.type", op: "startsWith", value: "payment." },
+          { field: "liability.blastRadius.financialAmount", op: "gte", value: 50000 },
+        ],
+      },
       decision: "escalate",
     },
   ],

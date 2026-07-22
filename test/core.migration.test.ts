@@ -30,11 +30,20 @@ describe("legacy migration adapters", () => {
   });
 
   it("maps Lighthouse decisions to unified verdicts", () => {
-    const deny = fromLighthouseVerdict({ ...LIGHTHOUSE_DEMO[0], decision: "deny" }, { tenantId: "t", sequence: 0 });
+    const deny = fromLighthouseVerdict(
+      { ...LIGHTHOUSE_DEMO[0], decision: "deny" },
+      { tenantId: "t", sequence: 0 },
+    );
     expect(deny.verdict.decision).toBe("block");
-    const review = fromLighthouseVerdict({ ...LIGHTHOUSE_DEMO[0], decision: "review" }, { tenantId: "t", sequence: 0 });
+    const review = fromLighthouseVerdict(
+      { ...LIGHTHOUSE_DEMO[0], decision: "review" },
+      { tenantId: "t", sequence: 0 },
+    );
     expect(review.verdict.decision).toBe("escalate");
-    const transform = fromLighthouseVerdict({ ...LIGHTHOUSE_DEMO[0], decision: "transform" }, { tenantId: "t", sequence: 0 });
+    const transform = fromLighthouseVerdict(
+      { ...LIGHTHOUSE_DEMO[0], decision: "transform" },
+      { tenantId: "t", sequence: 0 },
+    );
     expect(transform.verdict.decision).toBe("modify");
   });
 

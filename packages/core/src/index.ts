@@ -30,11 +30,7 @@ export { type KeystoreBackend, type StoredKey, FileKeystore } from "./signing/ke
 export { LocalKms } from "./signing/localKms.js";
 
 // Verdict engine
-export {
-  VerdictEngine,
-  type VerdictRequest,
-  type VerdictEngineOptions,
-} from "./verdict/engine.js";
+export { VerdictEngine, type VerdictRequest, type VerdictEngineOptions } from "./verdict/engine.js";
 
 // Selective-disclosure redaction
 export {

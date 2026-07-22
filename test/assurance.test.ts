@@ -45,7 +45,12 @@ describe("risk profile v2", () => {
   it("computes posture metrics and a grade", () => {
     const recs = summaries([
       { oversightMode: "autonomous", reversibility: "irreversible", financialAmount: 1000 },
-      { oversightMode: "human_in_loop", decision: "escalate", financialAmount: 500, mandatePresent: true },
+      {
+        oversightMode: "human_in_loop",
+        decision: "escalate",
+        financialAmount: 500,
+        mandatePresent: true,
+      },
       { oversightMode: "human_on_loop", decision: "block" },
     ]);
     const p = computeRiskProfile(recs, wilsonInterval(960, 1000), 0.05);
@@ -59,8 +64,18 @@ describe("risk profile v2", () => {
 
 describe("readiness gate", () => {
   const recs = summaries([
-    { financialAmount: 30000, reversibility: "irreversible", oversightMode: "human_in_loop", mandatePresent: false },
-    { financialAmount: 20000, reversibility: "irreversible", oversightMode: "human_in_loop", mandatePresent: false },
+    {
+      financialAmount: 30000,
+      reversibility: "irreversible",
+      oversightMode: "human_in_loop",
+      mandatePresent: false,
+    },
+    {
+      financialAmount: 20000,
+      reversibility: "irreversible",
+      oversightMode: "human_in_loop",
+      mandatePresent: false,
+    },
   ]);
 
   it("blocks external release when mandate coverage is below threshold", () => {

@@ -49,7 +49,10 @@ interface AuditRow {
  * itself.
  */
 export class AccessAuditLog {
-  constructor(private readonly pool: Pool, private readonly now: () => Date = () => new Date()) {}
+  constructor(
+    private readonly pool: Pool,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
 
   private hashEntry(e: Omit<AccessAuditEntry, "entryHash">): string {
     return sha256Hex({
@@ -166,7 +169,12 @@ export class AccessAuditLog {
 
   async verify(tenantId: string): Promise<AccessAuditVerification> {
     const entries = await this.list(tenantId);
-    const out: AccessAuditVerification = { ok: true, entriesChecked: 0, firstBrokenSequence: null, errors: [] };
+    const out: AccessAuditVerification = {
+      ok: true,
+      entriesChecked: 0,
+      firstBrokenSequence: null,
+      errors: [],
+    };
     let expectedPrev = GENESIS_HASH;
     let expectedSeq = 0;
     for (const e of entries) {
@@ -202,7 +210,10 @@ export class AccessAuditLog {
       actorKind: row.actor_kind,
       action: row.action as AccessAction,
       resource: row.resource,
-      metadata: typeof row.metadata === "string" ? JSON.parse(row.metadata) : (row.metadata as Record<string, unknown>),
+      metadata:
+        typeof row.metadata === "string"
+          ? JSON.parse(row.metadata)
+          : (row.metadata as Record<string, unknown>),
       at: typeof row.at === "string" ? row.at : new Date(row.at).toISOString(),
       prevHash: row.prev_hash,
       entryHash: row.entry_hash,

@@ -25,7 +25,10 @@ export class MandateStore {
     return {
       id: row.mandate_id,
       scope: row.scope,
-      limits: (typeof row.limits === "string" ? JSON.parse(row.limits) : row.limits) as Record<string, unknown>,
+      limits: (typeof row.limits === "string" ? JSON.parse(row.limits) : row.limits) as Record<
+        string,
+        unknown
+      >,
       grantor: row.grantor,
       expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : null,
       version: String(row.version),
@@ -81,9 +84,9 @@ export class MandateStore {
   }
 
   async revoke(tenantId: string, mandateId: string): Promise<void> {
-    await this.pool.query(`UPDATE mandates SET status = 'revoked' WHERE tenant_id = $1 AND mandate_id = $2`, [
-      tenantId,
-      mandateId,
-    ]);
+    await this.pool.query(
+      `UPDATE mandates SET status = 'revoked' WHERE tenant_id = $1 AND mandate_id = $2`,
+      [tenantId, mandateId],
+    );
   }
 }

@@ -1,10 +1,11 @@
-import { generateKeyPairSync, sign as edSign, verify as edVerify, createPublicKey, createPrivateKey } from "node:crypto";
 import {
-  type SigningProvider,
-  type PublicKeyEntry,
-  makeKeyId,
-  parseKeyId,
-} from "./provider.js";
+  generateKeyPairSync,
+  sign as edSign,
+  verify as edVerify,
+  createPublicKey,
+  createPrivateKey,
+} from "node:crypto";
+import { type SigningProvider, type PublicKeyEntry, makeKeyId, parseKeyId } from "./provider.js";
 import { type KeystoreBackend, type StoredKey } from "./keystore.js";
 
 /**
@@ -92,6 +93,10 @@ export class LocalKms implements SigningProvider {
 
   async publishKeyset(): Promise<PublicKeyEntry[]> {
     const all = await this.keystore.list();
-    return all.map((k) => ({ keyId: k.keyId, publicKey: k.publicKeyDer, algorithm: "ed25519" as const }));
+    return all.map((k) => ({
+      keyId: k.keyId,
+      publicKey: k.publicKeyDer,
+      algorithm: "ed25519" as const,
+    }));
   }
 }

@@ -92,20 +92,32 @@ describe("Gatehouse — tenant isolation attack suite", () => {
     expect((await submit(TA, keyA)).statusCode).toBe(201);
     expect((await submit(TB, keyB)).statusCode).toBe(201);
 
-    const readA = await app!.inject({ method: "GET", url: `/v1/records/${TA}/0`, headers: { "x-api-key": keyA } });
+    const readA = await app!.inject({
+      method: "GET",
+      url: `/v1/records/${TA}/0`,
+      headers: { "x-api-key": keyA },
+    });
     expect(readA.statusCode).toBe(200);
   });
 
   it("blocks cross-tenant reads (B's key cannot read A's record)", async (ctx) => {
     if (!available) return ctx.skip();
-    const res = await app!.inject({ method: "GET", url: `/v1/records/${TA}/0`, headers: { "x-api-key": keyB } });
+    const res = await app!.inject({
+      method: "GET",
+      url: `/v1/records/${TA}/0`,
+      headers: { "x-api-key": keyB },
+    });
     expect(res.statusCode).toBe(403);
     expect(res.json().error.code).toBe("tenant_mismatch");
   });
 
   it("blocks IDOR on the chain endpoint across tenants", async (ctx) => {
     if (!available) return ctx.skip();
-    const res = await app!.inject({ method: "GET", url: `/v1/chain/${TA}`, headers: { "x-api-key": keyB } });
+    const res = await app!.inject({
+      method: "GET",
+      url: `/v1/chain/${TA}`,
+      headers: { "x-api-key": keyB },
+    });
     expect(res.statusCode).toBe(403);
   });
 
@@ -144,7 +156,10 @@ describe("Gatehouse — tenant isolation attack suite", () => {
       await client.query("SELECT set_config('pharos.tenant_id', $1, true)", [TA]);
       await client.query("SET LOCAL ROLE pharos_app");
       // Even explicitly querying for B's tenant_id returns nothing under A's context.
-      const res = await client.query("SELECT count(*)::int AS n FROM action_records WHERE tenant_id = $1", [TB]);
+      const res = await client.query(
+        "SELECT count(*)::int AS n FROM action_records WHERE tenant_id = $1",
+        [TB],
+      );
       expect(res.rows[0].n).toBe(0);
       await client.query("COMMIT");
     } finally {
@@ -190,10 +205,22 @@ describe("Gatehouse — access audit chain", () => {
   it("records evidence views and verifies the audit chain", async (ctx) => {
     if (!available) return ctx.skip();
     // Generate some audited reads.
-    await app!.inject({ method: "GET", url: `/v1/records/${TB}/0`, headers: { "x-api-key": keyB } });
-    await app!.inject({ method: "GET", url: `/v1/chain/${TB}/verify`, headers: { "x-api-key": keyB } });
+    await app!.inject({
+      method: "GET",
+      url: `/v1/records/${TB}/0`,
+      headers: { "x-api-key": keyB },
+    });
+    await app!.inject({
+      method: "GET",
+      url: `/v1/chain/${TB}/verify`,
+      headers: { "x-api-key": keyB },
+    });
 
-    const verify = await app!.inject({ method: "GET", url: `/v1/tenants/${TB}/audit/verify`, headers: { "x-api-key": keyB } });
+    const verify = await app!.inject({
+      method: "GET",
+      url: `/v1/tenants/${TB}/audit/verify`,
+      headers: { "x-api-key": keyB },
+    });
     expect(verify.statusCode).toBe(200);
     expect(verify.json().data.ok).toBe(true);
     expect(verify.json().data.entriesChecked).toBeGreaterThan(0);

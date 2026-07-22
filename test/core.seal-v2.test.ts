@@ -24,7 +24,12 @@ function content(seq: number, tenantId = "t1"): ActionRecordContent {
     id: randomUUID(),
     tenantId,
     sequence: seq,
-    action: { type: "email.send", agentId: "a1", payload: { n: seq }, emittedAt: "2026-01-01T00:00:00.000Z" },
+    action: {
+      type: "email.send",
+      agentId: "a1",
+      payload: { n: seq },
+      emittedAt: "2026-01-01T00:00:00.000Z",
+    },
     verdict: {
       decision: "allow",
       tierReached: 1,
@@ -58,7 +63,12 @@ describe("seal signature v2 (anti-splice)", () => {
   });
 
   it("new seals carry sigVersion 2 and verify end-to-end", async () => {
-    const record = await sealRecord({ content: content(0), prevHash: GENESIS_HASH, signer: kms, keyId });
+    const record = await sealRecord({
+      content: content(0),
+      prevHash: GENESIS_HASH,
+      signer: kms,
+      keyId,
+    });
     expect(record.seal.sigVersion).toBe(SEAL_SIGNATURE_VERSION);
     const v = verifyRecord(record, GENESIS_HASH, keyset);
     expect(v.checks.signatureValid).toBe(true);
@@ -71,15 +81,20 @@ describe("seal signature v2 (anti-splice)", () => {
     // only) still verified and only the unsigned chain-link check could
     // object — and the attacker controls the expected prevHash by choosing
     // the splice point. Under v2 the signature itself pins prevHash.
-    const record = await sealRecord({ content: content(1), prevHash: GENESIS_HASH, signer: kms, keyId });
+    const record = await sealRecord({
+      content: content(1),
+      prevHash: GENESIS_HASH,
+      signer: kms,
+      keyId,
+    });
     const foreignPrev = sha256Hex({ some: "other record" });
     const spliced: ActionRecord = {
       content: record.content,
       seal: { ...record.seal, prevHash: foreignPrev },
     };
     const v = verifyRecord(spliced, foreignPrev, keyset);
-    expect(v.checks.chainLinkValid).toBe(true);      // the splice point "matches"
-    expect(v.checks.signatureValid).toBe(false);     // but the signature pins the real prevHash
+    expect(v.checks.chainLinkValid).toBe(true); // the splice point "matches"
+    expect(v.checks.signatureValid).toBe(false); // but the signature pins the real prevHash
     expect(v.ok).toBe(false);
   });
 

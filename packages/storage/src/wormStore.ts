@@ -62,7 +62,11 @@ export class WormStore {
   }
 
   async putRecord(record: ActionRecord, retainUntil: Date): Promise<WormPutResult> {
-    const key = this.keyFor(record.content.tenantId, record.content.sequence, record.seal.contentHash);
+    const key = this.keyFor(
+      record.content.tenantId,
+      record.content.sequence,
+      record.seal.contentHash,
+    );
     const body = JSON.stringify(record);
     const res = await this.client.send(
       new PutObjectCommand({
@@ -83,7 +87,9 @@ export class WormStore {
 
   async getRecord(key: string): Promise<ActionRecord | null> {
     try {
-      const res = await this.client.send(new GetObjectCommand({ Bucket: this.cfg.bucket, Key: key }));
+      const res = await this.client.send(
+        new GetObjectCommand({ Bucket: this.cfg.bucket, Key: key }),
+      );
       const text = await res.Body?.transformToString();
       if (!text) return null;
       return JSON.parse(text) as ActionRecord;
@@ -98,7 +104,11 @@ export class WormStore {
     let token: string | undefined;
     do {
       const res = await this.client.send(
-        new ListObjectsV2Command({ Bucket: this.cfg.bucket, Prefix: prefix, ContinuationToken: token }),
+        new ListObjectsV2Command({
+          Bucket: this.cfg.bucket,
+          Prefix: prefix,
+          ContinuationToken: token,
+        }),
       );
       for (const obj of res.Contents ?? []) if (obj.Key) keys.push(obj.Key);
       token = res.IsTruncated ? res.NextContinuationToken : undefined;

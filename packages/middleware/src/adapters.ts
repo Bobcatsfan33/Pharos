@@ -65,7 +65,11 @@ export function anthropicToolHandlers<R>(
 ): Record<string, (input: Record<string, unknown>) => Promise<R>> {
   const out: Record<string, (input: Record<string, unknown>) => Promise<R>> = {};
   for (const [toolName, handler] of Object.entries(handlers)) {
-    out[toolName] = governTool(governor, { tenantId: base.tenantId, agentId: base.agentId, toolName }, handler);
+    out[toolName] = governTool(
+      governor,
+      { tenantId: base.tenantId, agentId: base.agentId, toolName },
+      handler,
+    );
   }
   return out;
 }

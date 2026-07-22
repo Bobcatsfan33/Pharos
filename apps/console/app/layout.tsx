@@ -9,7 +9,14 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, background: "#0b0f17", color: "#e5e7eb", fontFamily: "ui-sans-serif, system-ui, sans-serif" }}>
+      <body
+        style={{
+          margin: 0,
+          background: "#0b0f17",
+          color: "#e5e7eb",
+          fontFamily: "ui-sans-serif, system-ui, sans-serif",
+        }}
+      >
         <div style={{ display: "flex" }}>
           <Nav />
           <main style={{ flex: 1, padding: "32px 40px", maxWidth: 1100 }}>{children}</main>

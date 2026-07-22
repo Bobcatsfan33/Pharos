@@ -39,7 +39,12 @@ export interface Verdict {
   ruleCitations: Array<{ ruleId: string; pack: string; clause?: string; description?: string }>;
   failMode: "fail_open" | "fail_closed" | null;
   judgeVersion: string | null;
-  latency: { totalMs: number; perTier: Record<string, number>; deadlineMs: number; deadlineBreached: boolean };
+  latency: {
+    totalMs: number;
+    perTier: Record<string, number>;
+    deadlineMs: number;
+    deadlineBreached: boolean;
+  };
 }
 
 export interface SubmitResult {

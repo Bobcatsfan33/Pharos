@@ -70,9 +70,13 @@ export class OidcVerifier {
       throw new Error(`token missing tenant claim ${entry.cfg.claims.tenant}`);
     }
     const rawRoles = payload[entry.cfg.claims.roles];
-    const roles: Role[] = Array.isArray(rawRoles) ? rawRoles.filter((r): r is Role => typeof r === "string" && isRole(r)) : [];
+    const roles: Role[] = Array.isArray(rawRoles)
+      ? rawRoles.filter((r): r is Role => typeof r === "string" && isRole(r))
+      : [];
 
-    const displayClaim = entry.cfg.claims.displayName ? payload[entry.cfg.claims.displayName] : undefined;
+    const displayClaim = entry.cfg.claims.displayName
+      ? payload[entry.cfg.claims.displayName]
+      : undefined;
 
     return {
       subject: String(payload.sub),

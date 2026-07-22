@@ -50,7 +50,14 @@ beforeAll(async () => {
     const pa = pharosApp.server.address();
     pharosUrl = typeof pa === "object" && pa ? `http://127.0.0.1:${pa.port}` : "";
     await platform.tenants.createTenant({ tenantId: TENANT, displayName: "Gateway" });
-    apiKey = (await platform.apiKeys.create(TENANT, "gw", ["actions:write", "records:read", "reviews:read", "reviews:act"])).plaintext;
+    apiKey = (
+      await platform.apiKeys.create(TENANT, "gw", [
+        "actions:write",
+        "records:read",
+        "reviews:read",
+        "reviews:act",
+      ])
+    ).plaintext;
 
     // The upstream the agent actually wanted to reach (counts side effects).
     targetApp = Fastify();
@@ -71,7 +78,12 @@ beforeAll(async () => {
       target: targetUrl,
       mapAction: (req) => ({
         action: { type: "message.send", payload: req.body as Record<string, unknown> },
-        liability: { mandate: null, oversightMode: "human_on_loop", blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" }, modelMetadata: null },
+        liability: {
+          mandate: null,
+          oversightMode: "human_on_loop",
+          blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" },
+          modelMetadata: null,
+        },
       }),
     });
     await gatewayApp.listen({ port: 0, host: "127.0.0.1" });
@@ -92,7 +104,11 @@ afterAll(async () => {
 
 // The "unmodified agent": plain HTTP to the gateway, zero Pharos code.
 async function agentSend(body: unknown) {
-  return fetch(`${gatewayUrl}/send`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  return fetch(`${gatewayUrl}/send`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
 }
 
 describe("Gateway — zero-code governance of an unmodified agent", () => {
@@ -108,7 +124,9 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
   it("blocks a FINRA-promissory action before it reaches the upstream", async (ctx) => {
     if (!available) return ctx.skip();
     const before = upstreamHits;
-    const res = await agentSend({ body: "We guarantee a 20% return with no risk — guaranteed profits!" });
+    const res = await agentSend({
+      body: "We guarantee a 20% return with no risk — guaranteed profits!",
+    });
     expect(res.status).toBe(403);
     expect(upstreamHits).toBe(before); // never forwarded
   });
@@ -116,7 +134,9 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
   it("holds an escalation, resumes after a human verdict, forwards exactly once", async (ctx) => {
     if (!available) return ctx.skip();
     const before = upstreamHits;
-    const res = await agentSend({ body: "Patient John Smith was diagnosed with HIV and started antiretroviral therapy." });
+    const res = await agentSend({
+      body: "Patient John Smith was diagnosed with HIV and started antiretroviral therapy.",
+    });
     expect(res.status).toBe(202);
     const escalationId = (await res.json()).escalationId as string;
     expect(escalationId).toBeTruthy();

@@ -9,7 +9,8 @@ export const HIPAA_PACK_V2: PolicyArtifact = {
   packId: "hipaa",
   version: "2.0.0",
   title: "HIPAA Privacy & Security",
-  changelog: "v2: minimum-necessary, PHI-in-context via Tier-3, authorization-state, breach triggers.",
+  changelog:
+    "v2: minimum-necessary, PHI-in-context via Tier-3, authorization-state, breach triggers.",
   rules: [
     {
       ruleId: "hipaa-phi-exposure",
@@ -26,7 +27,12 @@ export const HIPAA_PACK_V2: PolicyArtifact = {
       clause: "45 CFR 164.508 (authorization)",
       description:
         "Disclosure of PHI to an external recipient without authorization is prohibited. High PHI probability on an outbound external send is blocked pending authorization.",
-      when: { all: [{ judge: "phi-in-context", gte: 0.8 }, { field: "action.type", op: "startsWith", value: "email." }] },
+      when: {
+        all: [
+          { judge: "phi-in-context", gte: 0.8 },
+          { field: "action.type", op: "startsWith", value: "email." },
+        ],
+      },
       decision: "block",
     },
     {
@@ -35,7 +41,12 @@ export const HIPAA_PACK_V2: PolicyArtifact = {
       clause: "45 CFR 164.400-414 (breach notification)",
       description:
         "Unauthorized disclosure of PHI to an external party may constitute a breach requiring notification. Such events are escalated to trigger the breach-assessment workflow.",
-      when: { all: [{ judge: "phi-in-context", gte: 0.6 }, { field: "action.type", op: "contains", value: "export" }] },
+      when: {
+        all: [
+          { judge: "phi-in-context", gte: 0.6 },
+          { field: "action.type", op: "contains", value: "export" },
+        ],
+      },
       decision: "escalate",
     },
   ],

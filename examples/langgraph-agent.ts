@@ -35,7 +35,12 @@ const sendEmailNode = langgraphNode<State, { sent: true }>(
     toolName: "email.send",
     mapAction: (state) => ({
       action: { type: "email.send", payload: { body: state.message } },
-      liability: { mandate: null, oversightMode: "human_on_loop", blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" }, modelMetadata: null },
+      liability: {
+        mandate: null,
+        oversightMode: "human_on_loop",
+        blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" },
+        modelMetadata: null,
+      },
     }),
     awaitOpts: { pollIntervalMs: 500, timeoutMs: 60_000 },
   },
@@ -51,7 +56,8 @@ async function runOnce(message: string): Promise<void> {
     const next = await sendEmailNode({ message });
     console.log(`  message="${message.slice(0, 40)}…" -> sent=${next.sent}`);
   } catch (err) {
-    if (err instanceof PharosBlockedError) console.log(`  message="${message.slice(0, 40)}…" -> BLOCKED (${err.reason})`);
+    if (err instanceof PharosBlockedError)
+      console.log(`  message="${message.slice(0, 40)}…" -> BLOCKED (${err.reason})`);
     else throw err;
   }
 }

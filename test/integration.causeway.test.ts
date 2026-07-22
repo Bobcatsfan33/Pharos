@@ -35,7 +35,15 @@ let app: FastifyInstance | null = null;
 let baseUrl = "";
 let apiKey = "";
 
-const REVIEW_SCOPES = ["actions:write", "records:read", "chain:verify", "policies:write", "policies:read", "reviews:read", "reviews:act"];
+const REVIEW_SCOPES = [
+  "actions:write",
+  "records:read",
+  "chain:verify",
+  "policies:write",
+  "policies:read",
+  "reviews:read",
+  "reviews:act",
+];
 
 beforeAll(async () => {
   try {
@@ -63,7 +71,11 @@ function client(opts: Partial<ConstructorParameters<typeof PharosClient>[0]> = {
   return new PharosClient({ baseUrl, apiKey, deadlineMs: 2000, ...opts });
 }
 
-async function resolve(escalationId: string, decision: "approve" | "reject", rationale = "reviewed") {
+async function resolve(
+  escalationId: string,
+  decision: "approve" | "reject",
+  rationale = "reviewed",
+) {
   return fetch(`${baseUrl}/v1/tenants/${TENANT}/escalations/${escalationId}/resolve`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": apiKey },
@@ -79,14 +91,26 @@ describe("Causeway — mandate binding", () => {
     await fetch(`${baseUrl}/v1/tenants/${TENANT}/mandates`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": apiKey },
-      body: JSON.stringify({ mandateId: "vendor-pay", scope: "vendor payments", limits: { maxAmount: 25000 }, grantor: "cfo" }),
+      body: JSON.stringify({
+        mandateId: "vendor-pay",
+        scope: "vendor payments",
+        limits: { maxAmount: 25000 },
+        grantor: "cfo",
+      }),
     });
 
     const res = await c.submit({
       tenantId: TENANT,
       mandateId: "vendor-pay",
-      action: { type: "payment.transfer", agentId: "treasury", payload: { amount: 30000, to: "vendor-x" } },
-      liability: { oversightMode: "human_in_loop", blastRadius: { financialAmount: 30000, currency: "USD", reversibility: "irreversible" } },
+      action: {
+        type: "payment.transfer",
+        agentId: "treasury",
+        payload: { amount: 30000, to: "vendor-x" },
+      },
+      liability: {
+        oversightMode: "human_in_loop",
+        blastRadius: { financialAmount: 30000, currency: "USD", reversibility: "irreversible" },
+      },
     });
     expect(res.verdict.decision).toBe("block");
     expect(res.verdict.tierReached).toBe(1);
@@ -104,19 +128,34 @@ describe("Causeway — escalation round trip (exactly-once)", () => {
     let sideEffectRuns = 0;
     const input = {
       tenantId: TENANT,
-      action: { type: "message.send", agentId: "support", payload: { body: "Patient John Smith was diagnosed with HIV and started therapy." } },
-      liability: { oversightMode: "human_in_loop" as const, blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" as const } },
+      action: {
+        type: "message.send",
+        agentId: "support",
+        payload: { body: "Patient John Smith was diagnosed with HIV and started therapy." },
+      },
+      liability: {
+        oversightMode: "human_in_loop" as const,
+        blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" as const },
+      },
     };
 
     // Start the governed call; it will escalate and await a human verdict.
-    const governP = c.govern(input, () => {
-      sideEffectRuns++;
-    }, { pollIntervalMs: 50, timeoutMs: 8000 });
+    const governP = c.govern(
+      input,
+      () => {
+        sideEffectRuns++;
+      },
+      { pollIntervalMs: 50, timeoutMs: 8000 },
+    );
 
     // A reviewer approves the pending escalation.
     let escalationId = "";
     for (let i = 0; i < 120 && !escalationId; i++) {
-      const pending = await (await fetch(`${baseUrl}/v1/tenants/${TENANT}/escalations`, { headers: { "x-api-key": apiKey } })).json();
+      const pending = await (
+        await fetch(`${baseUrl}/v1/tenants/${TENANT}/escalations`, {
+          headers: { "x-api-key": apiKey },
+        })
+      ).json();
       if (pending.data.escalations.length > 0) escalationId = pending.data.escalations[0].id;
       else await new Promise((r) => setTimeout(r, 50));
     }
@@ -141,14 +180,31 @@ describe("Causeway — escalation round trip (exactly-once)", () => {
     let runs = 0;
     const input = {
       tenantId: TENANT,
-      action: { type: "message.send", agentId: "support", payload: { body: "Patient Mary Johnson has a positive cancer biopsy." } },
-      liability: { oversightMode: "human_in_loop" as const, blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" as const } },
+      action: {
+        type: "message.send",
+        agentId: "support",
+        payload: { body: "Patient Mary Johnson has a positive cancer biopsy." },
+      },
+      liability: {
+        oversightMode: "human_in_loop" as const,
+        blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" as const },
+      },
     };
-    const governP = c.govern(input, () => { runs++; }, { pollIntervalMs: 50, timeoutMs: 8000 });
+    const governP = c.govern(
+      input,
+      () => {
+        runs++;
+      },
+      { pollIntervalMs: 50, timeoutMs: 8000 },
+    );
 
     let escalationId = "";
     for (let i = 0; i < 120 && !escalationId; i++) {
-      const pending = await (await fetch(`${baseUrl}/v1/tenants/${TENANT}/escalations`, { headers: { "x-api-key": apiKey } })).json();
+      const pending = await (
+        await fetch(`${baseUrl}/v1/tenants/${TENANT}/escalations`, {
+          headers: { "x-api-key": apiKey },
+        })
+      ).json();
       const fresh = pending.data.escalations[0];
       if (fresh) escalationId = fresh.id;
       else await new Promise((r) => setTimeout(r, 50));
@@ -161,11 +217,20 @@ describe("Causeway — escalation round trip (exactly-once)", () => {
 
   it("SDK falls back to a safe local default when the platform is unreachable", async (ctx) => {
     if (!available) return ctx.skip();
-    const offline = new PharosClient({ baseUrl: "http://127.0.0.1:1", apiKey, deadlineMs: 200, maxRetries: 0, localFailMode: "fail_closed" });
+    const offline = new PharosClient({
+      baseUrl: "http://127.0.0.1:1",
+      apiKey,
+      deadlineMs: 200,
+      maxRetries: 0,
+      localFailMode: "fail_closed",
+    });
     const res = await offline.submit({
       tenantId: TENANT,
       action: { type: "email.send", agentId: "a", payload: {} },
-      liability: { oversightMode: "autonomous", blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" } },
+      liability: {
+        oversightMode: "autonomous",
+        blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" },
+      },
     });
     expect(res.localFallback).toBe(true);
     expect(res.verdict.failMode).toBe("fail_closed");

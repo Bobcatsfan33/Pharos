@@ -14,11 +14,22 @@ import type { Platform } from "../platform.js";
  * signed evidence record and returns the binding, so the verdict is provable.
  */
 const PdpRequestSchema = z.object({
-  action: z.object({ type: z.string().min(1), agentId: z.string().min(1), payload: z.record(z.string(), z.unknown()).optional() }),
+  action: z.object({
+    type: z.string().min(1),
+    agentId: z.string().min(1),
+    payload: z.record(z.string(), z.unknown()).optional(),
+  }),
   liability: z.object({
-    mandate: z.object({ id: z.string(), limits: z.record(z.string(), z.unknown()).optional() }).nullable().optional(),
+    mandate: z
+      .object({ id: z.string(), limits: z.record(z.string(), z.unknown()).optional() })
+      .nullable()
+      .optional(),
     oversightMode: z.enum(["autonomous", "human_in_loop", "human_on_loop"]),
-    blastRadius: z.object({ financialAmount: z.number().optional(), currency: z.string().optional(), reversibility: z.enum(["reversible", "irreversible"]) }),
+    blastRadius: z.object({
+      financialAmount: z.number().optional(),
+      currency: z.string().optional(),
+      reversibility: z.enum(["reversible", "irreversible"]),
+    }),
   }),
   deadlineMs: z.number().int().optional(),
 });
@@ -36,25 +47,57 @@ export function registerPdpRoutes(app: FastifyInstance, platform: Platform): voi
       authorize(principal, principal.tenantId, "actions:write");
     } catch (err) {
       const code = err instanceof AuthorizationError ? err.code : "unauthenticated";
-      return reply.status(code === "forbidden" ? 403 : 401).send({ success: false, data: null, error: { code } });
+      return reply
+        .status(code === "forbidden" ? 403 : 401)
+        .send({ success: false, data: null, error: { code } });
     }
     const tenantId = principal.tenantId;
 
     const parsed = PdpRequestSchema.safeParse(request.body);
-    if (!parsed.success) return reply.status(400).send({ success: false, data: null, error: { code: "invalid_request", issues: parsed.error.issues } });
+    if (!parsed.success)
+      return reply.status(400).send({
+        success: false,
+        data: null,
+        error: { code: "invalid_request", issues: parsed.error.issues },
+      });
     const req = parsed.data;
 
-    const action = { type: req.action.type, agentId: req.action.agentId, payload: req.action.payload ?? {}, emittedAt: new Date().toISOString() };
+    const action = {
+      type: req.action.type,
+      agentId: req.action.agentId,
+      payload: req.action.payload ?? {},
+      emittedAt: new Date().toISOString(),
+    };
     const liability = {
-      mandate: req.liability.mandate ? { id: req.liability.mandate.id, scope: "", limits: req.liability.mandate.limits ?? {}, grantor: "", expiresAt: null, version: "1" } : null,
+      mandate: req.liability.mandate
+        ? {
+            id: req.liability.mandate.id,
+            scope: "",
+            limits: req.liability.mandate.limits ?? {},
+            grantor: "",
+            expiresAt: null,
+            version: "1",
+          }
+        : null,
       oversightMode: req.liability.oversightMode,
-      blastRadius: { financialAmount: req.liability.blastRadius.financialAmount ?? 0, currency: req.liability.blastRadius.currency ?? "USD", reversibility: req.liability.blastRadius.reversibility },
+      blastRadius: {
+        financialAmount: req.liability.blastRadius.financialAmount ?? 0,
+        currency: req.liability.blastRadius.currency ?? "USD",
+        reversibility: req.liability.blastRadius.reversibility,
+      },
       modelMetadata: null,
     };
 
-    const verdict = await platform.cascade.evaluate({ tenantId, action, liability }, new Date(), await platform.activePolicyArtifacts(tenantId));
+    const verdict = await platform.cascade.evaluate(
+      { tenantId, action, liability },
+      new Date(),
+      await platform.activePolicyArtifacts(tenantId),
+    );
     const record = await platform.store.append({ tenantId, action, verdict, liability });
-    platform.metrics.verdicts.inc({ decision: verdict.decision, tier: String(verdict.tierReached) });
+    platform.metrics.verdicts.inc({
+      decision: verdict.decision,
+      tier: String(verdict.tierReached),
+    });
     platform.metrics.recordsSealed.inc();
 
     const response: PdpResponse = {
@@ -65,8 +108,17 @@ export function registerPdpRoutes(app: FastifyInstance, platform: Platform): voi
       ruleCitations: verdict.ruleCitations,
       failMode: verdict.failMode,
       judgeVersion: verdict.judgeVersion,
-      latency: { totalMs: verdict.latency.totalMs, deadlineMs: req.deadlineMs ?? verdict.latency.deadlineMs, deadlineBreached: verdict.latency.deadlineBreached },
-      evidenceBinding: { algorithm: "ed25519", contentHash: record.seal.contentHash, keyId: record.seal.keyId, signature: record.seal.signature },
+      latency: {
+        totalMs: verdict.latency.totalMs,
+        deadlineMs: req.deadlineMs ?? verdict.latency.deadlineMs,
+        deadlineBreached: verdict.latency.deadlineBreached,
+      },
+      evidenceBinding: {
+        algorithm: "ed25519",
+        contentHash: record.seal.contentHash,
+        keyId: record.seal.keyId,
+        signature: record.seal.signature,
+      },
     };
     return reply.send({ success: true, data: response, error: null });
   });

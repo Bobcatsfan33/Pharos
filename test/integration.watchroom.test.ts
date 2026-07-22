@@ -35,10 +35,38 @@ let available = true;
 let platform: Platform | null = null;
 
 const PROFILES = [
-  { type: "email.send", risk: 0.8, packs: ["finra"], amount: 0, rev: "reversible" as const, rule: "finra-2210-promissory" },
-  { type: "message.send", risk: 0.6, packs: ["hipaa"], amount: 0, rev: "reversible" as const, rule: "hipaa-phi-exposure" },
-  { type: "payment.transfer", risk: 0.95, packs: ["core"], amount: 200000, rev: "irreversible" as const, rule: "risk-extreme" },
-  { type: "payment.transfer", risk: 0.5, packs: ["core"], amount: 9800, rev: "irreversible" as const, rule: "funds-movement-unmandated" },
+  {
+    type: "email.send",
+    risk: 0.8,
+    packs: ["finra"],
+    amount: 0,
+    rev: "reversible" as const,
+    rule: "finra-2210-promissory",
+  },
+  {
+    type: "message.send",
+    risk: 0.6,
+    packs: ["hipaa"],
+    amount: 0,
+    rev: "reversible" as const,
+    rule: "hipaa-phi-exposure",
+  },
+  {
+    type: "payment.transfer",
+    risk: 0.95,
+    packs: ["core"],
+    amount: 200000,
+    rev: "irreversible" as const,
+    rule: "risk-extreme",
+  },
+  {
+    type: "payment.transfer",
+    risk: 0.5,
+    packs: ["core"],
+    amount: 9800,
+    rev: "irreversible" as const,
+    rule: "funds-movement-unmandated",
+  },
   { type: "crm.update", risk: 0.2, packs: [], amount: 0, rev: "reversible" as const, rule: "none" },
 ];
 
@@ -67,14 +95,28 @@ describe("Watchroom — 500-escalation drain", () => {
     const now = Date.now();
     for (let i = 0; i < TOTAL; i++) {
       const p = PROFILES[i % PROFILES.length]!;
-      const routing = routeEscalation({ actionType: p.type, riskScore: p.risk, packs: p.packs, financialAmount: p.amount, reversibility: p.rev });
+      const routing = routeEscalation({
+        actionType: p.type,
+        riskScore: p.risk,
+        packs: p.packs,
+        financialAmount: p.amount,
+        reversibility: p.rev,
+      });
       const isBreached = i >= TOTAL - BREACHED;
-      const slaDueAt = isBreached ? new Date(now - 60_000).toISOString() : new Date(now + routing.slaMinutes * 60_000).toISOString();
+      const slaDueAt = isBreached
+        ? new Date(now - 60_000).toISOString()
+        : new Date(now + routing.slaMinutes * 60_000).toISOString();
       await platform.escalations.create({
         tenantId: TENANT,
         recordSequence: i,
         idempotencyKey: `seed-${i}`,
-        context: { verdict: { riskScore: p.risk, ruleCitations: p.rule === "none" ? [] : [{ ruleId: p.rule, pack: p.packs[0] ?? "core" }] } },
+        context: {
+          verdict: {
+            riskScore: p.risk,
+            ruleCitations:
+              p.rule === "none" ? [] : [{ ruleId: p.rule, pack: p.packs[0] ?? "core" }],
+          },
+        },
         queue: routing.queue,
         priority: routing.priority,
         slaDueAt,
@@ -99,7 +141,11 @@ describe("Watchroom — 500-escalation drain", () => {
         const reviewer = REVIEWERS[drained % REVIEWERS.length]!;
         // Humans approve ~1/3 of machine-flagged items (creates disagreements), reject the rest.
         const decision = drained % 3 === 0 ? "approve" : "reject";
-        await platform.escalations.resolve(TENANT, e.id, { decision, rationale: "drill", resolvedBy: reviewer });
+        await platform.escalations.resolve(TENANT, e.id, {
+          decision,
+          rationale: "drill",
+          resolvedBy: reviewer,
+        });
         drained++;
       }
     }
@@ -108,7 +154,9 @@ describe("Watchroom — 500-escalation drain", () => {
 
     // SLA attainment: everything drained before its (future) deadline.
     const resolved = await platform.escalations.listResolved(TENANT, TOTAL);
-    const onTime = resolved.filter((e) => e.resolvedAt && e.slaDueAt && Date.parse(e.resolvedAt) <= Date.parse(e.slaDueAt));
+    const onTime = resolved.filter(
+      (e) => e.resolvedAt && e.slaDueAt && Date.parse(e.resolvedAt) <= Date.parse(e.slaDueAt),
+    );
     expect(onTime.length).toBe(TOTAL - BREACHED);
     console.log(`[watchroom] drained ${drained} escalations in ${drainMs}ms; SLA attainment 100%`);
 

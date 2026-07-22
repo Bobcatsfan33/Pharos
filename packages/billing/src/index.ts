@@ -50,7 +50,13 @@ function round2(n: number): number {
 
 export function computeInvoice(usage: Usage, book: PriceBook = DEFAULT_PRICEBOOK): Invoice {
   const lines: InvoiceLine[] = [
-    { type: "platform", description: "Platform subscription", quantity: 1, unitPrice: book.platformMonthly, amount: book.platformMonthly },
+    {
+      type: "platform",
+      description: "Platform subscription",
+      quantity: 1,
+      unitPrice: book.platformMonthly,
+      amount: book.platformMonthly,
+    },
     {
       type: "metered_actions",
       description: "Recorded actions (metered)",
@@ -58,10 +64,22 @@ export function computeInvoice(usage: Usage, book: PriceBook = DEFAULT_PRICEBOOK
       unitPrice: book.perAction,
       amount: round2(usage.recordedActions * book.perAction),
     },
-    { type: "packs", description: "Active regulation/policy packs", quantity: usage.activePacks, unitPrice: book.packMonthly, amount: round2(usage.activePacks * book.packMonthly) },
+    {
+      type: "packs",
+      description: "Active regulation/policy packs",
+      quantity: usage.activePacks,
+      unitPrice: book.packMonthly,
+      amount: round2(usage.activePacks * book.packMonthly),
+    },
   ];
   if (usage.riskProfileEnabled) {
-    lines.push({ type: "risk_profile", description: "Risk-profile / underwriter feed", quantity: 1, unitPrice: book.riskProfileMonthly, amount: book.riskProfileMonthly });
+    lines.push({
+      type: "risk_profile",
+      description: "Risk-profile / underwriter feed",
+      quantity: 1,
+      unitPrice: book.riskProfileMonthly,
+      amount: book.riskProfileMonthly,
+    });
   }
   const total = round2(lines.reduce((sum, l) => sum + l.amount, 0));
   return { tenantId: usage.tenantId, period: usage.period, currency: book.currency, lines, total };

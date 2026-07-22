@@ -54,7 +54,11 @@ async function getJson<T>(path: string, authenticated = true): Promise<T> {
   return body.data;
 }
 
-function readBundle(path: string): { tenantId: string; records: ActionRecord[]; keys: PublicKeyEntry[] } {
+function readBundle(path: string): {
+  tenantId: string;
+  records: ActionRecord[];
+  keys: PublicKeyEntry[];
+} {
   const bundle = JSON.parse(readFileSync(path, "utf8")) as EvidenceBundle;
   const keys = bundle.keyset ?? bundle.keys;
   if (!Array.isArray(bundle.records) || bundle.records.length === 0) {
@@ -71,7 +75,9 @@ function readBundle(path: string): { tenantId: string; records: ActionRecord[]; 
 }
 
 function printReport(records: ActionRecord[], keys: PublicKeyEntry[]): void {
-  console.log(`Verifying ${records.length} records with @pharos/core ONLY (no DB, no signer, no platform calls)...\n`);
+  console.log(
+    `Verifying ${records.length} records with @pharos/core ONLY (no DB, no signer, no platform calls)...\n`,
+  );
 
   const report = verifyChain(records, keys);
 

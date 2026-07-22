@@ -56,7 +56,10 @@ export function buildUnderwriterFeed(
       sampleSize: assurance.n,
       confidence: assurance.confidence,
     },
-    signals: { escalationRate: round(profile.escalationRate), disagreementRate: round(profile.disagreementRate) },
+    signals: {
+      escalationRate: round(profile.escalationRate),
+      disagreementRate: round(profile.disagreementRate),
+    },
     riskScore: profile.compositeRisk,
     riskGrade: profile.grade,
   };

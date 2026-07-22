@@ -336,7 +336,9 @@ export async function runMigrations(pool: Pool): Promise<string[]> {
     try {
       await client.query("BEGIN");
       await client.query(migration.sql);
-      await client.query("INSERT INTO pharos_migrations (version) VALUES ($1)", [migration.version]);
+      await client.query("INSERT INTO pharos_migrations (version) VALUES ($1)", [
+        migration.version,
+      ]);
       await client.query("COMMIT");
       applied.push(migration.version);
     } catch (err) {

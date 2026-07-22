@@ -41,17 +41,49 @@ export function evaluateReadiness(
   exceptions: Record<string, string> = {},
 ): ReadinessResult {
   const total = records.length || 1;
-  const consequential = records.filter((r) => r.financialAmount > 0 || r.reversibility === "irreversible");
-  const mandateCoverage = consequential.length === 0 ? 1 : consequential.filter((r) => r.mandatePresent).length / consequential.length;
+  const consequential = records.filter(
+    (r) => r.financialAmount > 0 || r.reversibility === "irreversible",
+  );
+  const mandateCoverage =
+    consequential.length === 0
+      ? 1
+      : consequential.filter((r) => r.mandatePresent).length / consequential.length;
   const violationRate = records.filter((r) => r.decision === "block").length / total;
   const irreversible = records.filter((r) => r.reversibility === "irreversible");
-  const irreversibilityControl = irreversible.length === 0 ? 1 : irreversible.filter((r) => r.oversightMode !== "autonomous").length / irreversible.length;
+  const irreversibilityControl =
+    irreversible.length === 0
+      ? 1
+      : irreversible.filter((r) => r.oversightMode !== "autonomous").length / irreversible.length;
 
   const raw: Array<Omit<ReadinessCheck, "passed" | "excepted">> = [
-    { id: "chain-completeness", description: "Evidence chain verifies genesis-to-head", value: chainComplete ? 1 : 0, threshold: 1, comparator: "gte" },
-    { id: "mandate-coverage", description: "Consequential actions are governed by a mandate", value: mandateCoverage, threshold: thresholds.minMandateCoverage, comparator: "gte" },
-    { id: "violation-rate", description: "Policy-violation (block) rate is within tolerance", value: violationRate, threshold: thresholds.maxViolationRate, comparator: "lte" },
-    { id: "irreversibility-controls", description: "Irreversible actions have human oversight", value: irreversibilityControl, threshold: thresholds.minIrreversibilityControl, comparator: "gte" },
+    {
+      id: "chain-completeness",
+      description: "Evidence chain verifies genesis-to-head",
+      value: chainComplete ? 1 : 0,
+      threshold: 1,
+      comparator: "gte",
+    },
+    {
+      id: "mandate-coverage",
+      description: "Consequential actions are governed by a mandate",
+      value: mandateCoverage,
+      threshold: thresholds.minMandateCoverage,
+      comparator: "gte",
+    },
+    {
+      id: "violation-rate",
+      description: "Policy-violation (block) rate is within tolerance",
+      value: violationRate,
+      threshold: thresholds.maxViolationRate,
+      comparator: "lte",
+    },
+    {
+      id: "irreversibility-controls",
+      description: "Irreversible actions have human oversight",
+      value: irreversibilityControl,
+      threshold: thresholds.minIrreversibilityControl,
+      comparator: "gte",
+    },
   ];
 
   const checks: ReadinessCheck[] = raw.map((c) => {

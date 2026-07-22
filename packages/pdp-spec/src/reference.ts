@@ -1,4 +1,10 @@
-import { PDP_SPEC_VERSION, type Pdp, type PdpRequest, type PdpResponse, type PdpCitation } from "./contract.js";
+import {
+  PDP_SPEC_VERSION,
+  type Pdp,
+  type PdpRequest,
+  type PdpResponse,
+  type PdpCitation,
+} from "./contract.js";
 
 /**
  * An INDEPENDENT reference PDP — a minimal, standalone implementation of the open contract
@@ -28,7 +34,9 @@ export function createReferencePdp(opts: ReferencePdpOptions = {}): Pdp {
         decision: reversible ? "allow" : "escalate",
         tierReached: 1,
         riskScore: 0.5,
-        ruleCitations: [{ ruleId: reversible ? "deadline-fail-open" : "deadline-fail-closed", pack: "reference" }],
+        ruleCitations: [
+          { ruleId: reversible ? "deadline-fail-open" : "deadline-fail-closed", pack: "reference" },
+        ],
         failMode: reversible ? "fail_open" : "fail_closed",
         judgeVersion: null,
         latency: { totalMs: Date.now() - start, deadlineMs, deadlineBreached: true },
@@ -42,7 +50,11 @@ export function createReferencePdp(opts: ReferencePdpOptions = {}): Pdp {
     if (blocked.has(request.action.type)) {
       decision = "block";
       riskScore = 0.9;
-      citations.push({ ruleId: "blocked-action-type", pack: "reference", description: `Action ${request.action.type} is on the deny list.` });
+      citations.push({
+        ruleId: "blocked-action-type",
+        pack: "reference",
+        description: `Action ${request.action.type} is on the deny list.`,
+      });
     }
 
     const max = readLimit(request.liability.mandate?.limits);
@@ -50,13 +62,26 @@ export function createReferencePdp(opts: ReferencePdpOptions = {}): Pdp {
     if (max !== null && amount > max) {
       decision = "block";
       riskScore = 1;
-      citations.push({ ruleId: "mandate-limit-exceeded", pack: "reference", description: `Amount ${amount} exceeds mandate limit ${max}.` });
+      citations.push({
+        ruleId: "mandate-limit-exceeded",
+        pack: "reference",
+        description: `Amount ${amount} exceeds mandate limit ${max}.`,
+      });
     }
 
-    if (decision === "allow" && !reversible && request.liability.oversightMode !== "autonomous" && amount > 0) {
+    if (
+      decision === "allow" &&
+      !reversible &&
+      request.liability.oversightMode !== "autonomous" &&
+      amount > 0
+    ) {
       decision = "escalate";
       riskScore = Math.max(riskScore, 0.4);
-      citations.push({ ruleId: "irreversible-oversight", pack: "reference", description: "Irreversible action under human oversight escalated." });
+      citations.push({
+        ruleId: "irreversible-oversight",
+        pack: "reference",
+        description: "Irreversible action under human oversight escalated.",
+      });
     }
 
     return {

@@ -72,7 +72,12 @@ export function fromLighthouseVerdict(
         description: c.note,
       })),
       riskScore: v.score,
-      failMode: v.fallback_mode === "open" ? "fail_open" : v.fallback_mode === "closed" ? "fail_closed" : null,
+      failMode:
+        v.fallback_mode === "open"
+          ? "fail_open"
+          : v.fallback_mode === "closed"
+            ? "fail_closed"
+            : null,
       judgeVersion: v.model_id,
       latency: { totalMs: 0, perTier: {}, deadlineMs: DEADLINE_MS, deadlineBreached: false },
     },
@@ -137,7 +142,9 @@ export function fromFlightlineEvent(
         reversibility: e.impact.reversible ? "reversible" : "irreversible",
         notes: e.impact.notes,
       },
-      modelMetadata: e.model ? { provider: e.model.vendor, model: e.model.name, version: e.model.ver } : null,
+      modelMetadata: e.model
+        ? { provider: e.model.vendor, model: e.model.name, version: e.model.ver }
+        : null,
     },
     sealedAt: e.sealed_at,
   };
@@ -159,10 +166,18 @@ export function toLighthouseVerdict(content: ActionRecordContent): LighthouseVer
     action_payload: content.action.payload,
     decision: decisionMap[content.verdict.decision],
     tier: content.verdict.tierReached,
-    citations: content.verdict.ruleCitations.map((c) => ({ rule: c.ruleId, source: c.pack, note: c.description })),
+    citations: content.verdict.ruleCitations.map((c) => ({
+      rule: c.ruleId,
+      source: c.pack,
+      note: c.description,
+    })),
     score: content.verdict.riskScore,
     fallback_mode:
-      content.verdict.failMode === "fail_open" ? "open" : content.verdict.failMode === "fail_closed" ? "closed" : null,
+      content.verdict.failMode === "fail_open"
+        ? "open"
+        : content.verdict.failMode === "fail_closed"
+          ? "closed"
+          : null,
     model_id: content.verdict.judgeVersion,
     ts: content.action.emittedAt,
   });

@@ -7,8 +7,4 @@ export {
   DEFAULT_THRESHOLDS,
   evaluateReadiness,
 } from "./readiness.js";
-export {
-  UNDERWRITER_FEED_VERSION,
-  type UnderwriterFeed,
-  buildUnderwriterFeed,
-} from "./feed.js";
+export { UNDERWRITER_FEED_VERSION, type UnderwriterFeed, buildUnderwriterFeed } from "./feed.js";

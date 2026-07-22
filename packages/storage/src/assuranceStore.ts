@@ -24,7 +24,10 @@ export class AssuranceStore {
   constructor(private readonly pool: Pool) {}
 
   /** Enqueue audits for candidate verdicts not yet sampled. Returns how many were added. */
-  async sample(tenantId: string, candidates: Array<{ recordSequence: number; pack: string | null; decision: string }>): Promise<number> {
+  async sample(
+    tenantId: string,
+    candidates: Array<{ recordSequence: number; pack: string | null; decision: string }>,
+  ): Promise<number> {
     let added = 0;
     for (const c of candidates) {
       const res = await this.pool.query(
@@ -45,7 +48,12 @@ export class AssuranceStore {
     return res.rows.map((r) => this.row(r));
   }
 
-  async recordAudit(tenantId: string, id: string, upheld: boolean, auditedBy: string): Promise<void> {
+  async recordAudit(
+    tenantId: string,
+    id: string,
+    upheld: boolean,
+    auditedBy: string,
+  ): Promise<void> {
     await this.pool.query(
       `UPDATE assurance_audits SET upheld = $3, status = 'audited', audited_by = $4, audited_at = now()
        WHERE tenant_id = $1 AND id = $2`,
@@ -80,7 +88,12 @@ export class AssuranceStore {
   }
 
   // --- Readiness-gate exceptions ---
-  async grantException(tenantId: string, checkId: string, owner: string, reason?: string): Promise<void> {
+  async grantException(
+    tenantId: string,
+    checkId: string,
+    owner: string,
+    reason?: string,
+  ): Promise<void> {
     await this.pool.query(
       `INSERT INTO readiness_exceptions (tenant_id, check_id, owner, reason) VALUES ($1,$2,$3,$4)
        ON CONFLICT (tenant_id, check_id) DO UPDATE SET owner = EXCLUDED.owner, reason = EXCLUDED.reason`,
@@ -89,7 +102,10 @@ export class AssuranceStore {
   }
 
   async revokeException(tenantId: string, checkId: string): Promise<void> {
-    await this.pool.query(`DELETE FROM readiness_exceptions WHERE tenant_id = $1 AND check_id = $2`, [tenantId, checkId]);
+    await this.pool.query(
+      `DELETE FROM readiness_exceptions WHERE tenant_id = $1 AND check_id = $2`,
+      [tenantId, checkId],
+    );
   }
 
   async exceptions(tenantId: string): Promise<Record<string, string>> {

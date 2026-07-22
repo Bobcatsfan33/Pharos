@@ -39,7 +39,8 @@ export function trainJudge(examples: LabeledExample[], opts: TrainOptions): Judg
   let bias = 0;
   const n = examples.length || 1;
 
-  const sigmoid = (z: number) => (z >= 0 ? 1 / (1 + Math.exp(-z)) : Math.exp(z) / (1 + Math.exp(z)));
+  const sigmoid = (z: number) =>
+    z >= 0 ? 1 / (1 + Math.exp(-z)) : Math.exp(z) / (1 + Math.exp(z));
 
   for (let iter = 0; iter < iterations; iter++) {
     const gradW = new Map<string, number>(vocab.map((v) => [v, 0]));

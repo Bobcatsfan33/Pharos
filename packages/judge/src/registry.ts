@@ -1,7 +1,12 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type JudgeModelArtifact, type JudgeResult, judge as judgeWith, modelVersion } from "./model.js";
+import {
+  type JudgeModelArtifact,
+  type JudgeResult,
+  judge as judgeWith,
+  modelVersion,
+} from "./model.js";
 
 /** The directory of committed, trained model artifacts shipped with the package. */
 export const DEFAULT_MODELS_DIR = fileURLToPath(new URL("../models", import.meta.url));
@@ -42,7 +47,11 @@ export class ModelRegistry {
   }
 
   listVersions(): Array<{ packId: string; concern: string; version: string }> {
-    return [...this.byVersion.entries()].map(([version, a]) => ({ packId: a.packId, concern: a.concern, version }));
+    return [...this.byVersion.entries()].map(([version, a]) => ({
+      packId: a.packId,
+      concern: a.concern,
+      version,
+    }));
   }
 
   /** Judge text with a pack's active model. */
