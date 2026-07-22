@@ -1,0 +1,27 @@
+# gitleaks configuration for Pharos (S2-T3).
+# Extends the default rule set; the allowlist below is the triage record for every
+# finding that has been reviewed and dismissed with a reason. No real secret is allowlisted.
+title = "Pharos gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Reviewed false positives — documentation placeholders, not real secrets."
+# Documentation files whose only "secret-like" strings are placeholders and env-var NAMES:
+#   - deploy/INSTALL.md line ~14: a checklist of variable NAMES to set (PHAROS_S3_ACCESS_KEY,
+#     PHAROS_S3_SECRET_KEY, ...) and placeholder connection strings (postgres://...). No values.
+#   - examples/README.md line ~15: the usage example `PHAROS_API_KEY=<key> pnpm tsx ...`,
+#     where `<key>` is a literal placeholder.
+# The real local-dev credentials live only in .env.example / docker-compose.yml (documented,
+# non-production, and intentionally committed as local dev defaults).
+paths = [
+  '''deploy/INSTALL\.md''',
+  '''examples/README\.md''',
+]
+# Extra safety net for placeholder tokens that may appear in other docs/examples.
+regexes = [
+  '''<key>''',
+  '''<token>''',
+  '''<admin-token>''',
+]
