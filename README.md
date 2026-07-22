@@ -53,6 +53,8 @@ See [docs/architecture.md](docs/architecture.md) for the implemented design.
 
 Built sprint-by-sprint against [the roadmap](docs/ROADMAP.md). Sequence and proof are the contract: no external claim ships before its proof exists, and every milestone is a live demo with measured exit criteria — not a document.
 
+Want to follow along or get involved? Release history lives in **[CHANGELOG.md](CHANGELOG.md)**, contribution guidelines in **[CONTRIBUTING.md](CONTRIBUTING.md)**, and community standards in our **[Code of Conduct](CODE_OF_CONDUCT.md)**.
+
 > **Known gaps and stand-ins.** Several components are implemented today as honest placeholders for their production versions (linear judges, local KMS, a simulated TSA, the gateway's in-memory held-request state). Every one is listed, with the roadmap task that replaces it, in **[docs/LIMITATIONS.md](docs/LIMITATIONS.md)**. Read it before evaluating Pharos against a production bar.
 
 **Sprint 0 (Bedrock) — complete.** A single deployable platform where an agent action receives a verdict and produces a sealed, durable, externally-verifiable evidence record — surviving restarts, verifiable genesis-to-head.
