@@ -24,9 +24,9 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          # security-extended = the full security query suite without the maintainability/
-          # quality queries (which belong to eslint/ruff, not the security gate).
-          queries: security-extended
+          # Query suite + query-level triage (persistent-false-positive exclusions) live in
+          # the config file so they apply identically on push and PR analyses.
+          config-file: ./.github/codeql/codeql-config.yml
       # JS/TS and Python are interpreted — no build step is needed.
       - name: analyze
         uses: github/codeql-action/analyze@v3
