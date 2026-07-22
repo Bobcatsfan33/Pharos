@@ -1,4 +1,11 @@
-import type { ActionInput, ClaimResult, Escalation, LiabilityInput, SubmitInput, SubmitResult } from "@pharos/sdk";
+import type {
+  ActionInput,
+  ClaimResult,
+  Escalation,
+  LiabilityInput,
+  SubmitInput,
+  SubmitResult,
+} from "@pharos/sdk";
 
 /**
  * The shared governor contract every framework middleware delegates to.
@@ -14,7 +21,11 @@ import type { ActionInput, ClaimResult, Escalation, LiabilityInput, SubmitInput,
  */
 export interface Governor {
   submit(input: SubmitInput): Promise<SubmitResult>;
-  awaitResolution(tenantId: string, id: string, opts?: { pollIntervalMs?: number; timeoutMs?: number }): Promise<Escalation>;
+  awaitResolution(
+    tenantId: string,
+    id: string,
+    opts?: { pollIntervalMs?: number; timeoutMs?: number },
+  ): Promise<Escalation>;
   claim(tenantId: string, id: string): Promise<ClaimResult>;
 }
 
@@ -33,7 +44,11 @@ export interface GovernOptions<Args> {
   agentId: string;
   toolName: string;
   /** Map tool args to the action + liability. Defaults to a reversible, autonomous action. */
-  mapAction?: (args: Args) => { action?: Partial<ActionInput>; liability?: LiabilityInput; mandateId?: string };
+  mapAction?: (args: Args) => {
+    action?: Partial<ActionInput>;
+    liability?: LiabilityInput;
+    mandateId?: string;
+  };
   awaitOpts?: { pollIntervalMs?: number; timeoutMs?: number };
 }
 
@@ -52,7 +67,10 @@ function buildInput<Args>(opts: GovernOptions<Args>, args: Args): SubmitInput {
       type: mapped.action?.type ?? `tool.${opts.toolName}`,
       agentId: mapped.action?.agentId ?? opts.agentId,
       sessionId: mapped.action?.sessionId,
-      payload: (mapped.action?.payload ?? (args as Record<string, unknown>)) as Record<string, unknown>,
+      payload: (mapped.action?.payload ?? (args as Record<string, unknown>)) as Record<
+        string,
+        unknown
+      >,
     },
     liability: mapped.liability ?? DEFAULT_LIABILITY,
     mandateId: mapped.mandateId,
@@ -82,8 +100,13 @@ export function governTool<Args, R>(
     }
 
     // escalate: park → human verdict → exactly-once resume.
-    if (!submitted.escalation) throw new PharosBlockedError("escalated without a continuation handle");
-    const resolved = await governor.awaitResolution(input.tenantId, submitted.escalation.id, opts.awaitOpts);
+    if (!submitted.escalation)
+      throw new PharosBlockedError("escalated without a continuation handle");
+    const resolved = await governor.awaitResolution(
+      input.tenantId,
+      submitted.escalation.id,
+      opts.awaitOpts,
+    );
     if (resolved.status === "rejected") {
       throw new PharosBlockedError("rejected by reviewer", []);
     }

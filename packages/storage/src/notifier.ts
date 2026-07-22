@@ -33,7 +33,10 @@ export interface ReviewNotifierOptions {
 
 export class ReviewNotifier {
   private readonly fetchImpl: typeof fetch;
-  constructor(private readonly pool: Pool, private readonly opts: ReviewNotifierOptions = {}) {
+  constructor(
+    private readonly pool: Pool,
+    private readonly opts: ReviewNotifierOptions = {},
+  ) {
     this.fetchImpl = opts.fetchImpl ?? fetch;
   }
 
@@ -54,7 +57,14 @@ export class ReviewNotifier {
       await this.pool.query(
         `INSERT INTO review_notifications (id, tenant_id, escalation_id, queue, channel, event)
          VALUES ($1,$2,$3,$4,$5,$6)`,
-        [randomUUID(), input.tenantId, input.escalationId ?? null, input.queue ?? null, channel, input.event],
+        [
+          randomUUID(),
+          input.tenantId,
+          input.escalationId ?? null,
+          input.queue ?? null,
+          channel,
+          input.event,
+        ],
       );
       if (channel === "webhook" && this.opts.webhookUrl) {
         await this.fetchImpl(this.opts.webhookUrl, {
@@ -89,7 +99,8 @@ export class ReviewNotifier {
       queue: (r.queue as string) ?? null,
       channel: r.channel as NotificationChannel,
       event: r.event as NotificationEvent,
-      sentAt: typeof r.sent_at === "string" ? r.sent_at : new Date(r.sent_at as string).toISOString(),
+      sentAt:
+        typeof r.sent_at === "string" ? r.sent_at : new Date(r.sent_at as string).toISOString(),
     }));
   }
 }

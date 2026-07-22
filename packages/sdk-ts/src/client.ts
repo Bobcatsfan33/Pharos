@@ -63,18 +63,26 @@ export class PharosClient {
           body: body === undefined ? undefined : JSON.stringify(body),
           signal: controller.signal,
         });
-        const json = (await res.json().catch(() => ({}))) as { data?: T; error?: { code?: string } };
+        const json = (await res.json().catch(() => ({}))) as {
+          data?: T;
+          error?: { code?: string };
+        };
         if (!res.ok) {
           // 4xx is a client error — do not retry.
           if (res.status >= 400 && res.status < 500) {
-            throw new PharosError(`request failed: ${json.error?.code ?? res.statusText}`, json.error?.code ?? "client_error", res.status);
+            throw new PharosError(
+              `request failed: ${json.error?.code ?? res.statusText}`,
+              json.error?.code ?? "client_error",
+              res.status,
+            );
           }
           throw new PharosError(`server error ${res.status}`, "server_error", res.status);
         }
         return json.data as T;
       } catch (err) {
         lastErr = err;
-        if (err instanceof PharosError && err.status && err.status >= 400 && err.status < 500) throw err;
+        if (err instanceof PharosError && err.status && err.status >= 400 && err.status < 500)
+          throw err;
         if (attempt < this.maxRetries) {
           this.emit({ type: "retry", attempt, error: (err as Error).message });
           await sleep(2 ** attempt * 25);
@@ -91,10 +99,16 @@ export class PharosClient {
     const start = Date.now();
     try {
       const result = await this.request<SubmitResult>("POST", "/v1/actions", input);
-      this.emit({ type: "submit", attempt: 0, latencyMs: Date.now() - start, decision: result.verdict.decision });
+      this.emit({
+        type: "submit",
+        attempt: 0,
+        latencyMs: Date.now() - start,
+        decision: result.verdict.decision,
+      });
       return result;
     } catch (err) {
-      if (err instanceof PharosError && err.status && err.status >= 400 && err.status < 500) throw err;
+      if (err instanceof PharosError && err.status && err.status >= 400 && err.status < 500)
+        throw err;
       // Platform unreachable: apply the configured local fail-mode default.
       const failMode = this.localFailMode;
       this.emit({ type: "fallback", failMode });
@@ -102,17 +116,36 @@ export class PharosClient {
         decision: failMode === "fail_open" ? "allow" : "escalate",
         tierReached: 1,
         riskScore: 0.5,
-        ruleCitations: [{ ruleId: `sdk-${failMode}`, pack: "sdk", description: `Platform unreachable; SDK applied ${failMode}.` }],
+        ruleCitations: [
+          {
+            ruleId: `sdk-${failMode}`,
+            pack: "sdk",
+            description: `Platform unreachable; SDK applied ${failMode}.`,
+          },
+        ],
         failMode,
         judgeVersion: null,
-        latency: { totalMs: Date.now() - start, perTier: {}, deadlineMs: this.deadlineMs, deadlineBreached: true },
+        latency: {
+          totalMs: Date.now() - start,
+          perTier: {},
+          deadlineMs: this.deadlineMs,
+          deadlineBreached: true,
+        },
       };
-      return { verdict, record: { content: { id: "local", sequence: -1 } }, escalation: null, localFallback: true };
+      return {
+        verdict,
+        record: { content: { id: "local", sequence: -1 } },
+        escalation: null,
+        localFallback: true,
+      };
     }
   }
 
   async getEscalation(tenantId: string, id: string): Promise<Escalation> {
-    const data = await this.request<{ escalation: Escalation }>("GET", `/v1/tenants/${tenantId}/escalations/${id}`);
+    const data = await this.request<{ escalation: Escalation }>(
+      "GET",
+      `/v1/tenants/${tenantId}/escalations/${id}`,
+    );
     return data.escalation;
   }
 
@@ -127,14 +160,18 @@ export class PharosClient {
     for (;;) {
       const esc = await this.getEscalation(tenantId, id);
       if (esc.status !== "pending") return esc;
-      if (Date.now() > deadline) throw new PharosError("escalation resolution timed out", "resolution_timeout");
+      if (Date.now() > deadline)
+        throw new PharosError("escalation resolution timed out", "resolution_timeout");
       await sleep(interval);
     }
   }
 
   /** Atomically claim the right to resume — exactly one claim succeeds across all callers. */
   async claim(tenantId: string, id: string): Promise<ClaimResult> {
-    const data = await this.request<ClaimResult>("POST", `/v1/tenants/${tenantId}/escalations/${id}/claim`);
+    const data = await this.request<ClaimResult>(
+      "POST",
+      `/v1/tenants/${tenantId}/escalations/${id}/claim`,
+    );
     this.emit({ type: "resume", escalationId: id, claimed: data.claimed });
     return data;
   }

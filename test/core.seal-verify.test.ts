@@ -21,7 +21,12 @@ function content(seq: number, tenantId = "t1"): ActionRecordContent {
     id: randomUUID(),
     tenantId,
     sequence: seq,
-    action: { type: "email.send", agentId: "a1", payload: { n: seq }, emittedAt: "2026-01-01T00:00:00.000Z" },
+    action: {
+      type: "email.send",
+      agentId: "a1",
+      payload: { n: seq },
+      emittedAt: "2026-01-01T00:00:00.000Z",
+    },
     verdict: {
       decision: "allow",
       tierReached: 1,
@@ -96,7 +101,11 @@ describe("seal + chain verification", () => {
     const chain = await buildChain(2);
     const keyset = await kms.publishKeyset();
     chain[1]!.seal.signature = Buffer.from("not a real signature").toString("base64");
-    const rv = verifyRecord(chain[1]!, chain[0]!.seal.contentHash, new Map(keyset.map((k) => [k.keyId, k])));
+    const rv = verifyRecord(
+      chain[1]!,
+      chain[0]!.seal.contentHash,
+      new Map(keyset.map((k) => [k.keyId, k])),
+    );
     expect(rv.checks.signatureValid).toBe(false);
   });
 

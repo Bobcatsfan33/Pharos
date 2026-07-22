@@ -4,7 +4,13 @@ import { MetricsRegistry as Reg } from "@pharos/observability";
 
 describe("billing", () => {
   it("computes a three-part invoice", () => {
-    const inv = computeInvoice({ tenantId: "t", period: "2026-07", recordedActions: 1000, activePacks: 3, riskProfileEnabled: true });
+    const inv = computeInvoice({
+      tenantId: "t",
+      period: "2026-07",
+      recordedActions: 1000,
+      activePacks: 3,
+      riskProfileEnabled: true,
+    });
     const byType = Object.fromEntries(inv.lines.map((l) => [l.type, l.amount]));
     expect(byType.platform).toBe(2500);
     expect(byType.metered_actions).toBe(20); // 1000 * 0.02
@@ -14,13 +20,25 @@ describe("billing", () => {
   });
 
   it("omits the risk-profile line when disabled", () => {
-    const inv = computeInvoice({ tenantId: "t", period: "2026-07", recordedActions: 0, activePacks: 0, riskProfileEnabled: false });
+    const inv = computeInvoice({
+      tenantId: "t",
+      period: "2026-07",
+      recordedActions: 0,
+      activePacks: 0,
+      riskProfileEnabled: false,
+    });
     expect(inv.lines.find((l) => l.type === "risk_profile")).toBeUndefined();
     expect(inv.total).toBe(DEFAULT_PRICEBOOK.platformMonthly);
   });
 
   it("reconciles exactly against the recorded count", () => {
-    const inv = computeInvoice({ tenantId: "t", period: "2026-07", recordedActions: 742, activePacks: 2, riskProfileEnabled: true });
+    const inv = computeInvoice({
+      tenantId: "t",
+      period: "2026-07",
+      recordedActions: 742,
+      activePacks: 2,
+      riskProfileEnabled: true,
+    });
     expect(reconcile(inv, 742).ok).toBe(true);
     const off = reconcile(inv, 741);
     expect(off.ok).toBe(false);

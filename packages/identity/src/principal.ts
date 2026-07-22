@@ -49,9 +49,15 @@ export class AuthorizationError extends Error {
  */
 export function authorize(principal: Principal, tenantId: string, permission: Permission): void {
   if (principal.tenantId !== tenantId) {
-    throw new AuthorizationError("tenant_mismatch", `Principal ${principal.subject} cannot access tenant ${tenantId}`);
+    throw new AuthorizationError(
+      "tenant_mismatch",
+      `Principal ${principal.subject} cannot access tenant ${tenantId}`,
+    );
   }
   if (!can(principal, permission)) {
-    throw new AuthorizationError("forbidden", `Principal ${principal.subject} lacks permission ${permission}`);
+    throw new AuthorizationError(
+      "forbidden",
+      `Principal ${principal.subject} lacks permission ${permission}`,
+    );
   }
 }

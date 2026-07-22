@@ -99,7 +99,10 @@ export class EvidenceStore {
       );
 
       // Write to WORM first; a failure here aborts the whole append.
-      const wormResult = await this.deps.worm.putRecord(record, this.deps.worm.retainUntil(this.now()));
+      const wormResult = await this.deps.worm.putRecord(
+        record,
+        this.deps.worm.retainUntil(this.now()),
+      );
 
       // Persist the operational copy and advance the chain head atomically.
       await client.query(
@@ -165,7 +168,10 @@ export class EvidenceStore {
    * security policy on action_records then confines every query to this tenant — a
    * defense-in-depth backstop beneath the application-layer authorization checks.
    */
-  private async withTenant<T>(tenantId: string, fn: (client: PoolClient) => Promise<T>): Promise<T> {
+  private async withTenant<T>(
+    tenantId: string,
+    fn: (client: PoolClient) => Promise<T>,
+  ): Promise<T> {
     const client = await this.deps.pool.connect();
     try {
       await client.query("BEGIN");
@@ -214,7 +220,11 @@ export class EvidenceStore {
   }
 
   /** Records in a sequence range with their selective-disclosure data (for claims packs). */
-  async getRange(tenantId: string, fromSequence: number, toSequence: number): Promise<RecordDisclosure[]> {
+  async getRange(
+    tenantId: string,
+    fromSequence: number,
+    toSequence: number,
+  ): Promise<RecordDisclosure[]> {
     return this.withTenant(tenantId, async (client) => {
       const res = await client.query<RecordRow>(
         `SELECT * FROM action_records WHERE tenant_id = $1 AND sequence >= $2 AND sequence <= $3 ORDER BY sequence ASC`,
@@ -224,8 +234,13 @@ export class EvidenceStore {
         record: this.rowToRecord(r),
         disclosureRoot: r.disclosure_root ?? "",
         disclosureSignature: r.disclosure_sig ?? "",
-        salts: (typeof r.salts === "string" ? JSON.parse(r.salts) : r.salts ?? {}) as Record<string, string>,
-        commitments: (typeof r.commitments === "string" ? JSON.parse(r.commitments) : r.commitments ?? {}) as Record<string, string>,
+        salts: (typeof r.salts === "string" ? JSON.parse(r.salts) : (r.salts ?? {})) as Record<
+          string,
+          string
+        >,
+        commitments: (typeof r.commitments === "string"
+          ? JSON.parse(r.commitments)
+          : (r.commitments ?? {})) as Record<string, string>,
         keyId: r.key_id,
       }));
     });
@@ -261,14 +276,20 @@ export class EvidenceStore {
         params.push(toIso);
         conds.push(`created_at < $${params.length}`);
       }
-      const res = await client.query<{ n: string }>(`SELECT count(*)::text AS n FROM action_records WHERE ${conds.join(" AND ")}`, params);
+      const res = await client.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM action_records WHERE ${conds.join(" AND ")}`,
+        params,
+      );
       return Number(res.rows[0]?.n ?? 0);
     });
   }
 
   async count(tenantId: string): Promise<number> {
     const res = await this.withTenant(tenantId, (client) =>
-      client.query<{ n: string }>(`SELECT count(*)::text AS n FROM action_records WHERE tenant_id = $1`, [tenantId]),
+      client.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM action_records WHERE tenant_id = $1`,
+        [tenantId],
+      ),
     );
     return Number(res.rows[0]?.n ?? 0);
   }

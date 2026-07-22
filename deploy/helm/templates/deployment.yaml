@@ -4,7 +4,7 @@ metadata:
   name: pharos-api
   labels: { app: pharos-api }
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: { { .Values.replicaCount } }
   selector:
     matchLabels: { app: pharos-api }
   template:
@@ -21,11 +21,11 @@ spec:
       containers:
         - name: api
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          imagePullPolicy: { { .Values.image.pullPolicy } }
           ports:
-            - containerPort: {{ .Values.api.port }}
+            - containerPort: { { .Values.api.port } }
           envFrom:
-            - secretRef: { name: {{ .Values.secretName }} }
+            - secretRef: { name: { { .Values.secretName } } }
           env:
             - { name: PHAROS_ENV, value: "{{ .Values.config.env }}" }
             - { name: PHAROS_S3_BUCKET, value: "{{ .Values.config.s3Bucket }}" }
@@ -34,14 +34,14 @@ spec:
             - { name: PHAROS_KMS_PROVIDER, value: "{{ .Values.config.kmsProvider }}" }
             - { name: PHAROS_ALLOWED_ORIGINS, value: "{{ .Values.config.allowedOrigins }}" }
           readinessProbe:
-            httpGet: { path: /healthz, port: {{ .Values.api.port }} }
+            httpGet: { path: /healthz, port: { { .Values.api.port } } }
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
-            httpGet: { path: /healthz, port: {{ .Values.api.port }} }
+            httpGet: { path: /healthz, port: { { .Values.api.port } } }
             initialDelaySeconds: 10
             periodSeconds: 20
-          resources: {{ toYaml .Values.resources | nindent 12 }}
+          resources: { { toYaml .Values.resources | nindent 12 } }
 ---
 apiVersion: v1
 kind: Service
@@ -52,4 +52,4 @@ spec:
   selector: { app: pharos-api }
   ports:
     - port: 80
-      targetPort: {{ .Values.api.port }}
+      targetPort: { { .Values.api.port } }

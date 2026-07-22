@@ -49,7 +49,11 @@ export interface DivergenceResult {
 }
 
 /** Compare a candidate (shadow) policy's decisions against the active policy's decisions. */
-export function divergence(active: PolicyArtifact, candidate: PolicyArtifact, contexts: EvalContext[]): DivergenceResult {
+export function divergence(
+  active: PolicyArtifact,
+  candidate: PolicyArtifact,
+  contexts: EvalContext[],
+): DivergenceResult {
   const changeCounts = new Map<string, number>();
   let diverged = 0;
   for (const ctx of contexts) {

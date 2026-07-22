@@ -86,7 +86,12 @@ export function redactPayload(params: {
     if (redactSet.has(field)) {
       fields[field] = { commitment, redacted: true };
     } else {
-      fields[field] = { value: params.payload[field], salt: params.salts[field], commitment, redacted: false };
+      fields[field] = {
+        value: params.payload[field],
+        salt: params.salts[field],
+        commitment,
+        redacted: false,
+      };
     }
   }
   return {

@@ -14,11 +14,14 @@ export default async function ChainPage() {
     <div>
       <h1 style={{ fontSize: 24 }}>Chain integrity</h1>
       <p style={{ color: "#9ca3af", maxWidth: 640 }}>
-        Continuous genesis-to-head verification of the evidence hash chain. A break alerts immediately. Any
-        third party can reproduce this offline using only the exported records and the published public keyset.
+        Continuous genesis-to-head verification of the evidence hash chain. A break alerts
+        immediately. Any third party can reproduce this offline using only the exported records and
+        the published public keyset.
       </p>
       {report === null ? (
-        <p style={{ color: "#6b7280", marginTop: 24 }}>API unreachable, or no records for {DEMO_TENANT} yet.</p>
+        <p style={{ color: "#6b7280", marginTop: 24 }}>
+          API unreachable, or no records for {DEMO_TENANT} yet.
+        </p>
       ) : (
         <div
           style={{
@@ -34,7 +37,9 @@ export default async function ChainPage() {
           </div>
           <div style={{ color: "#9ca3af", marginTop: 8, fontSize: 14 }}>
             Tenant <code>{report.tenantId}</code> · {report.recordsChecked} records checked
-            {report.firstBrokenSequence !== null && <> · first break at sequence {report.firstBrokenSequence}</>}
+            {report.firstBrokenSequence !== null && (
+              <> · first break at sequence {report.firstBrokenSequence}</>
+            )}
           </div>
           {report.errors.length > 0 && (
             <ul style={{ color: "#fca5a5", fontSize: 13, marginTop: 8 }}>

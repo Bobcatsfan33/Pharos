@@ -16,12 +16,20 @@ export const DEFAULT_PACK_BINDINGS: JudgePackBinding[] = [
   {
     packId: "finra-promissory",
     onFlag: "block",
-    citation: { ruleId: "finra-2210-promissory", pack: "finra", clause: "FINRA Rule 2210(d)(1)(B)" },
+    citation: {
+      ruleId: "finra-2210-promissory",
+      pack: "finra",
+      clause: "FINRA Rule 2210(d)(1)(B)",
+    },
   },
   {
     packId: "phi-in-context",
     onFlag: "escalate",
-    citation: { ruleId: "hipaa-phi-exposure", pack: "hipaa", clause: "45 CFR 164.502(b) minimum necessary" },
+    citation: {
+      ruleId: "hipaa-phi-exposure",
+      pack: "hipaa",
+      clause: "45 CFR 164.502(b) minimum necessary",
+    },
   },
   {
     packId: "funds-movement-intent",

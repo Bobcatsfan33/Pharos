@@ -44,7 +44,12 @@ const ConfigSchema = z.object({
 export type PharosConfig = z.infer<typeof ConfigSchema>;
 
 function csv(value: string | undefined): string[] {
-  return value ? value.split(",").map((s) => s.trim()).filter(Boolean) : [];
+  return value
+    ? value
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
 }
 
 function safeJsonArray(value: string): unknown[] {
@@ -84,8 +89,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
     admin: { token: env.PHAROS_ADMIN_TOKEN },
   });
   if (!parsed.success) {
-    const detail = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
-    throw new Error(`Invalid Pharos configuration:\n${detail}\nSee .env.example for required variables.`);
+    const detail = parsed.error.issues
+      .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
+      .join("\n");
+    throw new Error(
+      `Invalid Pharos configuration:\n${detail}\nSee .env.example for required variables.`,
+    );
   }
   return parsed.data;
 }

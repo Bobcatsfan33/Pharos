@@ -22,18 +22,40 @@ const DEMO_ACTIONS = [
   {
     action: { type: "email.send", agentId: "agent-001", payload: { to: "client@example.com" } },
     liability: {
-      mandate: { id: "m-comms", scope: "client communications", limits: {}, grantor: "compliance", expiresAt: null, version: "1" },
+      mandate: {
+        id: "m-comms",
+        scope: "client communications",
+        limits: {},
+        grantor: "compliance",
+        expiresAt: null,
+        version: "1",
+      },
       oversightMode: "human_on_loop" as const,
       blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" as const },
       modelMetadata: { provider: "anthropic", model: "claude-opus-4-8" },
     },
   },
   {
-    action: { type: "payment.transfer", agentId: "agent-001", payload: { amount: 30000, to: "vendor-x" } },
+    action: {
+      type: "payment.transfer",
+      agentId: "agent-001",
+      payload: { amount: 30000, to: "vendor-x" },
+    },
     liability: {
-      mandate: { id: "m-funds", scope: "vendor payments", limits: { maxAmount: 25000 }, grantor: "treasury", expiresAt: null, version: "1" },
+      mandate: {
+        id: "m-funds",
+        scope: "vendor payments",
+        limits: { maxAmount: 25000 },
+        grantor: "treasury",
+        expiresAt: null,
+        version: "1",
+      },
       oversightMode: "human_in_loop" as const,
-      blastRadius: { financialAmount: 30000, currency: "USD", reversibility: "irreversible" as const },
+      blastRadius: {
+        financialAmount: 30000,
+        currency: "USD",
+        reversibility: "irreversible" as const,
+      },
       modelMetadata: { provider: "anthropic", model: "claude-opus-4-8" },
     },
   },
@@ -53,17 +75,37 @@ async function submit(): Promise<void> {
   try {
     // Provision the tenant (per-tenant signing key) and mint a read-scoped auditor key
     // so the external verifier can fetch the evidence bundle.
-    const tenant = await platform.tenants.createTenant({ tenantId: DEMO_TENANT, displayName: "Demo Tenant" });
+    const tenant = await platform.tenants.createTenant({
+      tenantId: DEMO_TENANT,
+      displayName: "Demo Tenant",
+    });
     await platform.signer.ensureKey(tenant.kmsKeyName);
-    const auditor = await platform.apiKeys.create(DEMO_TENANT, "demo-auditor", ["records:read", "chain:verify"]);
+    const auditor = await platform.apiKeys.create(DEMO_TENANT, "demo-auditor", [
+      "records:read",
+      "chain:verify",
+    ]);
     writeFileSync(AUDITOR_KEY_FILE, auditor.plaintext);
     console.log(`Provisioned tenant + auditor key (saved to ${AUDITOR_KEY_FILE}).`);
 
-    console.log(`\n=== Submitting ${DEMO_ACTIONS.length} demo actions for tenant "${DEMO_TENANT}" ===`);
+    console.log(
+      `\n=== Submitting ${DEMO_ACTIONS.length} demo actions for tenant "${DEMO_TENANT}" ===`,
+    );
     for (const item of DEMO_ACTIONS) {
-      const action = { ...item.action, payload: item.action.payload ?? {}, emittedAt: new Date().toISOString() };
-      const verdict = await platform.cascade.evaluate({ tenantId: DEMO_TENANT, action, liability: item.liability }, new Date());
-      const record = await platform.store.append({ tenantId: DEMO_TENANT, action, verdict, liability: item.liability });
+      const action = {
+        ...item.action,
+        payload: item.action.payload ?? {},
+        emittedAt: new Date().toISOString(),
+      };
+      const verdict = await platform.cascade.evaluate(
+        { tenantId: DEMO_TENANT, action, liability: item.liability },
+        new Date(),
+      );
+      const record = await platform.store.append({
+        tenantId: DEMO_TENANT,
+        action,
+        verdict,
+        liability: item.liability,
+      });
       console.log(
         `  seq ${record.content.sequence}  ${action.type.padEnd(18)}  -> ${verdict.decision.toUpperCase().padEnd(9)}` +
           `  hash ${record.seal.contentHash.slice(0, 12)}…`,
@@ -71,7 +113,9 @@ async function submit(): Promise<void> {
     }
     const head = await platform.store.getHead(DEMO_TENANT);
     console.log(`\nChain head: sequence ${head?.sequence} hash ${head?.hash.slice(0, 16)}…`);
-    console.log("Records are now durable in Postgres + WORM. Re-run with --verify to simulate a cold restart.\n");
+    console.log(
+      "Records are now durable in Postgres + WORM. Re-run with --verify to simulate a cold restart.\n",
+    );
   } finally {
     await platform.close();
   }

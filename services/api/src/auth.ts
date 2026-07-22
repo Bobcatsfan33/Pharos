@@ -1,10 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import {
-  AuthorizationError,
-  authorize,
-  type Permission,
-  type Principal,
-} from "@pharos/identity";
+import { AuthorizationError, authorize, type Permission, type Principal } from "@pharos/identity";
 import type { Platform } from "./platform.js";
 
 /**
@@ -22,7 +17,10 @@ function errorBody(code: string, message: string) {
   return { success: false, data: null, error: { code, message } };
 }
 
-export async function authenticate(platform: Platform, request: FastifyRequest): Promise<Principal> {
+export async function authenticate(
+  platform: Platform,
+  request: FastifyRequest,
+): Promise<Principal> {
   const authHeader = request.headers["authorization"];
   const apiKeyHeader = request.headers["x-api-key"];
 
@@ -30,7 +28,10 @@ export async function authenticate(platform: Platform, request: FastifyRequest):
     try {
       return await platform.oidc.verifyBearer(authHeader.slice(7));
     } catch (err) {
-      throw new AuthorizationError("unauthenticated", `bearer token rejected: ${(err as Error).message}`);
+      throw new AuthorizationError(
+        "unauthenticated",
+        `bearer token rejected: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -105,7 +106,11 @@ export async function requireAuth(
 }
 
 /** Platform-operator bootstrap guard for tenant provisioning. */
-export function requireAdminToken(platform: Platform, request: FastifyRequest, reply: FastifyReply): boolean {
+export function requireAdminToken(
+  platform: Platform,
+  request: FastifyRequest,
+  reply: FastifyReply,
+): boolean {
   const token = request.headers["x-pharos-admin"];
   const expected = platform.config.admin.token;
   if (!expected) {

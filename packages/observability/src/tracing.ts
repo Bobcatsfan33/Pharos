@@ -17,28 +17,58 @@ export type LogSink = (line: Record<string, unknown>) => void;
 const defaultSink: LogSink = (line) => process.stdout.write(JSON.stringify(line) + "\n");
 
 export class Tracer {
-  constructor(private readonly sink: LogSink = defaultSink, private readonly clock: () => number = () => Number(process.hrtime.bigint() / 1000n)) {}
+  constructor(
+    private readonly sink: LogSink = defaultSink,
+    private readonly clock: () => number = () => Number(process.hrtime.bigint() / 1000n),
+  ) {}
 
   newTrace(): SpanContext {
     return { traceId: randomBytes(16).toString("hex"), spanId: randomBytes(8).toString("hex") };
   }
 
   child(parent: SpanContext): SpanContext {
-    return { traceId: parent.traceId, spanId: randomBytes(8).toString("hex"), parentSpanId: parent.spanId };
+    return {
+      traceId: parent.traceId,
+      spanId: randomBytes(8).toString("hex"),
+      parentSpanId: parent.spanId,
+    };
   }
 
-  async span<T>(name: string, ctx: SpanContext, attrs: Record<string, unknown>, fn: (ctx: SpanContext) => Promise<T> | T): Promise<T> {
+  async span<T>(
+    name: string,
+    ctx: SpanContext,
+    attrs: Record<string, unknown>,
+    fn: (ctx: SpanContext) => Promise<T> | T,
+  ): Promise<T> {
     const start = this.clock();
     let status = "ok";
     try {
       return await fn(ctx);
     } catch (err) {
       status = "error";
-      this.sink({ kind: "span", name, traceId: ctx.traceId, spanId: ctx.spanId, parentSpanId: ctx.parentSpanId, status, error: (err as Error).message, ...attrs });
+      this.sink({
+        kind: "span",
+        name,
+        traceId: ctx.traceId,
+        spanId: ctx.spanId,
+        parentSpanId: ctx.parentSpanId,
+        status,
+        error: (err as Error).message,
+        ...attrs,
+      });
       throw err;
     } finally {
       if (status === "ok") {
-        this.sink({ kind: "span", name, traceId: ctx.traceId, spanId: ctx.spanId, parentSpanId: ctx.parentSpanId, durationUs: this.clock() - start, status, ...attrs });
+        this.sink({
+          kind: "span",
+          name,
+          traceId: ctx.traceId,
+          spanId: ctx.spanId,
+          parentSpanId: ctx.parentSpanId,
+          durationUs: this.clock() - start,
+          status,
+          ...attrs,
+        });
       }
     }
   }

@@ -94,7 +94,8 @@ export class VerdictEngine {
         ruleId: "irreversible-oversight",
         pack: "core",
         clause: "blastRadius.reversibility",
-        description: "Irreversible action under non-autonomous oversight escalated for human confirmation.",
+        description:
+          "Irreversible action under non-autonomous oversight escalated for human confirmation.",
       });
     }
 
@@ -116,7 +117,10 @@ export class VerdictEngine {
   }
 }
 
-function readNumericLimit(limits: Record<string, unknown> | undefined, keys: string[]): number | null {
+function readNumericLimit(
+  limits: Record<string, unknown> | undefined,
+  keys: string[],
+): number | null {
   if (!limits) return null;
   for (const k of keys) {
     const v = limits[k];

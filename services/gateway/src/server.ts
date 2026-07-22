@@ -20,7 +20,9 @@ async function main(): Promise<void> {
   });
   const port = Number(process.env.GATEWAY_PORT ?? 4100);
   await app.listen({ port, host: "0.0.0.0" });
-  console.log(`Pharos gateway listening on :${port} → ${process.env.GATEWAY_TARGET ?? "http://localhost:8080"}`);
+  console.log(
+    `Pharos gateway listening on :${port} → ${process.env.GATEWAY_TARGET ?? "http://localhost:8080"}`,
+  );
 }
 
 main().catch((err) => {

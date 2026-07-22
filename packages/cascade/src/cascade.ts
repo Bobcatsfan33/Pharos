@@ -57,7 +57,11 @@ export interface CascadeDeps {
 export class VerdictCascade {
   constructor(private readonly deps: CascadeDeps) {}
 
-  async evaluate(req: VerdictRequest, now: Date, policyOverride?: PolicyArtifact[]): Promise<VerdictContext> {
+  async evaluate(
+    req: VerdictRequest,
+    now: Date,
+    policyOverride?: PolicyArtifact[],
+  ): Promise<VerdictContext> {
     const perTier: Record<string, number> = {};
     const artifacts = policyOverride ?? this.deps.policyArtifacts;
     try {
@@ -154,7 +158,10 @@ export class VerdictCascade {
           description: `Tier-3 judge ${result.judgeVersion} flagged "${result.concern}" (p=${result.probability.toFixed(2)}).`,
         });
         const sev = SEVERITY[binding.onFlag];
-        if (sev > decidingSeverity || (sev === decidingSeverity && result.probability > decidingProb)) {
+        if (
+          sev > decidingSeverity ||
+          (sev === decidingSeverity && result.probability > decidingProb)
+        ) {
           decidingSeverity = sev;
           decidingProb = result.probability;
           judgeVersion = result.judgeVersion;
@@ -193,7 +200,12 @@ export class VerdictCascade {
       riskScore: Math.max(0, Math.min(1, riskScore)),
       failMode: null,
       judgeVersion,
-      latency: { totalMs, perTier, deadlineMs: this.deps.deadlineMs, deadlineBreached: totalMs > this.deps.deadlineMs },
+      latency: {
+        totalMs,
+        perTier,
+        deadlineMs: this.deps.deadlineMs,
+        deadlineBreached: totalMs > this.deps.deadlineMs,
+      },
     };
   }
 
@@ -201,7 +213,11 @@ export class VerdictCascade {
    * Engineered fail mode. Reversible actions fail open (allow + async review); irreversible
    * actions fail closed (escalate to a human). The reason is sealed into the record.
    */
-  private failMode(req: VerdictRequest, perTier: Record<string, number>, err: Error): VerdictContext {
+  private failMode(
+    req: VerdictRequest,
+    perTier: Record<string, number>,
+    err: Error,
+  ): VerdictContext {
     const reversible = req.liability.blastRadius.reversibility === "reversible";
     const failMode = reversible ? "fail_open" : "fail_closed";
     const decision: VerdictDecision = reversible ? "allow" : "escalate";
@@ -266,5 +282,6 @@ function collectStrings(value: unknown, out: string[], depth = 0): void {
   if (typeof value === "string") out.push(value);
   else if (typeof value === "number") out.push(String(value));
   else if (Array.isArray(value)) for (const v of value) collectStrings(v, out, depth + 1);
-  else if (value && typeof value === "object") for (const v of Object.values(value)) collectStrings(v, out, depth + 1);
+  else if (value && typeof value === "object")
+    for (const v of Object.values(value)) collectStrings(v, out, depth + 1);
 }

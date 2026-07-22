@@ -20,9 +20,24 @@ const modelsDir = join(here, "..", "packages", "judge", "models");
 mkdirSync(modelsDir, { recursive: true });
 
 const packs = [
-  { packId: "finra-promissory", concern: "FINRA 2210 promissory / guaranteed-return language", data: FINRA_PROMISSORY, threshold: 0.5 },
-  { packId: "phi-in-context", concern: "PHI present in message context", data: PHI_IN_CONTEXT, threshold: 0.5 },
-  { packId: "funds-movement-intent", concern: "Intent to move funds", data: FUNDS_MOVEMENT_INTENT, threshold: 0.5 },
+  {
+    packId: "finra-promissory",
+    concern: "FINRA 2210 promissory / guaranteed-return language",
+    data: FINRA_PROMISSORY,
+    threshold: 0.5,
+  },
+  {
+    packId: "phi-in-context",
+    concern: "PHI present in message context",
+    data: PHI_IN_CONTEXT,
+    threshold: 0.5,
+  },
+  {
+    packId: "funds-movement-intent",
+    concern: "Intent to move funds",
+    data: FUNDS_MOVEMENT_INTENT,
+    threshold: 0.5,
+  },
 ];
 
 let trainAcc = 0;
@@ -48,6 +63,10 @@ for (const pack of packs) {
 
   const file = join(modelsDir, `${pack.packId}.model.json`);
   writeFileSync(file, JSON.stringify(artifact, null, 2) + "\n");
-  console.log(`${pack.packId.padEnd(24)} ${version}  train-acc ${(acc * 100).toFixed(1)}%  (${Object.keys(artifact.weights).length} features)`);
+  console.log(
+    `${pack.packId.padEnd(24)} ${version}  train-acc ${(acc * 100).toFixed(1)}%  (${Object.keys(artifact.weights).length} features)`,
+  );
 }
-console.log(`\nOverall train accuracy: ${((trainAcc / trainN) * 100).toFixed(1)}% over ${trainN} examples.`);
+console.log(
+  `\nOverall train accuracy: ${((trainAcc / trainN) * 100).toFixed(1)}% over ${trainN} examples.`,
+);

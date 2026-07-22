@@ -81,7 +81,14 @@ describe("durable round trip + restart + chain verification", () => {
         tenantId: TENANT,
         action: { type: "payment.transfer", agentId: "agent-it", payload: { amount: 30000 } },
         liability: {
-          mandate: { id: "m1", scope: "payments", limits: { maxAmount: 25000 }, grantor: "cfo", expiresAt: null, version: "1" },
+          mandate: {
+            id: "m1",
+            scope: "payments",
+            limits: { maxAmount: 25000 },
+            grantor: "cfo",
+            expiresAt: null,
+            version: "1",
+          },
           oversightMode: "human_in_loop",
           blastRadius: { financialAmount: 30000, currency: "USD", reversibility: "irreversible" },
           modelMetadata: { provider: "anthropic", model: "claude-opus-4-8" },

@@ -50,7 +50,10 @@ describe("distilled judge model", () => {
     expect(registry.has("finra-promissory")).toBe(true);
     expect(registry.has("phi-in-context")).toBe(true);
     expect(registry.has("funds-movement-intent")).toBe(true);
-    const finra = registry.judge("finra-promissory", "We guarantee a 20% return with no risk, guaranteed profits");
+    const finra = registry.judge(
+      "finra-promissory",
+      "We guarantee a 20% return with no risk, guaranteed profits",
+    );
     expect(finra.flagged).toBe(true);
   });
 });

@@ -34,24 +34,38 @@ export function routeEscalation(ctx: RoutableContext): RoutingDecision {
   const queue = pickQueue(ctx);
   const priority = pickPriority(ctx);
   const fourEyes =
-    queue === "treasury-control" && ctx.financialAmount >= 100_000 ? true : ctx.reversibility === "irreversible" && ctx.financialAmount >= 250_000;
+    queue === "treasury-control" && ctx.financialAmount >= 100_000
+      ? true
+      : ctx.reversibility === "irreversible" && ctx.financialAmount >= 250_000;
   return { queue, priority, slaMinutes: SLA_BY_PRIORITY[priority] ?? 1440, fourEyes };
 }
 
 function pickQueue(ctx: RoutableContext): Queue {
   if (ctx.packs.includes("hipaa")) return "privacy-office";
   if (ctx.packs.includes("finra")) return "registered-principal";
-  if (ctx.actionType.startsWith("payment.") || ctx.actionType.startsWith("funds.") || ctx.actionType.startsWith("wire.")) {
+  if (
+    ctx.actionType.startsWith("payment.") ||
+    ctx.actionType.startsWith("funds.") ||
+    ctx.actionType.startsWith("wire.")
+  ) {
     return "treasury-control";
   }
-  if (ctx.actionType.includes("export") || ctx.actionType.includes("pii") || ctx.packs.includes("privacy")) {
+  if (
+    ctx.actionType.includes("export") ||
+    ctx.actionType.includes("pii") ||
+    ctx.packs.includes("privacy")
+  ) {
     return "privacy-office";
   }
   return "general";
 }
 
 function pickPriority(ctx: RoutableContext): number {
-  if (ctx.riskScore >= 0.9 || (ctx.reversibility === "irreversible" && ctx.financialAmount >= 100_000)) return 1;
+  if (
+    ctx.riskScore >= 0.9 ||
+    (ctx.reversibility === "irreversible" && ctx.financialAmount >= 100_000)
+  )
+    return 1;
   if (ctx.riskScore >= 0.6 || ctx.financialAmount >= 25_000) return 2;
   if (ctx.riskScore >= 0.3) return 3;
   return 4;

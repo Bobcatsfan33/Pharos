@@ -16,25 +16,35 @@ const CreateMandateSchema = z.object({
 });
 
 export function registerMandateRoutes(app: FastifyInstance, platform: Platform): void {
-  app.post<{ Params: { tenantId: string } }>("/v1/tenants/:tenantId/mandates", async (request, reply) => {
-    const { tenantId } = request.params;
-    const principal = await requireAuth(platform, request, reply, "policies:write", tenantId);
-    if (!principal) return reply;
-    const parsed = CreateMandateSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.status(400).send({ success: false, data: null, error: { code: "invalid_request", issues: parsed.error.issues } });
-    }
-    const mandate = await platform.mandates.create({ tenantId, ...parsed.data });
-    return reply.status(201).send({ success: true, data: { mandate }, error: null });
-  });
+  app.post<{ Params: { tenantId: string } }>(
+    "/v1/tenants/:tenantId/mandates",
+    async (request, reply) => {
+      const { tenantId } = request.params;
+      const principal = await requireAuth(platform, request, reply, "policies:write", tenantId);
+      if (!principal) return reply;
+      const parsed = CreateMandateSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          success: false,
+          data: null,
+          error: { code: "invalid_request", issues: parsed.error.issues },
+        });
+      }
+      const mandate = await platform.mandates.create({ tenantId, ...parsed.data });
+      return reply.status(201).send({ success: true, data: { mandate }, error: null });
+    },
+  );
 
-  app.get<{ Params: { tenantId: string } }>("/v1/tenants/:tenantId/mandates", async (request, reply) => {
-    const { tenantId } = request.params;
-    const principal = await requireAuth(platform, request, reply, "policies:read", tenantId);
-    if (!principal) return reply;
-    const mandates = await platform.mandates.list(tenantId);
-    return reply.send({ success: true, data: { mandates }, error: null });
-  });
+  app.get<{ Params: { tenantId: string } }>(
+    "/v1/tenants/:tenantId/mandates",
+    async (request, reply) => {
+      const { tenantId } = request.params;
+      const principal = await requireAuth(platform, request, reply, "policies:read", tenantId);
+      if (!principal) return reply;
+      const mandates = await platform.mandates.list(tenantId);
+      return reply.send({ success: true, data: { mandates }, error: null });
+    },
+  );
 
   app.post<{ Params: { tenantId: string; mandateId: string } }>(
     "/v1/tenants/:tenantId/mandates/:mandateId/revoke",

@@ -28,9 +28,21 @@ describe("VerdictEngine (Tier 1)", () => {
   it("blocks an action exceeding the mandate monetary limit", () => {
     const v = engine.evaluate(
       req({
-        action: { type: "payment.transfer", agentId: "a1", payload: { amount: 30000 }, emittedAt: now.toISOString() },
+        action: {
+          type: "payment.transfer",
+          agentId: "a1",
+          payload: { amount: 30000 },
+          emittedAt: now.toISOString(),
+        },
         liability: {
-          mandate: { id: "m1", scope: "payments", limits: { maxAmount: 25000 }, grantor: "cfo", expiresAt: null, version: "1" },
+          mandate: {
+            id: "m1",
+            scope: "payments",
+            limits: { maxAmount: 25000 },
+            grantor: "cfo",
+            expiresAt: null,
+            version: "1",
+          },
           oversightMode: "human_in_loop",
           blastRadius: { financialAmount: 30000, currency: "USD", reversibility: "irreversible" },
           modelMetadata: null,
@@ -47,7 +59,14 @@ describe("VerdictEngine (Tier 1)", () => {
     const v = engine.evaluate(
       req({
         liability: {
-          mandate: { id: "m1", scope: "x", limits: {}, grantor: "cfo", expiresAt: "2026-01-01T00:00:00.000Z", version: "1" },
+          mandate: {
+            id: "m1",
+            scope: "x",
+            limits: {},
+            grantor: "cfo",
+            expiresAt: "2026-01-01T00:00:00.000Z",
+            version: "1",
+          },
           oversightMode: "autonomous",
           blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" },
           modelMetadata: null,
@@ -61,7 +80,14 @@ describe("VerdictEngine (Tier 1)", () => {
 
   it("blocks deny-listed action types", () => {
     const v = engine.evaluate(
-      req({ action: { type: "system.shutdown", agentId: "a1", payload: {}, emittedAt: now.toISOString() } }),
+      req({
+        action: {
+          type: "system.shutdown",
+          agentId: "a1",
+          payload: {},
+          emittedAt: now.toISOString(),
+        },
+      }),
       now,
     );
     expect(v.decision).toBe("block");

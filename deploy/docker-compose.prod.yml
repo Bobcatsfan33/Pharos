@@ -23,7 +23,14 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${PHAROS_REDIS_PASSWORD:?set PHAROS_REDIS_PASSWORD}"]
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--requirepass",
+        "${PHAROS_REDIS_PASSWORD:?set PHAROS_REDIS_PASSWORD}",
+      ]
     volumes:
       - pharos_redis:/data
 

@@ -4,7 +4,11 @@ import {
   ActionRecordContentSchema,
   type RecordSeal,
 } from "../schema/actionRecord.js";
-import { SEAL_SIGNATURE_VERSION, type SigningProvider, signingMessageV2 } from "../signing/provider.js";
+import {
+  SEAL_SIGNATURE_VERSION,
+  type SigningProvider,
+  signingMessageV2,
+} from "../signing/provider.js";
 import { sha256Hex } from "./canonical.js";
 
 /**

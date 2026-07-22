@@ -80,7 +80,8 @@ export function computeRiskProfile(
     oversightCoverage * 15;
   const compositeRisk = Math.max(0, Math.min(100, Math.round(raw + 15)));
 
-  const grade: RiskProfileV2["grade"] = compositeRisk < 25 ? "A" : compositeRisk < 45 ? "B" : compositeRisk < 65 ? "C" : "D";
+  const grade: RiskProfileV2["grade"] =
+    compositeRisk < 25 ? "A" : compositeRisk < 45 ? "B" : compositeRisk < 65 ? "C" : "D";
 
   return {
     records: total,

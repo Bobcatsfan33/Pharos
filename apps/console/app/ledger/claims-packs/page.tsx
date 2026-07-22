@@ -11,7 +11,11 @@ interface Pack {
   releasedTo: string | null;
 }
 
-const STATUS_COLOR: Record<string, string> = { draft: "#9ca3af", sealed: "#60a5fa", released: "#34d399" };
+const STATUS_COLOR: Record<string, string> = {
+  draft: "#9ca3af",
+  sealed: "#60a5fa",
+  released: "#34d399",
+};
 
 export default async function ClaimsPacksPage() {
   const data = await api<{ packs: Pack[] }>(`/v1/tenants/${DEMO_TENANT}/claims-packs`);
@@ -20,9 +24,9 @@ export default async function ClaimsPacksPage() {
     <div>
       <h1 style={{ fontSize: 24 }}>Claims packs</h1>
       <p style={{ color: "#9ca3af", maxWidth: 680 }}>
-        Audience-scoped, offline-verifiable evidence bundles assembled from an incident: scoped record sets,
-        custody attestation, trusted-time anchors, and field-level redaction — all verifiable by a third party
-        without trusting Pharos.
+        Audience-scoped, offline-verifiable evidence bundles assembled from an incident: scoped
+        record sets, custody attestation, trusted-time anchors, and field-level redaction — all
+        verifiable by a third party without trusting Pharos.
       </p>
       {packs.length === 0 ? (
         <p style={{ color: "#6b7280", marginTop: 24 }}>No claims packs yet.</p>
@@ -43,9 +47,19 @@ export default async function ClaimsPacksPage() {
               <tr key={p.id} style={{ borderBottom: "1px solid #111827" }}>
                 <td style={{ padding: 8 }}>{p.incident ?? "—"}</td>
                 <td style={{ padding: 8, color: "#9ca3af" }}>{p.audience}</td>
-                <td style={{ padding: 8 }}>{p.fromSequence}–{p.toSequence}</td>
+                <td style={{ padding: 8 }}>
+                  {p.fromSequence}–{p.toSequence}
+                </td>
                 <td style={{ padding: 8, color: "#9ca3af" }}>{p.redactFields.join(", ") || "—"}</td>
-                <td style={{ padding: 8, color: STATUS_COLOR[p.status] ?? "#e5e7eb", fontWeight: 600 }}>{p.status}</td>
+                <td
+                  style={{
+                    padding: 8,
+                    color: STATUS_COLOR[p.status] ?? "#e5e7eb",
+                    fontWeight: 600,
+                  }}
+                >
+                  {p.status}
+                </td>
                 <td style={{ padding: 8, color: "#6b7280" }}>{p.releasedTo ?? "—"}</td>
               </tr>
             ))}

@@ -53,21 +53,29 @@ export class TenantStore {
        VALUES ($1,$2,$3,$4,$5)
        ON CONFLICT (tenant_id) DO UPDATE SET display_name = EXCLUDED.display_name, updated_at = now()
        RETURNING *`,
-      [input.tenantId, input.displayName, kmsKeyName, evidencePrefix, input.retainEvidenceOnDelete ?? true],
+      [
+        input.tenantId,
+        input.displayName,
+        kmsKeyName,
+        evidencePrefix,
+        input.retainEvidenceOnDelete ?? true,
+      ],
     );
     return this.rowTo(res.rows[0]!);
   }
 
   async getTenant(tenantId: string): Promise<Tenant | null> {
-    const res = await this.pool.query<TenantRow>(`SELECT * FROM tenants WHERE tenant_id = $1`, [tenantId]);
+    const res = await this.pool.query<TenantRow>(`SELECT * FROM tenants WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
     return res.rows[0] ? this.rowTo(res.rows[0]) : null;
   }
 
   async setStatus(tenantId: string, status: TenantStatus): Promise<void> {
-    await this.pool.query(`UPDATE tenants SET status = $2, updated_at = now() WHERE tenant_id = $1`, [
-      tenantId,
-      status,
-    ]);
+    await this.pool.query(
+      `UPDATE tenants SET status = $2, updated_at = now() WHERE tenant_id = $1`,
+      [tenantId, status],
+    );
   }
 
   async listTenants(): Promise<Tenant[]> {

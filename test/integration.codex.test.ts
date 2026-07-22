@@ -33,7 +33,28 @@ let app: FastifyInstance | null = null;
 const auth = { "x-api-key": "" };
 
 async function pay(amount: number) {
-  return app!.inject({ method: "POST", url: "/v1/actions", headers: auth, payload: { tenantId: TENANT, action: { type: "payment.transfer", agentId: "treasury", payload: { amount, to: "vendor" } }, liability: { mandate: { id: "m", scope: "pay", limits: { maxAmount: 1_000_000 }, grantor: "cfo", expiresAt: null, version: "1" }, oversightMode: "human_in_loop", blastRadius: { financialAmount: amount, currency: "USD", reversibility: "reversible" }, modelMetadata: null } } });
+  return app!.inject({
+    method: "POST",
+    url: "/v1/actions",
+    headers: auth,
+    payload: {
+      tenantId: TENANT,
+      action: { type: "payment.transfer", agentId: "treasury", payload: { amount, to: "vendor" } },
+      liability: {
+        mandate: {
+          id: "m",
+          scope: "pay",
+          limits: { maxAmount: 1_000_000 },
+          grantor: "cfo",
+          expiresAt: null,
+          version: "1",
+        },
+        oversightMode: "human_in_loop",
+        blastRadius: { financialAmount: amount, currency: "USD", reversibility: "reversible" },
+        modelMetadata: null,
+      },
+    },
+  });
 }
 
 beforeAll(async () => {
@@ -43,7 +64,14 @@ beforeAll(async () => {
     platform = await buildPlatform();
     app = await buildApp(platform);
     await platform.tenants.createTenant({ tenantId: TENANT, displayName: "Codex" });
-    auth["x-api-key"] = (await platform.apiKeys.create(TENANT, "cx", ["actions:write", "records:read", "policies:read", "policies:write"])).plaintext;
+    auth["x-api-key"] = (
+      await platform.apiKeys.create(TENANT, "cx", [
+        "actions:write",
+        "records:read",
+        "policies:read",
+        "policies:write",
+      ])
+    ).plaintext;
   } catch (err) {
     console.warn("[codex] infrastructure unavailable, skipping:", (err as Error).message);
     available = false;
@@ -60,39 +88,78 @@ describe("Codex — policy lifecycle", () => {
     if (!available) return ctx.skip();
 
     // 1. Historical traffic: 12 payments; six exceed $40k.
-    const amounts = [10000, 20000, 30000, 45000, 60000, 15000, 55000, 42000, 5000, 80000, 25000, 48000];
+    const amounts = [
+      10000, 20000, 30000, 45000, 60000, 15000, 55000, 42000, 5000, 80000, 25000, 48000,
+    ];
     for (const a of amounts) expect((await pay(a)).statusCode).toBe(201);
     const over40k = amounts.filter((a) => a > 40000).length; // 6
 
     // 2. Compile a natural-language policy.
     const compile = await app!.inject({
-      method: "POST", url: `/v1/tenants/${TENANT}/policies/compile`, headers: auth,
-      payload: { name: "acme-payments", text: "# Acme payments\nBlock payments when amount over $40000\nRequire human approval for wires" },
+      method: "POST",
+      url: `/v1/tenants/${TENANT}/policies/compile`,
+      headers: auth,
+      payload: {
+        name: "acme-payments",
+        text: "# Acme payments\nBlock payments when amount over $40000\nRequire human approval for wires",
+      },
     });
     expect(compile.statusCode).toBe(201);
     const policyId = compile.json().data.policy.id;
     expect(compile.json().data.policy.artifact.rules.length).toBe(2);
 
     // 3. Dry-run (impact dashboard) against historical traffic.
-    const dryRun = await app!.inject({ method: "POST", url: `/v1/tenants/${TENANT}/policies/${policyId}/dry-run`, headers: auth, payload: { window: 1000 } });
+    const dryRun = await app!.inject({
+      method: "POST",
+      url: `/v1/tenants/${TENANT}/policies/${policyId}/dry-run`,
+      headers: auth,
+      payload: { window: 1000 },
+    });
     const predictedBlocks = dryRun.json().data.impact.mix.block;
     expect(predictedBlocks).toBe(over40k); // predicts six blocks
 
     // 4. Activation requires shadow first (dry-run-before-enforce).
-    const earlyActivate = await app!.inject({ method: "POST", url: `/v1/tenants/${TENANT}/policies/${policyId}/activate`, headers: auth });
+    const earlyActivate = await app!.inject({
+      method: "POST",
+      url: `/v1/tenants/${TENANT}/policies/${policyId}/activate`,
+      headers: auth,
+    });
     expect(earlyActivate.statusCode).toBe(409);
 
     // 5. Shadow → divergence → activate.
-    expect((await app!.inject({ method: "POST", url: `/v1/tenants/${TENANT}/policies/${policyId}/shadow`, headers: auth })).statusCode).toBe(200);
-    const divergence = await app!.inject({ method: "POST", url: `/v1/tenants/${TENANT}/policies/${policyId}/divergence`, headers: auth, payload: { window: 1000 } });
+    expect(
+      (
+        await app!.inject({
+          method: "POST",
+          url: `/v1/tenants/${TENANT}/policies/${policyId}/shadow`,
+          headers: auth,
+        })
+      ).statusCode,
+    ).toBe(200);
+    const divergence = await app!.inject({
+      method: "POST",
+      url: `/v1/tenants/${TENANT}/policies/${policyId}/divergence`,
+      headers: auth,
+      payload: { window: 1000 },
+    });
     expect(divergence.json().data.diverged).toBeGreaterThan(0);
-    expect((await app!.inject({ method: "POST", url: `/v1/tenants/${TENANT}/policies/${policyId}/activate`, headers: auth })).statusCode).toBe(200);
+    expect(
+      (
+        await app!.inject({
+          method: "POST",
+          url: `/v1/tenants/${TENANT}/policies/${policyId}/activate`,
+          headers: auth,
+        })
+      ).statusCode,
+    ).toBe(200);
 
     // 6. Observed verdicts now match the prediction: a >$40k payment blocks with the compiled,
     //    examiner-readable citation.
     const blocked = await pay(45000);
     expect(blocked.json().data.verdict.decision).toBe("block");
-    const citation = blocked.json().data.verdict.ruleCitations.find((c: { ruleId: string }) => c.ruleId === "acme-payments-r1");
+    const citation = blocked
+      .json()
+      .data.verdict.ruleCitations.find((c: { ruleId: string }) => c.ruleId === "acme-payments-r1");
     expect(citation).toBeTruthy();
     expect(citation.description.length).toBeGreaterThan(10); // examiner-readable
 
@@ -101,7 +168,11 @@ describe("Codex — policy lifecycle", () => {
 
     // 7. Rollback restores prior state in well under a minute, with no chain disruption.
     const t0 = Date.now();
-    const rollback = await app!.inject({ method: "POST", url: `/v1/tenants/${TENANT}/policies/acme-payments/rollback`, headers: auth });
+    const rollback = await app!.inject({
+      method: "POST",
+      url: `/v1/tenants/${TENANT}/policies/acme-payments/rollback`,
+      headers: auth,
+    });
     expect(rollback.statusCode).toBe(200);
     expect(Date.now() - t0).toBeLessThan(60_000);
     // After rollback the $45k payment is no longer blocked by the (now-inactive) custom policy.

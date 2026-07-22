@@ -173,10 +173,19 @@ export class EscalationStore {
   async resolve(
     tenantId: string,
     id: string,
-    input: { decision: ResolutionDecision; rationale: string; resolvedBy: string; modifiedAction?: unknown },
+    input: {
+      decision: ResolutionDecision;
+      rationale: string;
+      resolvedBy: string;
+      modifiedAction?: unknown;
+    },
   ): Promise<Escalation | null> {
     const status: EscalationStatus =
-      input.decision === "approve" ? "approved" : input.decision === "modify" ? "modified" : "rejected";
+      input.decision === "approve"
+        ? "approved"
+        : input.decision === "modify"
+          ? "modified"
+          : "rejected";
     const resolution = {
       decision: input.decision,
       rationale: input.rationale,

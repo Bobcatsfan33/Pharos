@@ -57,7 +57,18 @@ describe("Signal — public PDP endpoint", () => {
       method: "POST",
       url: "/v1/pdp",
       headers: auth,
-      payload: { action: { type: "email.send", agentId: "a", payload: { body: "We guarantee a 20% return with no risk, guaranteed profits!" } }, liability: { mandate: null, oversightMode: "autonomous", blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" } } },
+      payload: {
+        action: {
+          type: "email.send",
+          agentId: "a",
+          payload: { body: "We guarantee a 20% return with no risk, guaranteed profits!" },
+        },
+        liability: {
+          mandate: null,
+          oversightMode: "autonomous",
+          blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" },
+        },
+      },
     });
     expect(res.statusCode).toBe(200);
     const response = res.json().data as PdpResponse;
@@ -78,7 +89,14 @@ describe("Signal — public PDP endpoint", () => {
 
   it("rejects an unauthenticated PDP call", async (ctx) => {
     if (!available) return ctx.skip();
-    const res = await app!.inject({ method: "POST", url: "/v1/pdp", payload: { action: { type: "x", agentId: "a" }, liability: { oversightMode: "autonomous", blastRadius: { reversibility: "reversible" } } } });
+    const res = await app!.inject({
+      method: "POST",
+      url: "/v1/pdp",
+      payload: {
+        action: { type: "x", agentId: "a" },
+        liability: { oversightMode: "autonomous", blastRadius: { reversibility: "reversible" } },
+      },
+    });
     expect(res.statusCode).toBe(401);
   });
 });
