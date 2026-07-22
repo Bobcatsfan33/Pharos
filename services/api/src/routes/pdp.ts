@@ -14,9 +14,9 @@ import type { Platform } from "../platform.js";
  * signed evidence record and returns the binding, so the verdict is provable.
  */
 const PdpRequestSchema = z.object({
-  action: z.object({ type: z.string().min(1), agentId: z.string().min(1), payload: z.record(z.unknown()).optional() }),
+  action: z.object({ type: z.string().min(1), agentId: z.string().min(1), payload: z.record(z.string(), z.unknown()).optional() }),
   liability: z.object({
-    mandate: z.object({ id: z.string(), limits: z.record(z.unknown()).optional() }).nullable().optional(),
+    mandate: z.object({ id: z.string(), limits: z.record(z.string(), z.unknown()).optional() }).nullable().optional(),
     oversightMode: z.enum(["autonomous", "human_in_loop", "human_on_loop"]),
     blastRadius: z.object({ financialAmount: z.number().optional(), currency: z.string().optional(), reversibility: z.enum(["reversible", "irreversible"]) }),
   }),

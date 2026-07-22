@@ -31,7 +31,7 @@ export const ActionIntentSchema = z.object({
   /** Optional grouping for a multi-step agent workflow. */
   sessionId: z.string().optional(),
   /** Opaque action payload (tool args, message body, transfer details, ...). */
-  payload: z.record(z.unknown()).default({}),
+  payload: z.record(z.string(), z.unknown()).default({}),
   /** ISO-8601 timestamp the agent emitted the action. */
   emittedAt: z.string().datetime(),
 });
@@ -73,7 +73,7 @@ export const VerdictContextSchema = z.object({
   /** Latency budget accounting, milliseconds. */
   latency: z.object({
     totalMs: z.number().nonnegative(),
-    perTier: z.record(z.number().nonnegative()).default({}),
+    perTier: z.record(z.string(), z.number().nonnegative()).default({}),
     deadlineMs: z.number().positive(),
     deadlineBreached: z.boolean().default(false),
   }),
@@ -98,7 +98,7 @@ export const MandateBindingSchema = z.object({
   /** Human-readable scope of authority granted to the agent. */
   scope: z.string(),
   /** Quantitative limits (e.g. { maxAmount: 25000, currency: "USD" }). */
-  limits: z.record(z.unknown()).default({}),
+  limits: z.record(z.string(), z.unknown()).default({}),
   /** Who granted the mandate (principal/role). */
   grantor: z.string(),
   /** ISO-8601 expiry; null = no expiry. */

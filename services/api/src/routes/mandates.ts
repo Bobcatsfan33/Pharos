@@ -10,7 +10,7 @@ import { requireAuth } from "../auth.js";
 const CreateMandateSchema = z.object({
   mandateId: z.string().min(1),
   scope: z.string().min(1),
-  limits: z.record(z.unknown()).optional(),
+  limits: z.record(z.string(), z.unknown()).optional(),
   grantor: z.string().min(1),
   expiresAt: z.string().datetime().nullable().optional(),
 });
