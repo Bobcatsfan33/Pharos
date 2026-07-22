@@ -1,6 +1,8 @@
 # Pharos Helm values. Multi-AZ via replicaCount + podAntiAffinity (set by your platform).
 image:
-  repository: pharos/api
+  # Signed image published to GHCR by .github/workflows/image.yml (cosign keyless + SBOM).
+  # Verify before deploying — see deploy/INSTALL.md "Verifying the signed image".
+  repository: ghcr.io/bobcatsfan33/pharos-api
   tag: "0.1.0"
   pullPolicy: IfNotPresent
 
