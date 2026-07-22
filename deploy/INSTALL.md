@@ -29,6 +29,32 @@ curl -sXPOST http://localhost:4000/v1/admin/tenants \
 # -> returns adminKey.plaintext (shown once)
 ```
 
+## Verifying the signed image
+
+The API image is published to GHCR and signed with [cosign](https://docs.sigstore.dev/)
+keyless (Sigstore/OIDC) by [`.github/workflows/image.yml`](../.github/workflows/image.yml),
+with a [syft](https://github.com/anchore/syft) SBOM (SPDX-JSON) attached as an attestation.
+**Verify before you deploy.**
+
+```bash
+IMAGE=ghcr.io/bobcatsfan33/pharos-api:0.1.0
+
+# 1. Verify the signature. The identity is the release workflow; the issuer is GitHub's OIDC.
+cosign verify "$IMAGE" \
+  --certificate-identity-regexp "^https://github.com/Bobcatsfan33/Pharos/.github/workflows/image.yml@.*$" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+
+# 2. Verify + download the SBOM attestation (SPDX-JSON).
+cosign verify-attestation "$IMAGE" --type spdxjson \
+  --certificate-identity-regexp "^https://github.com/Bobcatsfan33/Pharos/.github/workflows/image.yml@.*$" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  | jq -r '.payload | @base64d | fromjson | .predicate' > sbom.spdx.json
+```
+
+A successful `cosign verify` prints the verified signature entries and exits `0`. Pin by
+digest (`ghcr.io/bobcatsfan33/pharos-api@sha256:...`) in production. The Helm chart's
+`image.repository` already points at this GHCR path.
+
 ## Option B — Kubernetes (multi-AZ, production)
 
 ```bash
