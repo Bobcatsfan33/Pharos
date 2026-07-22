@@ -1,0 +1,18 @@
+name: "Pharos CodeQL config"
+
+# The full security query suite (no maintainability/quality queries — those are eslint/ruff's
+# job, not the security gate).
+queries:
+  - uses: security-extended
+
+# Query-level triage — a durable "dismiss with reason" for a query that is a confirmed,
+# persistent false positive for this codebase's architecture. Preferred over per-alert
+# dismissals, which break every time the underlying lines move (e.g. a formatting pass).
+query-filters:
+  # js/missing-rate-limiting: every API route calls requireAuth() as its first action, which
+  # enforces a per-principal fixed-window rate limit in withinRateLimit() (429 on exceed;
+  # services/api/src/auth.ts). CodeQL only recognizes known middleware (e.g. @fastify/rate-limit)
+  # and cannot see the custom auth-layer enforcement, so it flags every handler. Excluded here
+  # with this rationale rather than dismissing ~50 alerts on every code change.
+  - exclude:
+      id: js/missing-rate-limiting
