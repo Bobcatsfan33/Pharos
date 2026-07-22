@@ -17,7 +17,7 @@
     "start": "tsx src/server.ts"
   },
   "dependencies": {
-    "@fastify/cors": "^10.0.1",
+    "@fastify/cors": "^11.3.0",
     "@pharos/assurance": "workspace:*",
     "@pharos/billing": "workspace:*",
     "@pharos/cascade": "workspace:*",
