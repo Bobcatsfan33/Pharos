@@ -7,8 +7,38 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 10
     groups:
+      # Group only dev-dependency MINOR + PATCH updates. Majors are excluded so they arrive
+      # as individual PRs and can be reviewed one at a time (see CONTRIBUTING.md triage policy).
       dev-dependencies:
         dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # apps/console is out of scope until Phase 5; do not churn its framework majors.
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      # Dev-tooling majors deliberately deferred (adopt via a dedicated PR, not drive-by):
+      # TypeScript 7 (native rewrite), Vitest 4, ESLint 10 + plugins, @types/node 26.
+      # Tracking issue links these from LIMITATIONS/the board.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint-config-prettier"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "globals"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
 
@@ -22,11 +52,16 @@ updates:
       - "dependencies"
       - "python"
 
-  # GitHub Actions used by CI/release workflows.
+  # GitHub Actions used by CI/release workflows. Group all bumps (incl. majors) into one PR —
+  # actions are CI infrastructure, not the trust path.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
       - "ci"
