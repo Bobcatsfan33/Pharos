@@ -33,7 +33,7 @@
     "@types/node": "^22.20.1",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^9.1.2",
-    "fastify": "^5.2.0",
+    "fastify": "^5.10.0",
     "globals": "^15.15.0",
     "jose": "^6.2.4",
     "prettier": "^3.9.6",
