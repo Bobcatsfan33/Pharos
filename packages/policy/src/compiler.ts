@@ -53,6 +53,10 @@ export function compilePolicy(packId: string, version: string, title: string, te
 }
 
 function compileLine(packId: string, line: string, idx: number): PolicyRule | null {
+  // Bound the input length before running the pattern regexes. Real policy statements are
+  // short; this caps regex work so a pathological long line can't cause polynomial
+  // backtracking (ReDoS). Over-long lines fall through to `unparsed` for a human.
+  if (line.length > 512) return null;
   const id = `${packId}-r${idx + 1}`;
 
   // "Block/Escalate promissory|guaranteed-return language"

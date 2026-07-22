@@ -24,8 +24,9 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          # security-and-quality adds maintainability/quality queries on top of security.
-          queries: security-and-quality
+          # security-extended = the full security query suite without the maintainability/
+          # quality queries (which belong to eslint/ruff, not the security gate).
+          queries: security-extended
       # JS/TS and Python are interpreted — no build step is needed.
       - name: analyze
         uses: github/codeql-action/analyze@v3

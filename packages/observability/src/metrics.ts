@@ -15,7 +15,14 @@ function key(labels: Labels): string {
 function renderLabels(labels: Labels): string {
   const entries = Object.keys(labels)
     .sort()
-    .map((k) => `${k}="${String(labels[k]).replace(/"/g, '\\"')}"`);
+    // Prometheus exposition escaping: backslash first, then newline and double-quote.
+    .map(
+      (k) =>
+        `${k}="${String(labels[k])
+          .replace(/\\/g, "\\\\")
+          .replace(/\n/g, "\\n")
+          .replace(/"/g, '\\"')}"`,
+    );
   return entries.length ? `{${entries.join(",")}}` : "";
 }
 
