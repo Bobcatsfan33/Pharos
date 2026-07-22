@@ -12,3 +12,10 @@ coverage/
 .turbo/
 
 .pharos-demo-auditor-key
+
+# Python build/test artifacts (sdks/python)
+build/
+*.egg-info/
+__pycache__/
+.pytest_cache/
+*.pyc
