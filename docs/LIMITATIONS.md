@@ -24,6 +24,8 @@ roadmap.
 
 ## 1. Tier-3 judges are linear bag-of-words classifiers, not transformer judges
 
+> **Tracking issue:** [#36](https://github.com/Bobcatsfan33/Pharos/issues/36)
+
 **Today:** each Tier-3 "judge" is a bag-of-words (unigram + bigram) **logistic-regression
 classifier** trained on a few dozen hand-written labeled examples per concern
 ([`packages/judge/src/model.ts`](../packages/judge/src/model.ts),
@@ -42,6 +44,8 @@ Related: [decision-cascade.md](decision-cascade.md), [benchmarks/latency.md](ben
 
 ## 2. The latency benchmark was measured with the linear judges
 
+> **Tracking issue:** [#37](https://github.com/Bobcatsfan33/Pharos/issues/37)
+
 **Today:** the headline **p99 3.7ms at ~5,400 verdicts/sec** in
 [`docs/benchmarks/latency.md`](benchmarks/latency.md) was measured with the linear judges of
 item 1. It is a real measurement of the current stack, but it **must not be quoted as the
@@ -53,6 +57,8 @@ it appears — roadmap task **S7-T1**. Whether the 800ms envelope holds at targe
 is an open question that task answers.
 
 ## 3. Signing uses a local KMS (Ed25519 on disk), not AWS KMS/HSM
+
+> **Tracking issue:** [#34](https://github.com/Bobcatsfan33/Pharos/issues/34)
 
 **Today:** the only implemented `SigningProvider` is **local KMS** — Ed25519 keypairs held
 in an on-disk keystore ([`packages/core/src/signing/localKms.ts`](../packages/core/src/signing/localKms.ts)).
@@ -69,6 +75,8 @@ a rotation runbook — roadmap tasks **S3-T1, S3-T2, S3-T3** (Vault Transit is t
 
 ## 4. Trusted-time anchoring uses a simulated TSA, not a real RFC 3161 authority
 
+> **Tracking issue:** [#35](https://github.com/Bobcatsfan33/Pharos/issues/35)
+
 **Today:** each chain head is timestamped and signed by an **independent signing key that
 stands in for an RFC 3161 timestamp authority** — a simulated TSA
 ([`packages/evidence/src/timestamp.ts`](../packages/evidence/src/timestamp.ts), whose own
@@ -83,6 +91,8 @@ provider for hermetic tests — roadmap task **S4-T1** (scheduled anchoring serv
 
 ## 5. The policy compiler is a constrained-grammar compiler (v1), not a natural-language compiler
 
+> **Tracking issue:** [#39](https://github.com/Bobcatsfan33/Pharos/issues/39)
+
 **Today:** [`packages/policy/src/compiler.ts`](../packages/policy/src/compiler.ts) is a
 **constrained-grammar compiler**: a line-oriented grammar of roughly five plain-English
 patterns (block/escalate promissory or PHI language; block/escalate/modify a subject over an
@@ -96,6 +106,8 @@ scope correction, not a defect: the lifecycle (compile → dry-run → shadow �
 rollback) is genuinely implemented and tested.
 
 ## 6. The gateway holds escalated request bodies in memory (not durable across restart)
+
+> **Tracking issue:** [#38](https://github.com/Bobcatsfan33/Pharos/issues/38)
 
 **Today:** the zero-code HTTP gateway keeps the bodies of **escalated, held** requests in an
 in-memory `Map` ([`services/gateway/src/gateway.ts`](../services/gateway/src/gateway.ts), the
