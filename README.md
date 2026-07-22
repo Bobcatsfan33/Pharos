@@ -96,6 +96,10 @@ scripts            durability demo + standalone external verifier
 docs               architecture, frozen schema, external-verification walkthrough, audits, roadmap
 ```
 
+The open-source vs commercial-candidate boundary across these packages is drafted in
+[docs/adr/0001-open-core-boundary.md](docs/adr/0001-open-core-boundary.md) (Proposed). All
+code is Apache-2.0 today; that ADR does not relicense anything.
+
 ## Quickstart
 
 ```bash
