@@ -58,6 +58,16 @@ jobs:
             sleep 2
           done
 
+      # KMS emulator for the aws-kms integration test (S3-T0 spike choice: nsmithuk/local-kms —
+      # license-free, unlike LocalStack, which now requires a paid token). ~36MB, starts fast.
+      - name: Start KMS emulator (nsmithuk/local-kms)
+        run: |
+          docker run -d --name local-kms -p 8088:8080 nsmithuk/local-kms:latest
+          for i in $(seq 1 20); do
+            if curl -s -o /dev/null http://localhost:8088; then echo "kms ready"; break; fi
+            sleep 1
+          done
+
       - uses: pnpm/action-setup@v6
         with:
           version: 10.32.1
