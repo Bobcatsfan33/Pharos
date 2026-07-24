@@ -215,7 +215,7 @@ describe("Causeway — escalation round trip (exactly-once)", () => {
     expect(runs).toBe(0);
   });
 
-  it("SDK falls back to a safe local default when the platform is unreachable", async (ctx) => {
+  it("SDK falls back locally when the platform is unreachable (irreversible → fail closed)", async (ctx) => {
     if (!available) return ctx.skip();
     const offline = new PharosClient({
       baseUrl: "http://127.0.0.1:1",
@@ -224,12 +224,15 @@ describe("Causeway — escalation round trip (exactly-once)", () => {
       maxRetries: 0,
       localFailMode: "fail_closed",
     });
+    // S3-T2: the SDK local fail-mode is reversibility-aware. An irreversible action fails
+    // CLOSED (escalate) — the safe default. (Reversible→fail-open is covered in
+    // test/sdk.failmode.test.ts.)
     const res = await offline.submit({
       tenantId: TENANT,
       action: { type: "email.send", agentId: "a", payload: {} },
       liability: {
         oversightMode: "autonomous",
-        blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" },
+        blastRadius: { financialAmount: 0, currency: "USD", reversibility: "irreversible" },
       },
     });
     expect(res.localFallback).toBe(true);

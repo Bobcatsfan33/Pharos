@@ -106,10 +106,21 @@ export class MetricsRegistry {
     "End-to-end verdict latency (ms)",
   );
   readonly errors = new Counter("pharos_errors_total", "Total errors by route");
+  readonly kmsUnavailable = new Counter(
+    "pharos_kms_unavailable_total",
+    "Total KMS-unavailable events at seal time (signing provider unreachable / breaker open)",
+  );
 
   render(): string {
     return (
-      [this.verdicts, this.recordsSealed, this.escalations, this.verdictLatency, this.errors]
+      [
+        this.verdicts,
+        this.recordsSealed,
+        this.escalations,
+        this.verdictLatency,
+        this.errors,
+        this.kmsUnavailable,
+      ]
         .map((m) => m.render())
         .join("\n\n") + "\n"
     );
