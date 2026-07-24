@@ -19,6 +19,7 @@ export {
 export {
   type SigningProvider,
   type PublicKeyEntry,
+  type SignatureAlgorithm,
   makeKeyId,
   parseKeyId,
   signingMessage,
@@ -28,6 +29,7 @@ export {
 } from "./signing/provider.js";
 export { type KeystoreBackend, type StoredKey, FileKeystore } from "./signing/keystore.js";
 export { LocalKms } from "./signing/localKms.js";
+export { AwsKms, type AwsKmsConfig } from "./signing/awsKms.js";
 
 // Verdict engine
 export { VerdictEngine, type VerdictRequest, type VerdictEngineOptions } from "./verdict/engine.js";

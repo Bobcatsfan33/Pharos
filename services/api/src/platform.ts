@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { loadConfig, type PharosConfig } from "@pharos/config";
-import { FileKeystore, LocalKms, VerdictEngine, type SigningProvider } from "@pharos/core";
+import { AwsKms, FileKeystore, LocalKms, VerdictEngine, type SigningProvider } from "@pharos/core";
 import { createTimestamp } from "@pharos/evidence";
 import {
   AccessAuditLog,
@@ -74,27 +74,27 @@ export interface BuildPlatformOptions {
 }
 
 export function buildSigner(config: PharosConfig): SigningProvider {
-  if (config.kms.provider === "local-kms") {
-    return new LocalKms(new FileKeystore(config.kms.keystoreDir));
+  if (config.kms.provider === "aws-kms") {
+    return new AwsKms({
+      region: config.kms.awsRegion,
+      endpoint: config.kms.awsEndpoint,
+      aliasPrefix: "pharos",
+    });
   }
-  // aws-kms wiring is introduced in a later sprint; fail explicitly until then.
-  throw new Error(
-    `PHAROS_KMS_PROVIDER=${config.kms.provider} is not implemented yet: only "local-kms" ` +
-      `ships today. Set PHAROS_KMS_PROVIDER=local-kms and persist ` +
-      `PHAROS_KMS_KEYSTORE_DIR (${config.kms.keystoreDir}) on a durable volume — ` +
-      `these keys sign every evidence record.`,
-  );
+  return new LocalKms(new FileKeystore(config.kms.keystoreDir));
 }
 
 /** The timestamp authority uses an INDEPENDENT keystore so anchors don't trust platform keys. */
 export function buildTsa(config: PharosConfig): SigningProvider {
-  if (config.kms.provider === "local-kms") {
-    return new LocalKms(new FileKeystore(`${config.kms.keystoreDir}-tsa`));
+  if (config.kms.provider === "aws-kms") {
+    // Separate alias namespace so the TSA keyset is isolated from the signing keyset.
+    return new AwsKms({
+      region: config.kms.awsRegion,
+      endpoint: config.kms.awsEndpoint,
+      aliasPrefix: "pharos-tsa",
+    });
   }
-  throw new Error(
-    `PHAROS_KMS_PROVIDER=${config.kms.provider} is not implemented yet: only "local-kms" ` +
-      `ships today (the TSA keystore lives at \`\${PHAROS_KMS_KEYSTORE_DIR}-tsa\`).`,
-  );
+  return new LocalKms(new FileKeystore(`${config.kms.keystoreDir}-tsa`));
 }
 
 export async function buildPlatform(

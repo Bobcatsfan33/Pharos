@@ -1,7 +1,30 @@
 import { type ActionRecord, ActionRecordSchema, GENESIS_HASH } from "../schema/actionRecord.js";
 import { type PublicKeyEntry, sealSigningMessage } from "../signing/provider.js";
 import { sha256Hex } from "./canonical.js";
-import { verify as edVerify, createPublicKey } from "node:crypto";
+import { verify as nodeVerify, createPublicKey } from "node:crypto";
+
+/**
+ * Verify one signature against a published key entry, dispatching on its algorithm.
+ * Both keys are SPKI DER; the only difference is the node:crypto verify parameters:
+ * Ed25519 signs the message directly (algorithm `null`), ECDSA P-256 signs its SHA-256
+ * digest (algorithm `"sha256"`, DER-encoded signature — the AWS KMS output format).
+ */
+export function verifyWithKeyEntry(
+  entry: PublicKeyEntry,
+  message: Buffer,
+  signature: string,
+): boolean {
+  const publicKey = createPublicKey({
+    key: Buffer.from(entry.publicKey, "base64"),
+    format: "der",
+    type: "spki",
+  });
+  const sig = Buffer.from(signature, "base64");
+  if (entry.algorithm === "ecdsa-p256") {
+    return nodeVerify("sha256", message, publicKey, sig);
+  }
+  return nodeVerify(null, message, publicKey, sig);
+}
 
 export interface RecordVerification {
   ok: boolean;
@@ -35,12 +58,7 @@ function verifySignatureWithKeyset(
   const entry = keyset.get(keyId);
   if (!entry) return { ok: false, error: `unknown keyId ${keyId}` };
   try {
-    const publicKey = createPublicKey({
-      key: Buffer.from(entry.publicKey, "base64"),
-      format: "der",
-      type: "spki",
-    });
-    const ok = edVerify(null, message, publicKey, Buffer.from(signature, "base64"));
+    const ok = verifyWithKeyEntry(entry, message, signature);
     return { ok, error: ok ? undefined : "signature mismatch" };
   } catch (err) {
     return { ok: false, error: `signature verification error: ${(err as Error).message}` };
@@ -48,9 +66,10 @@ function verifySignatureWithKeyset(
 }
 
 /**
- * Build an offline Ed25519 signature checker from a published keyset. This is the pure
- * verification primitive a third party uses (for chain signatures, disclosure bindings, and
- * trusted-timestamp anchors) without any Pharos infrastructure.
+ * Build an offline signature checker from a published keyset (Ed25519 or ECDSA P-256, per
+ * each entry's algorithm). This is the pure verification primitive a third party uses (for
+ * chain signatures, disclosure bindings, and trusted-timestamp anchors) without any Pharos
+ * infrastructure.
  */
 export function keysetVerifier(
   keyset: PublicKeyEntry[] | Map<string, PublicKeyEntry>,
@@ -60,12 +79,7 @@ export function keysetVerifier(
     const entry = map.get(keyId);
     if (!entry) return false;
     try {
-      const publicKey = createPublicKey({
-        key: Buffer.from(entry.publicKey, "base64"),
-        format: "der",
-        type: "spki",
-      });
-      return edVerify(null, message, publicKey, Buffer.from(signature, "base64"));
+      return verifyWithKeyEntry(entry, message, signature);
     } catch {
       return false;
     }

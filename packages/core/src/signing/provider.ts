@@ -12,11 +12,18 @@
  * giving chain continuity across rotations (each record embeds the keyId that
  * signed it).
  */
+/**
+ * Signature algorithm of a published key. `ed25519` is the local-kms default; `ecdsa-p256`
+ * (ECDSA over NIST P-256 with SHA-256) is what AWS KMS produces — KMS has no Ed25519. A
+ * verifier dispatches on this field, so a keyset can mix both across a rotation.
+ */
+export type SignatureAlgorithm = "ed25519" | "ecdsa-p256";
+
 export interface PublicKeyEntry {
   keyId: string;
-  /** Base64 DER (SPKI) Ed25519 public key. */
+  /** Base64 DER (SPKI) public key — Ed25519 or ECDSA P-256 per `algorithm`. */
   publicKey: string;
-  algorithm: "ed25519";
+  algorithm: SignatureAlgorithm;
 }
 
 export interface SigningProvider {
