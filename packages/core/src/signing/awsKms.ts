@@ -133,6 +133,22 @@ export class AwsKms implements SigningProvider {
     return this.createVersion(keyName, next);
   }
 
+  /**
+   * Migration helper: provision a new KMS key for `keyName` at an EXPLICIT version, so an
+   * aws-kms provider can continue a keyId version sequence that began under a different provider
+   * (e.g. local-kms `<name>#v1` → aws-kms `<name>#v2`) without a keyId collision. keyIds must be
+   * globally unique, so this is how a provider switch preserves "no data migration" (old records
+   * keep verifying under their old keyId; new records sign under the next version). Not part of
+   * the SigningProvider interface — a provider-specific, one-time operational step. Throws if the
+   * version already exists.
+   */
+  async provisionVersion(keyName: string, version: number): Promise<string> {
+    if ((await this.versionsOf(keyName)).includes(version)) {
+      throw new Error(`aws-kms: version ${version} already exists for ${keyName}`);
+    }
+    return this.createVersion(keyName, version);
+  }
+
   async activeKeyId(keyName: string): Promise<string> {
     return this.ensureKey(keyName);
   }
