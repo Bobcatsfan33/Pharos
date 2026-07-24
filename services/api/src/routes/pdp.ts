@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { PDP_SPEC_VERSION, type PdpResponse } from "@pharos/pdp-spec";
+import { PDP_SPEC_VERSION, type PdpResponse } from "@getpharos/pdp-spec";
 import { authenticate } from "../auth.js";
 import { authorize, AuthorizationError } from "@pharos/identity";
 import type { Platform } from "../platform.js";

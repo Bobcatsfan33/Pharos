@@ -37,7 +37,7 @@ Pharos is a governance layer for AI agents. Every consequential agent action is 
 | `packages/assurance`, `review`, `billing`, `observability`, `middleware`, `pdp-spec`, `config` | Assurance sampling/Wilson bound, review queues/SLA, metering, Prometheus/tracing, framework adapters + conformance, open PDP spec, Zod config | Reasonable for their stage. |
 | `services/api` | Fastify ingestion API, composition root (`platform.ts`), routes | Fine. |
 | `services/gateway` | Zero-code HTTP egress proxy | **Holds escalated requests in an in-memory `Map`** (`gateway.ts`) and strips almost all headers when forwarding. Hardened in Phase 3. Note: server-side escalations (`packages/storage/src/escalationStore.ts`) ARE durable in Postgres — it's only the gateway's held request bodies that evaporate on restart. |
-| `sdks/python`, `packages/sdk-ts` | Python + TS SDKs (`pharos-sdk`, `@pharos/sdk`) with a shared conformance contract | Good; unpublished (Sprint 2). |
+| `sdks/python`, `packages/sdk-ts` | Python + TS SDKs (`getpharos`, `@getpharos/sdk`) with a shared conformance contract | Good; unpublished (Sprint 2). |
 | `apps/console` | Next.js console | Thin; not a roadmap focus until Phase 5. |
 | `test/` (157 TS tests at v0.1.0 — treat counts as floors, not fixed numbers), `sdks/python/tests` (10) | Unit + integration against real Postgres/Redis/MinIO | The CI gate in `.github/workflows/ci.yml` **fails the build if integration tests skip**. Never weaken this. |
 | `deploy/` | Compose (prod), Helm chart, INSTALL.md | Honest about the KMS placeholder until S3-T1 lands. |
@@ -138,15 +138,15 @@ Fresh-clone quickstart run; fixed the `verify:external` two-terminal gap; `docs/
 
 **Sprint goal:** Pharos is installable from published, signed artifacts, not from a git clone.
 
-**Day-1 human dependencies (tech lead, flag at sprint planning):** npm org + PyPI trusted-publisher credentials as repo secrets (blocks S2-T1); name-availability check for `@pharos/sdk` / `pharos-sdk`.
+**Day-1 human dependencies (tech lead, flag at sprint planning):** npm org + PyPI trusted-publisher credentials as repo secrets (blocks S2-T1); name-availability check for `@getpharos/sdk` / `getpharos`.
 
 **S2-T0 · Dependabot triage policy + first sweep.** *(added by amendment — see §7, amendment 5)*
 Dependabot went live mid-Sprint-1 and immediately opened 12 PRs (#8–#18, #20), several of them **majors** (zod 3→4, jose 5→6, Next 15→16, @fastify/cors 10→11, GitHub Actions majors). Do not blind-merge majors. Write the policy into `CONTRIBUTING.md`: patch/minor dev-deps → merge when CI is green; runtime-dep minors → merge with a skim of the changelog; **majors → one PR at a time, read the migration notes, full suite green, and a human decision** (zod 4 and jose 6 touch validation and token verification — the trust path; Next 16 touches only the out-of-scope console). Tune `dependabot.yml` grouping (group actions majors; group dev-deps, already partly done) to cut PR noise. Then execute the first sweep.
 *AC:* policy merged in CONTRIBUTING.md; every currently-open Dependabot PR is merged or closed-with-reason; open Dependabot PR count is 0 at sprint end; `dependabot.yml` grouping updated.
 
 **S2-T1 · Publish the SDKs.**
-Publish `@pharos/sdk` to npm and `pharos-sdk` to PyPI (⚠ check name availability day 1; if taken, decide fallback names with the tech lead immediately). `release.yml` workflow: on version tag → build, test, publish with provenance (`npm publish --provenance`, PyPI trusted publishing/OIDC).
-*AC:* `npm install @pharos/sdk` and `pip install pharos-sdk` work from a clean machine; both packages show provenance/trusted-publisher badges; `examples/langgraph-agent.ts` runs against the published package.
+Publish `@getpharos/sdk` to npm and `getpharos` to PyPI (⚠ check name availability day 1; if taken, decide fallback names with the tech lead immediately). `release.yml` workflow: on version tag → build, test, publish with provenance (`npm publish --provenance`, PyPI trusted publishing/OIDC).
+*AC:* `npm install @getpharos/sdk` and `pip install getpharos` work from a clean machine; both packages show provenance/trusted-publisher badges; `examples/langgraph-agent.ts` runs against the published package.
 
 **S2-T2 · Signed container images + SBOM.**
 CI builds the API image from the existing `Dockerfile` on tags, pushes to GHCR, signs with cosign (keyless/OIDC), attaches an SBOM (syft, SPDX-JSON) as an attestation. Document verification (`cosign verify ...`) in `deploy/INSTALL.md`; update the Helm chart default `image.repository` to GHCR.
@@ -168,7 +168,7 @@ File 15–20 well-specified `good-first-issue`s from this roadmap's small items 
 A single, purely mechanical PR: `pnpm format:write` across the repo, then flip the CI `format:check` step from report-only to blocking. Formatting is not a crypto *design* change, so `packages/core` is included — but the PR must **prove** it is whitespace/format-only: `git diff -w` over the PR is empty (byte-level changes are whitespace/punctuation reflow only), full suite green, typecheck green, zero manual edits mixed in. No other work rides along in this PR.
 *AC:* `pnpm format:check` passes repo-wide and is a blocking CI step; `git diff -w main...HEAD` on the PR is empty; suite green.
 
-**Sprint 2 demo:** `pip install pharos-sdk` + `npm install @pharos/sdk` live; `cosign verify` live; the project board tour; Dependabot queue at zero with the triage policy shown.
+**Sprint 2 demo:** `pip install getpharos` + `npm install @getpharos/sdk` live; `cosign verify` live; the project board tour; Dependabot queue at zero with the triage policy shown.
 
 ---
 
@@ -400,5 +400,7 @@ Amendments proposed in the Sprint 1 final report, ruled on by the tech lead, plu
 3. **CODEOWNERS branch protection (accepted, deferred).** Required-review protection with a single maintainer would deadlock all merges. Noted in §2; enable when a second maintainer exists.
 4. **Truth-pass summary reconciliation (accepted, fixed in #22).** The S1-T3 checklist corrected six claims but missed the Status section's own "remaining items are not code" summary, which the new LIMITATIONS.md contradicted. Ground rule 6 now says: truth passes must re-read summary statements, not just itemized claims.
 5. **Dependabot triage (new, from post-sprint verification).** Enabling Dependabot in S1-T4 immediately opened 12 PRs (#8–#18, #20), including majors on trust-path libraries (`zod` 3→4, `jose` 5→6). Added **S2-T0** (triage policy + first sweep) and risk-register item 9. Lesson: any task that turns on an automated PR source must include its triage policy in the same task.
+
+6. **Registry names locked (new, 2026-07-21).** `pharos` was taken on both registries. Final names: npm scope **`@getpharos`** (packages `@getpharos/sdk`, `@getpharos/middleware`, `@getpharos/pdp-spec`), PyPI distribution **`getpharos`** (module import stays `pharos_sdk`), workflow `release.yml`, GitHub environment **`pharos`** for the PyPI job (matches the registered trusted publisher). The S2-T1a rename PR applied these across code, tests, docs, and the release workflow — which also gained the missing `environment: pharos` (without it the PyPI OIDC exchange fails).
 
 *Sprint kickoff prompts are supplied by the tech lead per sprint (Sprint 1's `SPRINT1_KICKOFF_PROMPT.md` was delivered outside the repo); each prompt executes one sprint of this document.*

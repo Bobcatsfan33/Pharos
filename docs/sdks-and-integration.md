@@ -17,12 +17,12 @@ POST /v1/actions  { tenantId, action, liability, mandateId?, idempotencyKey? }
 
 ## SDKs
 
-- **TypeScript** — [`@pharos/sdk`](../packages/sdk-ts) (`PharosClient`): deadline-aware
+- **TypeScript** — [`@getpharos/sdk`](../packages/sdk-ts) (`PharosClient`): deadline-aware
   (aborts at the budget), retries transient failures (not 4xx), structured errors, telemetry
   hooks, and a safe **local fail-mode default** when the platform is unreachable
   (`fail_closed` → escalate by default). `govern()` runs a side effect end-to-end with
   exactly-once semantics.
-- **Python** — [`pharos-sdk`](../sdks/python) (`PharosClient`): the same contract, stdlib-only.
+- **Python** — [`getpharos`](../sdks/python) (`PharosClient`): the same contract, stdlib-only.
 
 ## Framework middlewares (one conformance contract)
 
@@ -31,11 +31,11 @@ share identical semantics and pass one conformance suite:
 
 | Framework | Package | Adapter |
 |-----------|---------|---------|
-| LangChain / LangGraph | `@pharos/middleware` | `langchainTool`, `langgraphNode` |
-| OpenAI Agents SDK | `@pharos/middleware` | `openaiAgentTool` |
-| Anthropic SDK (tool_use) | `@pharos/middleware` | `anthropicToolHandlers` |
-| CrewAI | `pharos-sdk` | `crewai_tool` |
-| Microsoft Agent Framework | `pharos-sdk` | `ms_agent_tool` |
+| LangChain / LangGraph | `@getpharos/middleware` | `langchainTool`, `langgraphNode` |
+| OpenAI Agents SDK | `@getpharos/middleware` | `openaiAgentTool` |
+| Anthropic SDK (tool_use) | `@getpharos/middleware` | `anthropicToolHandlers` |
+| CrewAI | `getpharos` | `crewai_tool` |
+| Microsoft Agent Framework | `getpharos` | `ms_agent_tool` |
 
 Contract (proven in `test/middleware.conformance.test.ts` and
 `sdks/python/tests/test_conformance.py`):

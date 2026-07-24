@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import Fastify, { type FastifyInstance } from "fastify";
-import { PharosClient } from "@pharos/sdk";
+import { PharosClient } from "@getpharos/sdk";
 import { createGatewayApp } from "@pharos/gateway";
 
 /**

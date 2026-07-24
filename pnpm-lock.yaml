@@ -121,7 +121,7 @@ importers:
 
   packages/middleware:
     dependencies:
-      '@pharos/sdk':
+      '@getpharos/sdk':
         specifier: workspace:*
         version: link:../sdk-ts
 
@@ -166,6 +166,9 @@ importers:
       '@fastify/cors':
         specifier: ^11.3.0
         version: 11.3.0
+      '@getpharos/pdp-spec':
+        specifier: workspace:*
+        version: link:../../packages/pdp-spec
       '@pharos/assurance':
         specifier: workspace:*
         version: link:../../packages/assurance
@@ -193,9 +196,6 @@ importers:
       '@pharos/observability':
         specifier: workspace:*
         version: link:../../packages/observability
-      '@pharos/pdp-spec':
-        specifier: workspace:*
-        version: link:../../packages/pdp-spec
       '@pharos/policy':
         specifier: workspace:*
         version: link:../../packages/policy
@@ -214,7 +214,7 @@ importers:
 
   services/gateway:
     dependencies:
-      '@pharos/sdk':
+      '@getpharos/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk-ts
       fastify:

@@ -2,7 +2,7 @@
  * Reference agent: a LangGraph-style workflow whose tools are governed by Pharos.
  *
  * Demonstrates the full round trip — act, get blocked, get escalated, receive a human
- * verdict, and resume exactly once — using the @pharos/sdk client and @pharos/middleware
+ * verdict, and resume exactly once — using the @getpharos/sdk client and @getpharos/middleware
  * langgraphNode adapter. The "tool" here is a stand-in for any side-effecting step.
  *
  *   1. pnpm infra:up && pnpm api:dev

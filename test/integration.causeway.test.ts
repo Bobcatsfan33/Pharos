@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
-import { PharosClient } from "@pharos/sdk";
+import { PharosClient } from "@getpharos/sdk";
 
 /**
  * M3 (Causeway) integration: the SDK round trip over a live server.

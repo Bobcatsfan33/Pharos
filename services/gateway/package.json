@@ -16,7 +16,7 @@
     "dev": "tsx --env-file=../../.env src/server.ts"
   },
   "dependencies": {
-    "@pharos/sdk": "workspace:*",
+    "@getpharos/sdk": "workspace:*",
     "fastify": "^5.10.0"
   }
 }

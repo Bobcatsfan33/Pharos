@@ -1,7 +1,7 @@
 # Open Policy Decision Point (PDP) specification v1.0
 
 Status: **public**. License: Apache-2.0. Reference implementation + conformance suite:
-[`@pharos/pdp-spec`](../../packages/pdp-spec). This is a vendor-neutral contract: an agent
+[`@getpharos/pdp-spec`](../../packages/pdp-spec). This is a vendor-neutral contract: an agent
 action goes in, a verdict comes out, optionally bound to a signed evidence record. Pharos is
 the reference *commercial* implementation; the package also ships an **independent reference
 implementation** that conforms, demonstrating the spec is implementable by other parties.
@@ -62,7 +62,7 @@ audit-trail work.
 ## Conformance
 
 ```ts
-import { runConformance, createReferencePdp } from "@pharos/pdp-spec";
+import { runConformance, createReferencePdp } from "@getpharos/pdp-spec";
 const result = await runConformance(myPdp);   // your implementation under the contract
 // result.passed === true  => conforming
 ```

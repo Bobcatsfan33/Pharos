@@ -1,5 +1,5 @@
 import Fastify, { type FastifyInstance } from "fastify";
-import type { LiabilityInput, PharosClient, ActionInput } from "@pharos/sdk";
+import type { LiabilityInput, PharosClient, ActionInput } from "@getpharos/sdk";
 
 /**
  * Zero-code governance gateway.
