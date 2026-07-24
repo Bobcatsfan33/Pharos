@@ -109,8 +109,16 @@ export class PharosClient {
     } catch (err) {
       if (err instanceof PharosError && err.status && err.status >= 400 && err.status < 500)
         throw err;
-      // Platform unreachable: apply the configured local fail-mode default.
-      const failMode = this.localFailMode;
+      // Platform unreachable (incl. a 503 kms_unavailable): apply the local fail-mode. Mirror
+      // the server cascade — reversible work fails OPEN (allow + local stub), irreversible work
+      // fails CLOSED (escalate); fall back to the configured default if reversibility is unknown.
+      const reversibility = input.liability?.blastRadius?.reversibility;
+      const failMode =
+        reversibility === "reversible"
+          ? "fail_open"
+          : reversibility === "irreversible"
+            ? "fail_closed"
+            : this.localFailMode;
       this.emit({ type: "fallback", failMode });
       const verdict: Verdict = {
         decision: failMode === "fail_open" ? "allow" : "escalate",

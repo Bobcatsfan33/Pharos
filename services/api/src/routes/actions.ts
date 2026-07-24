@@ -1,6 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { ActionIntentSchema, LiabilityContextSchema, ActionRecordSchema } from "@pharos/core";
+import {
+  ActionIntentSchema,
+  LiabilityContextSchema,
+  ActionRecordSchema,
+  KmsUnavailableError,
+} from "@pharos/core";
 import { fingerprintVerdict } from "@pharos/cascade";
 import { routeEscalation } from "@pharos/review";
 import type { Platform } from "../platform.js";
@@ -67,12 +72,30 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
       policyArtifacts,
     );
 
-    const record = await platform.store.append({
-      tenantId: body.tenantId,
-      action,
-      verdict,
-      liability,
-    });
+    let record;
+    try {
+      record = await platform.store.append({
+        tenantId: body.tenantId,
+        action,
+        verdict,
+        liability,
+      });
+    } catch (err) {
+      if (err instanceof KmsUnavailableError) {
+        // KMS down ⇒ the record cannot be sealed ⇒ the action cannot be governed. Return 503
+        // with a distinct code (no partial/unsealed write happened); the SDK's local fail-mode
+        // takes over. We never queue a "sign later" — that would break the transactional invariant.
+        return reply.status(503).send({
+          success: false,
+          data: null,
+          error: {
+            code: "kms_unavailable",
+            message: "signing key service is unavailable; the action was not governed or recorded",
+          },
+        });
+      }
+      throw err;
+    }
 
     // Observability: verdict + seal metrics.
     platform.metrics.verdicts.inc({

@@ -43,6 +43,35 @@ memory), failover never loses or rewrites evidence.
 | Verdict latency p99 > budget | `pharos_verdict_latency_ms` p99 > 800ms | Check judge/registry load; scale API; inspect Tier-3 |
 | SLA breach surge | `pharos_escalations_total` rising + review SLA dashboard breaches | Page review on-call; reassign queues |
 | Error rate | `pharos_errors_total` rising | Inspect logs by route/trace id |
+| KMS unavailable | `pharos_kms_unavailable_total` rising | Signing provider (KMS) unreachable — see below; check KMS/network/credentials |
+
+## KMS failure mode (S3-T2)
+
+Every evidence record is signed at seal time. Signing and the WORM+Postgres write happen in
+**one transaction** (signing first, before any write), so if the KMS is unreachable the seal
+cannot complete and the whole govern-and-record transaction rolls back. This is deliberate:
+the invariant is **no verdict without a durably-sealed record** — Pharos never returns a
+verdict and "signs later", and never queues an unsigned action. Trading that away would trade
+away the product.
+
+**Behavior when KMS is down at seal time:**
+
+- The API returns **`503`** with `error.code = "kms_unavailable"`. No partial record is
+  written (no WORM object, no Postgres row, chain head unchanged).
+- The signer is wrapped in a **circuit breaker**: after repeated connectivity failures it
+  opens and fails fast (stops hammering a down KMS) for a cooldown, then allows one trial;
+  any success closes it.
+- Each event increments **`pharos_kms_unavailable_total`**.
+- SDKs (TS + Python) apply their **local fail-mode** on the 503, mirroring the server cascade:
+  **reversible** actions fail **open** (allow, with a locally-logged stub), **irreversible**
+  actions fail **closed** (escalate). The action is not lost; the caller decides based on
+  reversibility, and the outage is visible in the metric.
+
+**Operator action:** treat a rising `pharos_kms_unavailable_total` as a KMS/connectivity
+incident. Check the KMS endpoint reachability, credentials/role, and region config
+(`PHAROS_KMS_AWS_REGION` / `PHAROS_KMS_AWS_ENDPOINT`). Recovery is automatic once KMS is
+reachable — the breaker closes on the next successful signature; no data repair is needed
+because no partial records exist.
 
 ## Billing / metering
 
