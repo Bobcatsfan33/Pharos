@@ -1,6 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { loadConfig, type PharosConfig } from "@pharos/config";
-import { AwsKms, FileKeystore, LocalKms, VerdictEngine, type SigningProvider } from "@pharos/core";
+import {
+  AwsKms,
+  FileKeystore,
+  LocalKms,
+  ResilientSigner,
+  VerdictEngine,
+  type SigningProvider,
+} from "@pharos/core";
 import { createTimestamp } from "@pharos/evidence";
 import {
   AccessAuditLog,
@@ -104,7 +111,13 @@ export async function buildPlatform(
   const pool = createPool(config.pg.url);
   await runMigrations(pool);
 
-  const signer = buildSigner(config);
+  const metrics = new MetricsRegistry();
+  // Wrap the seal-path signer with a circuit breaker: a KMS outage must fail the seal (and
+  // therefore the whole govern-and-record transaction) rather than queue a "sign later" —
+  // no verdict without a durable record. Surfaced as KmsUnavailableError -> 503 by the API.
+  const signer = new ResilientSigner(buildSigner(config), {
+    onKmsUnavailable: () => metrics.kmsUnavailable.inc(),
+  });
   const tsa = buildTsa(config);
 
   const worm = new WormStore({
@@ -136,7 +149,6 @@ export async function buildPlatform(
   });
   const policyStore = new PolicyStore(pool);
   const assurance = new AssuranceStore(pool);
-  const metrics = new MetricsRegistry();
   const tracer = new Tracer();
   const activePolicyArtifacts = async (tenantId: string): Promise<PolicyArtifact[]> => [
     ...shippedArtifacts,

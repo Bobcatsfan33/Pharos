@@ -88,12 +88,23 @@ class PharosClient:
         except PharosError as e:
             if e.status and 400 <= e.status < 500:
                 raise
-            return self._local_fallback(start)
+            return self._local_fallback(start, kwargs)
         except Exception:
-            return self._local_fallback(start)
+            return self._local_fallback(start, kwargs)
 
-    def _local_fallback(self, start: float) -> dict:
-        fail_mode = self.local_fail_mode
+    def _local_fallback(self, start: float, request: Optional[dict] = None) -> dict:
+        # Platform unreachable (incl. a 503 kms_unavailable): mirror the server cascade —
+        # reversible work fails OPEN (allow), irreversible fails CLOSED (escalate); fall back to
+        # the configured default when reversibility is unknown.
+        reversibility = (
+            ((request or {}).get("liability") or {}).get("blastRadius") or {}
+        ).get("reversibility")
+        if reversibility == "reversible":
+            fail_mode = "fail_open"
+        elif reversibility == "irreversible":
+            fail_mode = "fail_closed"
+        else:
+            fail_mode = self.local_fail_mode
         self._emit({"type": "fallback", "failMode": fail_mode})
         return {
             "verdict": {

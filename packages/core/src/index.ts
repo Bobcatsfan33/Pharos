@@ -30,6 +30,14 @@ export {
 export { type KeystoreBackend, type StoredKey, FileKeystore } from "./signing/keystore.js";
 export { LocalKms } from "./signing/localKms.js";
 export { AwsKms, type AwsKmsConfig } from "./signing/awsKms.js";
+export {
+  KmsUnavailableError,
+  isKmsConnectivityError,
+  CircuitBreaker,
+  ResilientSigner,
+  type ResilientSignerOptions,
+  type CircuitBreakerOptions,
+} from "./signing/resilience.js";
 
 // Verdict engine
 export { VerdictEngine, type VerdictRequest, type VerdictEngineOptions } from "./verdict/engine.js";
