@@ -39,7 +39,7 @@ verify** evidence:
 | Evidence trust core — schema, canonical hashing, seal, chain verify, redaction, signing abstraction | `packages/core` |
 | Offline/third-party verification | `scripts/external-verify.ts`, published keyset format |
 | Open PDP specification + conformance suite + reference implementation | `packages/pdp-spec`, `docs/spec/pdp-v1.md` |
-| SDKs (adoption surface) | `packages/sdk-ts` (`@pharos/sdk`), `sdks/python` (`pharos-sdk`), `packages/middleware` |
+| SDKs (adoption surface) | `packages/sdk-ts` (`@getpharos/sdk`), `sdks/python` (`getpharos`), `packages/middleware` |
 | Zero-code integration gateway | `services/gateway` |
 | Reference decision engine (Tier-1 rules + cascade scaffolding) | `packages/cascade`, the Tier-1 engine in `packages/core` |
 | The storage/transactional write path needed to run the above | `packages/storage`, `packages/config`, `services/api` |

@@ -6,8 +6,8 @@ import {
   anthropicToolHandlers,
   PharosBlockedError,
   type Governor,
-} from "@pharos/middleware";
-import type { ClaimResult, Escalation, SubmitInput, SubmitResult } from "@pharos/sdk";
+} from "@getpharos/middleware";
+import type { ClaimResult, Escalation, SubmitInput, SubmitResult } from "@getpharos/sdk";
 
 /**
  * One conformance contract, exercised through every framework adapter. A governed tool must:

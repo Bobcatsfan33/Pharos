@@ -4,7 +4,7 @@ Runnable references showing how agents are governed by Pharos.
 
 ## `langgraph-agent.ts` — SDK + middleware
 
-A LangGraph-style workflow whose tool step is governed via `@pharos/middleware`'s
+A LangGraph-style workflow whose tool step is governed via `@getpharos/middleware`'s
 `langgraphNode`. Shows allow → blocked → escalate→resume. Run:
 
 ```bash

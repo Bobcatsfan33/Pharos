@@ -6,7 +6,7 @@ copy a spec the ecosystem adopted or a channel underwriters already trust.
 ## Open PDP specification
 
 [PDP spec v1.0](spec/pdp-v1.md) is public with a conformance suite and an **independent
-reference implementation** that conforms ([`@pharos/pdp-spec`](../packages/pdp-spec)). Pharos
+reference implementation** that conforms ([`@getpharos/pdp-spec`](../packages/pdp-spec)). Pharos
 is the reference commercial implementation. Standards engagement:
 
 - **IETF** — submit the evidence-binding/recording-format for alignment with the agent

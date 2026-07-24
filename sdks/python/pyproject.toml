@@ -1,5 +1,5 @@
 [project]
-name = "pharos-sdk"
+name = "getpharos"
 version = "0.1.0"
 description = "Pharos SDK — submit agent actions for a real-time policy verdict and sealed evidence."
 readme = "README.md"

@@ -1,6 +1,6 @@
 """Shared tool governor for Python framework adapters (CrewAI, MS Agent Framework).
 
-Mirrors the TypeScript @pharos/middleware contract exactly so both stacks pass one
+Mirrors the TypeScript @getpharos/middleware contract exactly so both stacks pass one
 conformance suite:
     allow / modify  -> run the tool
     block / reject  -> raise PharosBlockedError

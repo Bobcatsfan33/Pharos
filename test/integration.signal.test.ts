@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
-import { validatePdpResponse, type PdpResponse } from "@pharos/pdp-spec";
+import { validatePdpResponse, type PdpResponse } from "@getpharos/pdp-spec";
 
 /**
  * M9 (Signal): the public PDP endpoint serves the open contract with a signed evidence

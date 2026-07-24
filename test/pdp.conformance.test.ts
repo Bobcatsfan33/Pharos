@@ -7,7 +7,7 @@ import {
   type Pdp,
   type PdpRequest,
   type PdpResponse,
-} from "@pharos/pdp-spec";
+} from "@getpharos/pdp-spec";
 import { VerdictEngine } from "@pharos/core";
 import { loadDefaultRegistry } from "@pharos/judge";
 import { VerdictCascade, DEFAULT_PACK_BINDINGS } from "@pharos/cascade";

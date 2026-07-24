@@ -1,4 +1,4 @@
-# pharos-sdk
+# getpharos
 
 The Python SDK for [Pharos](https://github.com/Bobcatsfan33/Pharos) — the trust control
 plane for enterprise AI agents.
@@ -13,7 +13,7 @@ The SDK is **dependency-free** (Python standard library only) so it installs any
 ## Install
 
 ```bash
-pip install pharos-sdk
+pip install getpharos
 ```
 
 Requires Python 3.9+.

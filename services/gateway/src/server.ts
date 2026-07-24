@@ -1,4 +1,4 @@
-import { PharosClient } from "@pharos/sdk";
+import { PharosClient } from "@getpharos/sdk";
 import { createGatewayApp } from "./gateway.js";
 
 /**

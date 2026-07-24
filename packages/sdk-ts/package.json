@@ -1,5 +1,5 @@
 {
-  "name": "@pharos/sdk",
+  "name": "@getpharos/sdk",
   "version": "0.1.0",
   "description": "Pharos SDK — submit agent actions for a real-time policy verdict and sealed evidence.",
   "license": "Apache-2.0",

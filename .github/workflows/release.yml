@@ -1,12 +1,13 @@
 name: release
 # Publishes the SDKs from signed, versioned artifacts.
-#   @pharos/sdk -> npm  (with provenance)
-#   pharos-sdk  -> PyPI (with trusted publishing / OIDC)
+#   @getpharos/sdk -> npm  (with provenance)
+#   getpharos  -> PyPI (with trusted publishing / OIDC)
 #
 # Triggers on a version tag (v*), or manually via workflow_dispatch for the first publish.
 # Requires (set up by a maintainer — see docs/PUBLISHING.md):
-#   - npm org "pharos" + repo secret NPM_TOKEN (automation token), OR npm trusted publishing.
-#   - PyPI project "pharos-sdk" with a Trusted Publisher pointing at this workflow (no secret).
+#   - npm org "getpharos"; trusted publisher on @getpharos/sdk -> this repo + release.yml (no secret).
+#     (First 0.1.0 publish is done manually by the maintainer; this workflow covers all later tags.)
+#   - PyPI pending trusted publisher: project "getpharos" -> this repo + release.yml, environment "pharos".
 on:
   push:
     tags:
@@ -33,14 +34,17 @@ jobs:
       - name: typecheck
         run: pnpm -r typecheck
       - name: build SDK
-        run: pnpm --filter @pharos/sdk build
-      - name: publish @pharos/sdk to npm (with provenance)
-        run: pnpm --filter @pharos/sdk publish --provenance --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm --filter @getpharos/sdk build
+      # npm trusted publishing (OIDC) needs npm >= 11.5.1; Node 22 ships npm 10.
+      - name: upgrade npm for OIDC trusted publishing
+        run: npm install -g npm@latest && npm --version
+      - name: publish @getpharos/sdk to npm (OIDC trusted publishing + provenance)
+        working-directory: packages/sdk-ts
+        run: npm publish --access public
 
   pypi-publish:
     runs-on: ubuntu-latest
+    environment: pharos # MUST match the environment on the PyPI trusted publisher
     permissions:
       id-token: write # required for PyPI trusted publishing
     steps:
@@ -58,7 +62,7 @@ jobs:
         run: |
           pip install build
           python -m build
-      - name: publish pharos-sdk to PyPI (trusted publishing)
+      - name: publish getpharos to PyPI (trusted publishing)
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: sdks/python/dist

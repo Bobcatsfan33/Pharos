@@ -5,7 +5,7 @@ import type {
   LiabilityInput,
   SubmitInput,
   SubmitResult,
-} from "@pharos/sdk";
+} from "@getpharos/sdk";
 
 /**
  * The shared governor contract every framework middleware delegates to.
