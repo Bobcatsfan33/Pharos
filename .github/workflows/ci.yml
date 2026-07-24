@@ -129,7 +129,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: require a changeset for publishable-package changes
         run: |
-          git fetch origin '${{ github.event.pull_request.base.ref }}' --depth=1
+          # Full history (not --depth=1): changesets needs the merge-base with the base branch.
+          # A shallow base fetch breaks fork PRs (and PRs branched from an older main) with
+          # "Failed to find where HEAD diverged from origin/main". checkout used fetch-depth: 0.
+          git fetch origin '${{ github.event.pull_request.base.ref }}'
           pnpm exec changeset status --since="origin/${{ github.event.pull_request.base.ref }}"
 
   dco:
