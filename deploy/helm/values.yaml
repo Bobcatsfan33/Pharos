@@ -19,10 +19,12 @@ config:
   s3Bucket: pharos-evidence
   s3Region: us-east-1
   s3ForcePathStyle: "true"
-  # NOTE: only local-kms is implemented today; aws-kms is a config enum
-  # placeholder and the API refuses to boot with it. With local-kms you MUST
-  # give the keystore a persistent volume (PHAROS_KMS_KEYSTORE_DIR) — the
-  # keys sign every evidence record.
+  # KMS provider: "local-kms" (default) or "aws-kms" (S3-T1).
+  #  - local-kms: Ed25519 keys in an on-disk keystore. You MUST give the keystore a persistent
+  #    volume (PHAROS_KMS_KEYSTORE_DIR) — these keys sign every evidence record.
+  #  - aws-kms: AWS KMS asymmetric keys (ECC_NIST_P256). Set PHAROS_KMS_AWS_REGION and provide
+  #    credentials via the standard AWS chain (IRSA / instance role / env). No keystore volume
+  #    needed — key material never leaves KMS.
   kmsProvider: local-kms
   allowedOrigins: ""
 

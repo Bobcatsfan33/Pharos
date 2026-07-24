@@ -26,6 +26,10 @@ const ConfigSchema = z.object({
   kms: z.object({
     provider: z.enum(["local-kms", "aws-kms"]).default("local-kms"),
     keystoreDir: z.string().default(".pharos-keystore"),
+    /** AWS region for aws-kms. Credentials come from the standard AWS provider chain. */
+    awsRegion: z.string().default("us-east-1"),
+    /** Optional endpoint override for a KMS emulator (dev/CI); omit for real AWS. */
+    awsEndpoint: z.string().optional(),
   }),
   api: z.object({
     port: z.coerce.number().int().positive().default(4000),
@@ -78,6 +82,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
     kms: {
       provider: env.PHAROS_KMS_PROVIDER,
       keystoreDir: env.PHAROS_KMS_KEYSTORE_DIR,
+      awsRegion: env.PHAROS_KMS_AWS_REGION,
+      awsEndpoint: env.PHAROS_KMS_AWS_ENDPOINT,
     },
     api: {
       port: env.PHAROS_API_PORT,

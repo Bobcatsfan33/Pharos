@@ -56,22 +56,25 @@ realistic concurrency on a documented reference box, deleting the 3.7ms headline
 it appears — roadmap task **S7-T1**. Whether the 800ms envelope holds at target concurrency
 is an open question that task answers.
 
-## 3. Signing uses a local KMS (Ed25519 on disk), not AWS KMS/HSM
+## 3. KMS: the default is local KMS (Ed25519 on disk); AWS KMS is implemented but not yet the default
 
 > **Tracking issue:** [#34](https://github.com/Bobcatsfan33/Pharos/issues/34)
 
-**Today:** the only implemented `SigningProvider` is **local KMS** — Ed25519 keypairs held
-in an on-disk keystore ([`packages/core/src/signing/localKms.ts`](../packages/core/src/signing/localKms.ts)).
-It is behaviourally compatible with a real KMS (sign / verify / public-key / rotate), and key
-material is confined to the keystore. `PHAROS_KMS_PROVIDER=aws-kms` is **a config enum only**:
-the value parses ([`packages/config`](../packages/config/src/index.ts)) but no AWS provider
-exists, and the Helm values say so
-([`deploy/helm/values.yaml`](../deploy/helm/values.yaml)).
+**Today:** an **AWS KMS `SigningProvider` is implemented** (S3-T1,
+[`packages/core/src/signing/awsKms.ts`](../packages/core/src/signing/awsKms.ts)) —
+`ECC_NIST_P256` / `ECDSA_SHA_256` (AWS KMS has no Ed25519), producing `ecdsa-p256` published
+keys that offline verification handles alongside Ed25519. Set `PHAROS_KMS_PROVIDER=aws-kms`
+plus `PHAROS_KMS_AWS_REGION` (credentials from the standard AWS chain). The provider passes
+the shared `SigningProvider` conformance suite and `pnpm demo:durability --verify` runs
+end-to-end under it; the "refuses to boot" placeholder is gone.
 
-**Production:** an AWS KMS asymmetric-key `SigningProvider` (`ECC_NIST_P256` / `ECDSA_SHA_256`,
-since KMS has no Ed25519), with dual-algorithm offline verification, failure-mode policy, and
-a rotation runbook — roadmap tasks **S3-T1, S3-T2, S3-T3** (Vault Transit is the stretch
-**S3-T4**).
+The **default remains `local-kms`** (Ed25519 in an on-disk keystore,
+[`localKms.ts`](../packages/core/src/signing/localKms.ts)) — appropriate for dev and
+self-hosted-without-AWS, but not an HSM boundary.
+
+**Remaining (this phase):** KMS-unreachable failure-mode policy (**S3-T2**) and the
+key-migration / rotation runbook (**S3-T3**); Vault Transit is the stretch **S3-T4**. This
+entry shrinks to "default is local-kms" once those land.
 
 ## 4. Trusted-time anchoring uses a simulated TSA, not a real RFC 3161 authority
 

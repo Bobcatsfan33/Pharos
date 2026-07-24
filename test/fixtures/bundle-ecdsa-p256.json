@@ -1,0 +1,217 @@
+{
+  "tenantId": "fixture-ecdsa-p256",
+  "algorithm": "ecdsa-p256",
+  "records": [
+    {
+      "content": {
+        "schemaVersion": "1.0.0",
+        "id": "a9b157b0-9936-477c-a2d6-3c6ebb33144b",
+        "tenantId": "fixture-ecdsa-p256",
+        "sequence": 0,
+        "action": {
+          "type": "email.send",
+          "agentId": "a1",
+          "payload": {
+            "n": 0
+          },
+          "emittedAt": "2026-01-01T00:00:00.000Z"
+        },
+        "verdict": {
+          "decision": "allow",
+          "tierReached": 1,
+          "ruleCitations": [],
+          "riskScore": 0,
+          "failMode": null,
+          "judgeVersion": null,
+          "latency": {
+            "totalMs": 1,
+            "perTier": {
+              "1": 1
+            },
+            "deadlineMs": 800,
+            "deadlineBreached": false
+          }
+        },
+        "liability": {
+          "mandate": null,
+          "oversightMode": "autonomous",
+          "blastRadius": {
+            "financialAmount": 0,
+            "currency": "USD",
+            "reversibility": "reversible"
+          },
+          "modelMetadata": null
+        },
+        "sealedAt": "2026-01-01T00:00:00.000Z"
+      },
+      "seal": {
+        "contentHash": "c786fa06c9bbe1deff01883b57a45276a72a2e70898ee6a6a8537862db137397",
+        "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "algorithm": "ed25519",
+        "keyId": "fixture:ecdsa-p256#v1",
+        "signature": "MEUCIQCieFVUw0hDwMp6tytg7PTFEKs/1O8JjVXsbNiC8lzuhQIgC5giX3SEou8RpYNYAMBXfqWT59Y73FQ009Nw4IlD5O4=",
+        "sigVersion": 2
+      }
+    },
+    {
+      "content": {
+        "schemaVersion": "1.0.0",
+        "id": "dd631906-7b92-4cda-814a-6a44335f45dd",
+        "tenantId": "fixture-ecdsa-p256",
+        "sequence": 1,
+        "action": {
+          "type": "email.send",
+          "agentId": "a1",
+          "payload": {
+            "n": 1
+          },
+          "emittedAt": "2026-01-01T00:00:00.000Z"
+        },
+        "verdict": {
+          "decision": "allow",
+          "tierReached": 1,
+          "ruleCitations": [],
+          "riskScore": 0,
+          "failMode": null,
+          "judgeVersion": null,
+          "latency": {
+            "totalMs": 1,
+            "perTier": {
+              "1": 1
+            },
+            "deadlineMs": 800,
+            "deadlineBreached": false
+          }
+        },
+        "liability": {
+          "mandate": null,
+          "oversightMode": "autonomous",
+          "blastRadius": {
+            "financialAmount": 0,
+            "currency": "USD",
+            "reversibility": "reversible"
+          },
+          "modelMetadata": null
+        },
+        "sealedAt": "2026-01-01T00:00:00.000Z"
+      },
+      "seal": {
+        "contentHash": "fd62e8f1b8c33e3e20b12ebc39f2c9cbcab136e179c449f8513804865d92c137",
+        "prevHash": "c786fa06c9bbe1deff01883b57a45276a72a2e70898ee6a6a8537862db137397",
+        "algorithm": "ed25519",
+        "keyId": "fixture:ecdsa-p256#v1",
+        "signature": "MEYCIQDilVi9HYoOouAQ2VAEvCGOzXFisHDuWRV44S/36yThYwIhAJxrJW4MtM0WGNkrGJywd1b8vCZSJkUd48hfeO3/rEbh",
+        "sigVersion": 2
+      }
+    },
+    {
+      "content": {
+        "schemaVersion": "1.0.0",
+        "id": "36222769-1086-480f-9472-3f6a3bef204c",
+        "tenantId": "fixture-ecdsa-p256",
+        "sequence": 2,
+        "action": {
+          "type": "email.send",
+          "agentId": "a1",
+          "payload": {
+            "n": 2
+          },
+          "emittedAt": "2026-01-01T00:00:00.000Z"
+        },
+        "verdict": {
+          "decision": "allow",
+          "tierReached": 1,
+          "ruleCitations": [],
+          "riskScore": 0,
+          "failMode": null,
+          "judgeVersion": null,
+          "latency": {
+            "totalMs": 1,
+            "perTier": {
+              "1": 1
+            },
+            "deadlineMs": 800,
+            "deadlineBreached": false
+          }
+        },
+        "liability": {
+          "mandate": null,
+          "oversightMode": "autonomous",
+          "blastRadius": {
+            "financialAmount": 0,
+            "currency": "USD",
+            "reversibility": "reversible"
+          },
+          "modelMetadata": null
+        },
+        "sealedAt": "2026-01-01T00:00:00.000Z"
+      },
+      "seal": {
+        "contentHash": "3c618eff5e62e5422b99d2465b62c1931060d4956103b661e536e53fa18633d1",
+        "prevHash": "fd62e8f1b8c33e3e20b12ebc39f2c9cbcab136e179c449f8513804865d92c137",
+        "algorithm": "ed25519",
+        "keyId": "fixture:ecdsa-p256#v1",
+        "signature": "MEQCIA5G/4rXPPvQqpSxOD6qp7FtaevpCvQudcqBNxPWxfDMAiBnJWYAoCHC7SNaHd54OP39QChzLKYtirbwAqrKDYaQKA==",
+        "sigVersion": 2
+      }
+    },
+    {
+      "content": {
+        "schemaVersion": "1.0.0",
+        "id": "f38f126b-f850-47b3-850f-c5f20813f1bf",
+        "tenantId": "fixture-ecdsa-p256",
+        "sequence": 3,
+        "action": {
+          "type": "email.send",
+          "agentId": "a1",
+          "payload": {
+            "n": 3
+          },
+          "emittedAt": "2026-01-01T00:00:00.000Z"
+        },
+        "verdict": {
+          "decision": "allow",
+          "tierReached": 1,
+          "ruleCitations": [],
+          "riskScore": 0,
+          "failMode": null,
+          "judgeVersion": null,
+          "latency": {
+            "totalMs": 1,
+            "perTier": {
+              "1": 1
+            },
+            "deadlineMs": 800,
+            "deadlineBreached": false
+          }
+        },
+        "liability": {
+          "mandate": null,
+          "oversightMode": "autonomous",
+          "blastRadius": {
+            "financialAmount": 0,
+            "currency": "USD",
+            "reversibility": "reversible"
+          },
+          "modelMetadata": null
+        },
+        "sealedAt": "2026-01-01T00:00:00.000Z"
+      },
+      "seal": {
+        "contentHash": "e683cc41c04c072476d477c4b01e36a44d2ec0b47c2c610c77fdb7929bfff983",
+        "prevHash": "3c618eff5e62e5422b99d2465b62c1931060d4956103b661e536e53fa18633d1",
+        "algorithm": "ed25519",
+        "keyId": "fixture:ecdsa-p256#v1",
+        "signature": "MEYCIQDpvQN92a9AJd+cJtlhH3xFrU2A30k99TRezrwnj0+g4QIhAP7oPob71PMS0cw0wKyEc4TsGKXoCEZyfb1wHgY9db3P",
+        "sigVersion": 2
+      }
+    }
+  ],
+  "keyset": [
+    {
+      "keyId": "fixture:ecdsa-p256#v1",
+      "publicKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqeKKDJXrUVseFJK+O33MOoxti1h1XOmpUvp7GrrpxaM05kBUrRHE3vL6vo3eRjBuZd5KaVV5bRJ20XbWm8wCig==",
+      "algorithm": "ecdsa-p256"
+    }
+  ]
+}
