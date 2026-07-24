@@ -31,10 +31,12 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Build the publishable packages first: their exports point at ./dist, so both the
+      # cross-package typecheck below and `npm publish` need dist to exist.
+      - name: build publishable packages
+        run: pnpm build:publishable
       - name: typecheck
         run: pnpm -r typecheck
-      - name: build SDK
-        run: pnpm --filter @getpharos/sdk build
       # npm trusted publishing (OIDC) needs npm >= 11.5.1; Node 22 ships npm 10.
       - name: upgrade npm for OIDC trusted publishing
         run: npm install -g npm@latest && npm --version

@@ -11,6 +11,7 @@
   },
   "scripts": {
     "build": "pnpm -r --filter=./packages/* --filter=./services/* build",
+    "build:publishable": "pnpm --filter @getpharos/sdk --filter @getpharos/middleware --filter @getpharos/pdp-spec build",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "test:watch": "vitest",

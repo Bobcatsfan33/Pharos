@@ -66,6 +66,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Publishable packages export ./dist; with no tsconfig paths, cross-package typecheck
+      # resolves them via exports, so their dist must exist before `pnpm -r typecheck`.
+      - run: pnpm build:publishable
       - run: pnpm -r typecheck
       - name: test
         run: pnpm exec vitest run --reporter=default --reporter=json --outputFile.json=vitest-report.json
