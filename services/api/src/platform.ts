@@ -7,8 +7,9 @@ import {
   ResilientSigner,
   VerdictEngine,
   type SigningProvider,
+  type PublicKeyEntry,
 } from "@pharos/core";
-import { createTimestamp } from "@pharos/evidence";
+import { LocalTsa, Rfc3161Tsa, type TsaProvider } from "@pharos/evidence";
 import {
   AccessAuditLog,
   ApiKeyStore,
@@ -61,7 +62,9 @@ export interface Platform {
   metrics: MetricsRegistry;
   tracer: Tracer;
   /** Independent timestamp authority (separate keys) for trusted-time anchoring. */
-  tsa: SigningProvider;
+  tsa: TsaProvider;
+  /** Published TSA public keyset (local provider); empty for rfc3161 (tokens self-verify). */
+  tsaKeyset: () => Promise<PublicKeyEntry[]>;
   /** Anchor a tenant's current chain head with a trusted timestamp. */
   anchorHead: (tenantId: string) => Promise<{ sequence: number; headHash: string } | null>;
   tenants: TenantStore;
@@ -92,7 +95,8 @@ export function buildSigner(config: PharosConfig): SigningProvider {
 }
 
 /** The timestamp authority uses an INDEPENDENT keystore so anchors don't trust platform keys. */
-export function buildTsa(config: PharosConfig): SigningProvider {
+/** The signing provider for the simulated (`local`) TSA — an INDEPENDENT keystore/namespace. */
+export function buildTsaSigner(config: PharosConfig): SigningProvider {
   if (config.kms.provider === "aws-kms") {
     // Separate alias namespace so the TSA keyset is isolated from the signing keyset.
     return new AwsKms({
@@ -102,6 +106,28 @@ export function buildTsa(config: PharosConfig): SigningProvider {
     });
   }
   return new LocalKms(new FileKeystore(`${config.kms.keystoreDir}-tsa`));
+}
+
+/** Dev default TSA when PHAROS_TSA_PROVIDER=rfc3161 but no URL is set (FreeTSA). */
+const DEFAULT_FREETSA_URL = "https://freetsa.org/tsr";
+
+/**
+ * Build the trusted-time authority. `rfc3161` is a real TSA (the token is verified offline
+ * against its own certificate, so no keyset is published). `local` is the simulated TSA whose
+ * public keyset IS published for offline verification.
+ */
+export function buildTsaProvider(config: PharosConfig): {
+  tsa: TsaProvider;
+  keyset: () => Promise<PublicKeyEntry[]>;
+} {
+  if (config.tsa.provider === "rfc3161") {
+    return {
+      tsa: new Rfc3161Tsa(config.tsa.url ?? DEFAULT_FREETSA_URL),
+      keyset: async () => [],
+    };
+  }
+  const signer = buildTsaSigner(config);
+  return { tsa: new LocalTsa(signer, `tsa-${config.env}`), keyset: () => signer.publishKeyset() };
 }
 
 export async function buildPlatform(
@@ -118,7 +144,7 @@ export async function buildPlatform(
   const signer = new ResilientSigner(buildSigner(config), {
     onKmsUnavailable: () => metrics.kmsUnavailable.inc(),
   });
-  const tsa = buildTsa(config);
+  const { tsa, keyset: tsaKeyset } = buildTsaProvider(config);
 
   const worm = new WormStore({
     endpoint: config.s3.endpoint,
@@ -182,16 +208,17 @@ export async function buildPlatform(
   const anchorHead = async (tenantId: string) => {
     const head = await store.getHead(tenantId);
     if (!head) return null;
-    const time = new Date().toISOString();
-    const ts = await createTimestamp(tsa, `tsa-${config.env}`, head.hash, time);
+    const ts = await tsa.timestamp(head.hash);
     await evidenceOps.createAnchor({
       id: randomUUID(),
       tenantId,
       sequence: head.sequence,
       headHash: head.hash,
+      provider: ts.provider ?? "local",
       tsaTime: ts.time,
-      tsaSignature: ts.signature,
-      tsaKeyId: ts.keyId,
+      tsaSignature: ts.signature ?? null,
+      tsaKeyId: ts.keyId ?? null,
+      tsaToken: ts.token ?? null,
     });
     return { sequence: head.sequence, headHash: head.hash };
   };
@@ -216,6 +243,7 @@ export async function buildPlatform(
     metrics,
     tracer,
     tsa,
+    tsaKeyset,
     anchorHead,
     tenants,
     apiKeys,

@@ -6,11 +6,22 @@ assembly, regulatory exports, and the scoped exchange portal.
 
 ## Trusted time & anchoring
 
-Chain heads are timestamped and signed by an **independent** timestamp authority (a separate
-keystore standing in for an RFC 3161 TSA + external transparency log;
-[`timestamp.ts`](../packages/evidence/src/timestamp.ts)). Anchors are stored in
-`chain_anchors` and embedded in claims packs. Because the TSA key is not the platform key,
-tamper-evidence does not require trusting Pharos.
+Chain heads are timestamped by an **independent** trusted-time authority. Two providers are
+supported ([`timestamp.ts`](../packages/evidence/src/timestamp.ts)):
+
+- **`rfc3161`** — a real RFC 3161 TSA ([`rfc3161.ts`](../packages/evidence/src/rfc3161.ts)):
+  Pharos builds the `TimeStampReq` over `sha256(head)` (ASN.1 via `pkijs`/`asn1js`, not
+  hand-rolled), POSTs it to a configurable TSA (`PHAROS_TSA_URL`), and stores the full DER
+  `TimeStampToken` verbatim in the anchor. The token carries the TSA's signing certificate, so
+  it **verifies fully offline** — `verifyRfc3161Token` checks the CMS signature against the
+  embedded cert and that the `messageImprint` equals `sha256(head)`. No third-party token is
+  minted by a key Pharos controls, so this carries independent legal weight.
+- **`local`** — a separate keystore key stamps the time (hermetic; the dev/test default). The
+  TSA key is still not the platform key, so tamper-evidence does not require trusting Pharos,
+  but the token is not a third-party RFC 3161 token.
+
+Anchors are stored in `chain_anchors` (provider + DER token) and embedded in claims packs; the
+offline verifier (`scripts/external-verify.ts --bundle`) validates them with no Pharos access.
 
 ## Field-level redaction (selective disclosure)
 

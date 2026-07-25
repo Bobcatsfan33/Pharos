@@ -317,6 +317,18 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE action_records ADD COLUMN IF NOT EXISTS sig_version SMALLINT;
     `,
   },
+  {
+    version: "0010_rfc3161_anchors",
+    sql: /* sql */ `
+      -- Sprint 4: real RFC 3161 anchoring alongside the simulated 'local' TSA.
+      -- tsa_provider distinguishes them; rfc3161 anchors carry a full DER token instead of a
+      -- keyset-verified signature, so tsa_signature/tsa_key_id become nullable.
+      ALTER TABLE chain_anchors ADD COLUMN IF NOT EXISTS tsa_provider TEXT NOT NULL DEFAULT 'local';
+      ALTER TABLE chain_anchors ADD COLUMN IF NOT EXISTS tsa_token TEXT;
+      ALTER TABLE chain_anchors ALTER COLUMN tsa_signature DROP NOT NULL;
+      ALTER TABLE chain_anchors ALTER COLUMN tsa_key_id DROP NOT NULL;
+    `,
+  },
 ];
 
 export async function runMigrations(pool: Pool): Promise<string[]> {
