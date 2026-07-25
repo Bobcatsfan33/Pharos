@@ -34,6 +34,14 @@ weights rather than hand-written patterns, but a linear model over word counts i
 by paraphrase, synonym substitution, translation, or trivial obfuscation** and has near-zero
 adversarial recall. This is the biggest gap in the product.
 
+**Measured (honest baseline):** the eval harness (S5) now quantifies exactly how weak this is —
+see **[docs/benchmarks/judge-evals.md](benchmarks/judge-evals.md)**. PR-AUC 68–77%; clean recall
+58–99%; but **every base64/rot13-obfuscated positive is missed (adversarial recall 0%)**, and on
+two concerns the judge over-flags compliant near-misses (hard-negative FPR up to 83%). Operational
+precision is far below the balanced-eval figure once base rates are applied (e.g. ~0.4% adjusted
+precision at 0.1% prevalence). These are real numbers with 95% intervals and negative-control
+floors — the baseline Sprint 6 must beat at the frozen operating points.
+
 **Production:** transformer judges served on CPU behind the identical cascade interface —
 **gated by an eval harness that must exist first**.
 - Eval harness + adversarial datasets: **S5-T1 … S5-T4** (Phase 2, Sprint 5).

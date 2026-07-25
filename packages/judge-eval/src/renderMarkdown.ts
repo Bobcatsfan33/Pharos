@@ -7,8 +7,11 @@ export interface ReportMeta {
   generatedNote: string;
   operatingPointsHash: string;
   datasetHashes: Record<string, string>;
+  /** Hard-negative share of the clean-negative split, per concern (§7-10(a) composition). */
+  hardNegativeShare: Record<string, number>;
   humanReviewStatus: string;
   generatorIdentity: string;
+  nativeLanguageMethod: string;
   sharedFamilyLimitation: string;
 }
 
@@ -21,16 +24,36 @@ export function renderMarkdown(reports: ConcernReport[], meta: ReportMeta): stri
     "> **Read the base-rate box before any precision number.** Precision on a balanced eval set is *not* operational precision. PR-AUC is the lead ranking metric; ROC-AUC is secondary. All intervals are 95% (Wilson for proportions, seeded stratified bootstrap for derived metrics).\n",
   );
   L.push(`_${meta.generatedNote}_\n`);
+
+  // Headline — lead with the ugly truth: adversarial recall and hard-negative behavior.
+  L.push("## Headline\n");
+  L.push(
+    "Today's Tier-3 judges are linear bag-of-words classifiers. They hold up on clean text but **collapse under trivial obfuscation** — the gap Sprint 6 must close.\n",
+  );
+  L.push("| Concern | PR-AUC (lead) | Clean recall | Hard-neg FPR | Worst adversarial recall |");
+  L.push("|---|---|---|---|---|");
+  for (const r of reports) {
+    const worst = r.adversarial.reduce((m, a) => (a.recall < m.recall ? a : m), r.adversarial[0]!);
+    L.push(
+      `| ${r.concern} | ${pct(r.clean.prAuc)} ${ci(r.clean.prAucCI.lower, r.clean.prAucCI.upper)} | ${pct(r.clean.recall)} | ${pct(r.hardNegatives.falsePositiveRate)} | **${pct(worst.recall)}** (${worst.suite}) |`,
+    );
+  }
+  L.push("");
+
   L.push("## Provenance\n");
   L.push(
     `- **Operating points (frozen):** hash \`${meta.operatingPointsHash.slice(0, 16)}…\` (threshold 0.5 per concern).`,
   );
   L.push(`- **Generator:** ${meta.generatorIdentity}`);
+  L.push(`- **Native-language method:** ${meta.nativeLanguageMethod}`);
   L.push(`- **Human review:** ${meta.humanReviewStatus}`);
   L.push(`- **Shared-generator-family limitation:** ${meta.sharedFamilyLimitation}`);
-  L.push("- **Dataset hashes:**");
-  for (const [c, h] of Object.entries(meta.datasetHashes))
-    L.push(`  - ${c}: \`${h.slice(0, 16)}…\``);
+  L.push("- **Dataset hashes + hard-negative composition:**");
+  for (const [c, h] of Object.entries(meta.datasetHashes)) {
+    const share = meta.hardNegativeShare[c];
+    const shareStr = share === undefined ? "" : ` · hard negatives ${pct(share)}`;
+    L.push(`  - ${c}: \`${h.slice(0, 16)}…\`${shareStr}`);
+  }
   L.push("");
 
   for (const r of reports) {

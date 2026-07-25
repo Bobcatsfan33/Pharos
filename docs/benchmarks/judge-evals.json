@@ -1,0 +1,732 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-07-25T00:00:00.000Z",
+  "operatingPointsHash": "1f934c1990ee6486ddabd638f2c7d722ee772f2b14a1d7aa82786339ce91e85f",
+  "datasetHashes": {
+    "finra-promissory": "aa08cd27d97ff55c308ad928fe5c6e2ccf88a25e2c0b23f0bd0a7e495f746aaa",
+    "phi-in-context": "b4dba716dfcec1fedb3c9781235096eb274e97eabc6d05142c3f23f4f9aa461f",
+    "funds-movement-intent": "b7c38f45933839499f4de54ec86deb3a3f36ec7ee47a8dd427c0a04f4238bdbe"
+  },
+  "reports": [
+    {
+      "concern": "finra-promissory",
+      "scorer": "logistic:finra-promissory",
+      "threshold": 0.5,
+      "operatingPointsHash": "1f934c1990ee6486ddabd638f2c7d722ee772f2b14a1d7aa82786339ce91e85f",
+      "clean": {
+        "positives": 300,
+        "negatives": 300,
+        "prevalence": 0.5,
+        "precision": 0.812206572769953,
+        "precisionCI": {
+          "point": 0.812206572769953,
+          "lower": 0.7544005654978688,
+          "upper": 0.8589507775678384,
+          "n": 213,
+          "confidence": 0.95
+        },
+        "recall": 0.5766666666666667,
+        "recallCI": {
+          "point": 0.5766666666666667,
+          "lower": 0.5201332672229634,
+          "upper": 0.6312614771892728,
+          "n": 300,
+          "confidence": 0.95
+        },
+        "fpr": 0.13333333333333333,
+        "fprCI": {
+          "point": 0.13333333333333333,
+          "lower": 0.09946641683411198,
+          "upper": 0.1764717620638884,
+          "n": 300,
+          "confidence": 0.95
+        },
+        "f1": 0.6744639376218324,
+        "f1CI": {
+          "point": 0.6744639376218324,
+          "lower": 0.6298511701885935,
+          "upper": 0.7225483697882142,
+          "resamples": 1000
+        },
+        "prAuc": 0.7737149588078281,
+        "prAucCI": {
+          "point": 0.7737149588078281,
+          "lower": 0.7334443339086865,
+          "upper": 0.812160326011484,
+          "resamples": 1000
+        },
+        "rocAuc": 0.7543888888888889,
+        "rocAucCI": {
+          "point": 0.7543888888888889,
+          "lower": 0.7171630555555555,
+          "upper": 0.7921791666666667,
+          "resamples": 1000
+        },
+        "ece": 0.0987245970563412,
+        "eceCI": {
+          "point": 0.0987245970563412,
+          "lower": 0.08836678738259536,
+          "upper": 0.14001576934901472,
+          "resamples": 1000
+        }
+      },
+      "hardNegatives": {
+        "count": 270,
+        "falsePositiveRate": 0.14814814814814814,
+        "falsePositiveRateCI": {
+          "point": 0.14814814814814814,
+          "lower": 0.11071998722173283,
+          "upper": 0.19544789247683325,
+          "n": 270,
+          "confidence": 0.95
+        }
+      },
+      "adversarial": [
+        {
+          "suite": "paraphrase",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.45,
+          "recallCI": {
+            "point": 0.45,
+            "lower": 0.34577689184711224,
+            "upper": 0.5588049211064404,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.12666666666666665
+        },
+        {
+          "suite": "synonym",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.625,
+          "recallCI": {
+            "point": 0.625,
+            "lower": 0.5154872546314301,
+            "upper": 0.7230582129846882,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": -0.04833333333333334
+        },
+        {
+          "suite": "leetspeak",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.2,
+          "recallCI": {
+            "point": 0.2,
+            "lower": 0.12702844043960787,
+            "upper": 0.30046243728170835,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.37666666666666665
+        },
+        {
+          "suite": "base64",
+          "lang": "en",
+          "count": 80,
+          "recall": 0,
+          "recallCI": {
+            "point": 0,
+            "lower": 0,
+            "upper": 0.0458181295355271,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.5766666666666667
+        },
+        {
+          "suite": "rot13",
+          "lang": "en",
+          "count": 80,
+          "recall": 0,
+          "recallCI": {
+            "point": 0,
+            "lower": 0,
+            "upper": 0.0458181295355271,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.5766666666666667
+        },
+        {
+          "suite": "sentence-split",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.6,
+          "recallCI": {
+            "point": 0.6,
+            "lower": 0.49045465005160394,
+            "upper": 0.7003817240412905,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": -0.023333333333333317
+        },
+        {
+          "suite": "prompt-injection",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.5375,
+          "recallCI": {
+            "point": 0.5375,
+            "lower": 0.42904357591268794,
+            "upper": 0.6425200643721475,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.03916666666666668
+        },
+        {
+          "suite": "spanish",
+          "lang": "es",
+          "count": 36,
+          "recall": 0.027777777777777776,
+          "recallCI": {
+            "point": 0.027777777777777776,
+            "lower": 0.004920407139810455,
+            "upper": 0.14169718653273855,
+            "n": 36,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.5488888888888889
+        },
+        {
+          "suite": "german",
+          "lang": "de",
+          "count": 38,
+          "recall": 0.05263157894736842,
+          "recallCI": {
+            "point": 0.05263157894736842,
+            "lower": 0.014554208147292417,
+            "upper": 0.17285462131770377,
+            "n": 38,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.5240350877192983
+        }
+      ],
+      "controls": [
+        {
+          "name": "always-positive (majority-class control)",
+          "cleanRecall": 1,
+          "prAuc": 0.5,
+          "rocAuc": 0.5
+        },
+        {
+          "name": "seeded-random",
+          "cleanRecall": 0.5466666666666666,
+          "prAuc": 0.5070113310705875,
+          "rocAuc": 0.5147555555555555
+        }
+      ],
+      "baseRate": {
+        "evalPrevalence": 0.5,
+        "productionPrevalence": null,
+        "productionPrevalenceRationale": "No defensible deployment prevalence yet; scenarios reported instead of implying balanced-eval precision is operational (§7-10(b)).",
+        "adjustedPrecision": null,
+        "scenarios": [
+          {
+            "prevalence": 0.001,
+            "adjustedPrecision": 0.004310667032118207
+          },
+          {
+            "prevalence": 0.01,
+            "adjustedPrecision": 0.04185821437212678
+          },
+          {
+            "prevalence": 0.05,
+            "adjustedPrecision": 0.1854233654876742
+          },
+          {
+            "prevalence": 0.1,
+            "adjustedPrecision": 0.32457786116322707
+          }
+        ]
+      }
+    },
+    {
+      "concern": "phi-in-context",
+      "scorer": "logistic:phi-in-context",
+      "threshold": 0.5,
+      "operatingPointsHash": "1f934c1990ee6486ddabd638f2c7d722ee772f2b14a1d7aa82786339ce91e85f",
+      "clean": {
+        "positives": 300,
+        "negatives": 300,
+        "prevalence": 0.5,
+        "precision": 0.6607142857142857,
+        "precisionCI": {
+          "point": 0.6607142857142857,
+          "lower": 0.6085264367329296,
+          "upper": 0.709268809246704,
+          "n": 336,
+          "confidence": 0.95
+        },
+        "recall": 0.74,
+        "recallCI": {
+          "point": 0.74,
+          "lower": 0.6875519770721528,
+          "upper": 0.7863793967400651,
+          "n": 300,
+          "confidence": 0.95
+        },
+        "fpr": 0.38,
+        "fprCI": {
+          "point": 0.38,
+          "lower": 0.3269187519503734,
+          "upper": 0.43611556114351757,
+          "n": 300,
+          "confidence": 0.95
+        },
+        "f1": 0.6981132075471698,
+        "f1CI": {
+          "point": 0.6981132075471698,
+          "lower": 0.6625189541213062,
+          "upper": 0.7331217300138951,
+          "resamples": 1000
+        },
+        "prAuc": 0.6779780597054857,
+        "prAucCI": {
+          "point": 0.6779780597054857,
+          "lower": 0.6358273151360515,
+          "upper": 0.7224917506748211,
+          "resamples": 1000
+        },
+        "rocAuc": 0.7242888888888889,
+        "rocAucCI": {
+          "point": 0.7242888888888889,
+          "lower": 0.6826141666666667,
+          "upper": 0.7644161111111112,
+          "resamples": 1000
+        },
+        "ece": 0.1527202141862796,
+        "eceCI": {
+          "point": 0.1527202141862796,
+          "lower": 0.12309001605257164,
+          "upper": 0.18906830216660767,
+          "resamples": 1000
+        }
+      },
+      "hardNegatives": {
+        "count": 268,
+        "falsePositiveRate": 0.4253731343283582,
+        "falsePositiveRateCI": {
+          "point": 0.4253731343283582,
+          "lower": 0.3676465465911285,
+          "upper": 0.48520886342054337,
+          "n": 268,
+          "confidence": 0.95
+        }
+      },
+      "adversarial": [
+        {
+          "suite": "paraphrase",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.3,
+          "recallCI": {
+            "point": 0.3,
+            "lower": 0.21064571260081338,
+            "upper": 0.40768153921339734,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.44
+        },
+        {
+          "suite": "synonym",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.7375,
+          "recallCI": {
+            "point": 0.7375,
+            "lower": 0.6318104033557183,
+            "upper": 0.8214259851149064,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.0024999999999999467
+        },
+        {
+          "suite": "leetspeak",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.625,
+          "recallCI": {
+            "point": 0.625,
+            "lower": 0.5154872546314301,
+            "upper": 0.7230582129846882,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.11499999999999999
+        },
+        {
+          "suite": "base64",
+          "lang": "en",
+          "count": 80,
+          "recall": 0,
+          "recallCI": {
+            "point": 0,
+            "lower": 0,
+            "upper": 0.0458181295355271,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.74
+        },
+        {
+          "suite": "rot13",
+          "lang": "en",
+          "count": 80,
+          "recall": 0,
+          "recallCI": {
+            "point": 0,
+            "lower": 0,
+            "upper": 0.0458181295355271,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.74
+        },
+        {
+          "suite": "sentence-split",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.675,
+          "recallCI": {
+            "point": 0.675,
+            "lower": 0.5664052731061472,
+            "upper": 0.7675583815564183,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.06499999999999995
+        },
+        {
+          "suite": "prompt-injection",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.7875,
+          "recallCI": {
+            "point": 0.7875,
+            "lower": 0.6857784426940333,
+            "upper": 0.8628761328230385,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": -0.04749999999999999
+        },
+        {
+          "suite": "spanish",
+          "lang": "es",
+          "count": 36,
+          "recall": 0.8055555555555556,
+          "recallCI": {
+            "point": 0.8055555555555556,
+            "lower": 0.6497195700482262,
+            "upper": 0.9024690458107127,
+            "n": 36,
+            "confidence": 0.95
+          },
+          "degradationVsClean": -0.06555555555555559
+        },
+        {
+          "suite": "german",
+          "lang": "de",
+          "count": 39,
+          "recall": 0.9743589743589743,
+          "recallCI": {
+            "point": 0.9743589743589743,
+            "lower": 0.8681900983014994,
+            "upper": 0.99545929689901,
+            "n": 39,
+            "confidence": 0.95
+          },
+          "degradationVsClean": -0.23435897435897435
+        }
+      ],
+      "controls": [
+        {
+          "name": "always-positive (majority-class control)",
+          "cleanRecall": 1,
+          "prAuc": 0.5,
+          "rocAuc": 0.5
+        },
+        {
+          "name": "seeded-random",
+          "cleanRecall": 0.5066666666666667,
+          "prAuc": 0.5111734089331956,
+          "rocAuc": 0.5126666666666667
+        }
+      ],
+      "baseRate": {
+        "evalPrevalence": 0.5,
+        "productionPrevalence": null,
+        "productionPrevalenceRationale": "No defensible deployment prevalence yet; scenarios reported instead of implying balanced-eval precision is operational (§7-10(b)).",
+        "adjustedPrecision": null,
+        "scenarios": [
+          {
+            "prevalence": 0.001,
+            "adjustedPrecision": 0.0019455252918287936
+          },
+          {
+            "prevalence": 0.01,
+            "adjustedPrecision": 0.01929092805005214
+          },
+          {
+            "prevalence": 0.05,
+            "adjustedPrecision": 0.09296482412060302
+          },
+          {
+            "prevalence": 0.1,
+            "adjustedPrecision": 0.17788461538461536
+          }
+        ]
+      }
+    },
+    {
+      "concern": "funds-movement-intent",
+      "scorer": "logistic:funds-movement-intent",
+      "threshold": 0.5,
+      "operatingPointsHash": "1f934c1990ee6486ddabd638f2c7d722ee772f2b14a1d7aa82786339ce91e85f",
+      "clean": {
+        "positives": 300,
+        "negatives": 300,
+        "prevalence": 0.5,
+        "precision": 0.5498154981549815,
+        "precisionCI": {
+          "point": 0.5498154981549815,
+          "lower": 0.5077266937083234,
+          "upper": 0.5912031312937358,
+          "n": 542,
+          "confidence": 0.95
+        },
+        "recall": 0.9933333333333333,
+        "recallCI": {
+          "point": 0.9933333333333333,
+          "lower": 0.9760224167496929,
+          "upper": 0.9981698516420882,
+          "n": 300,
+          "confidence": 0.95
+        },
+        "fpr": 0.8133333333333334,
+        "fprCI": {
+          "point": 0.8133333333333334,
+          "lower": 0.7653812201652491,
+          "upper": 0.8533625178673686,
+          "n": 300,
+          "confidence": 0.95
+        },
+        "f1": 0.7078384798099762,
+        "f1CI": {
+          "point": 0.7078384798099762,
+          "lower": 0.6970760233918128,
+          "upper": 0.7196149217809867,
+          "resamples": 1000
+        },
+        "prAuc": 0.7180207359194575,
+        "prAucCI": {
+          "point": 0.7180207359194575,
+          "lower": 0.6780438278743861,
+          "upper": 0.7597699882347858,
+          "resamples": 1000
+        },
+        "rocAuc": 0.7209,
+        "rocAucCI": {
+          "point": 0.7209,
+          "lower": 0.6801886111111111,
+          "upper": 0.7607583333333333,
+          "resamples": 1000
+        },
+        "ece": 0.3112760340759255,
+        "eceCI": {
+          "point": 0.3112760340759255,
+          "lower": 0.2972406503765137,
+          "upper": 0.32828696332343105,
+          "resamples": 1000
+        }
+      },
+      "hardNegatives": {
+        "count": 292,
+        "falsePositiveRate": 0.8321917808219178,
+        "falsePositiveRateCI": {
+          "point": 0.8321917808219178,
+          "lower": 0.7850773460231619,
+          "upper": 0.8706792905663736,
+          "n": 292,
+          "confidence": 0.95
+        }
+      },
+      "adversarial": [
+        {
+          "suite": "paraphrase",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.9625,
+          "recallCI": {
+            "point": 0.9625,
+            "lower": 0.8954527990995489,
+            "upper": 0.9871654310800887,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.030833333333333268
+        },
+        {
+          "suite": "synonym",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.9125,
+          "recallCI": {
+            "point": 0.9125,
+            "lower": 0.8302320449152499,
+            "upper": 0.95696799821794,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.08083333333333331
+        },
+        {
+          "suite": "leetspeak",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.025,
+          "recallCI": {
+            "point": 0.025,
+            "lower": 0.006882893202970645,
+            "upper": 0.0866443298557801,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.9683333333333333
+        },
+        {
+          "suite": "base64",
+          "lang": "en",
+          "count": 80,
+          "recall": 0,
+          "recallCI": {
+            "point": 0,
+            "lower": 0,
+            "upper": 0.0458181295355271,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.9933333333333333
+        },
+        {
+          "suite": "rot13",
+          "lang": "en",
+          "count": 80,
+          "recall": 0,
+          "recallCI": {
+            "point": 0,
+            "lower": 0,
+            "upper": 0.0458181295355271,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.9933333333333333
+        },
+        {
+          "suite": "sentence-split",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.9125,
+          "recallCI": {
+            "point": 0.9125,
+            "lower": 0.8302320449152499,
+            "upper": 0.95696799821794,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.08083333333333331
+        },
+        {
+          "suite": "prompt-injection",
+          "lang": "en",
+          "count": 80,
+          "recall": 0.9625,
+          "recallCI": {
+            "point": 0.9625,
+            "lower": 0.8954527990995489,
+            "upper": 0.9871654310800887,
+            "n": 80,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.030833333333333268
+        },
+        {
+          "suite": "spanish",
+          "lang": "es",
+          "count": 36,
+          "recall": 0.5833333333333334,
+          "recallCI": {
+            "point": 0.5833333333333334,
+            "lower": 0.42200251574871667,
+            "upper": 0.7285943794855395,
+            "n": 36,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.4099999999999999
+        },
+        {
+          "suite": "german",
+          "lang": "de",
+          "count": 36,
+          "recall": 0.9166666666666666,
+          "recallCI": {
+            "point": 0.9166666666666666,
+            "lower": 0.7817330875072737,
+            "upper": 0.9712513886640065,
+            "n": 36,
+            "confidence": 0.95
+          },
+          "degradationVsClean": 0.07666666666666666
+        }
+      ],
+      "controls": [
+        {
+          "name": "always-positive (majority-class control)",
+          "cleanRecall": 1,
+          "prAuc": 0.5,
+          "rocAuc": 0.5
+        },
+        {
+          "name": "seeded-random",
+          "cleanRecall": 0.5033333333333333,
+          "prAuc": 0.5286405422583074,
+          "rocAuc": 0.5126777777777778
+        }
+      ],
+      "baseRate": {
+        "evalPrevalence": 0.5,
+        "productionPrevalence": null,
+        "productionPrevalenceRationale": "No defensible deployment prevalence yet; scenarios reported instead of implying balanced-eval precision is operational (§7-10(b)).",
+        "adjustedPrecision": null,
+        "scenarios": [
+          {
+            "prevalence": 0.001,
+            "adjustedPrecision": 0.0012210412449703753
+          },
+          {
+            "prevalence": 0.01,
+            "adjustedPrecision": 0.012186145415882883
+          },
+          {
+            "prevalence": 0.05,
+            "adjustedPrecision": 0.06039724361572761
+          },
+          {
+            "prevalence": 0.1,
+            "adjustedPrecision": 0.1194867682437851
+          }
+        ]
+      }
+    }
+  ]
+}
