@@ -130,6 +130,9 @@ importers:
 
   packages/judge-eval:
     dependencies:
+      '@pharos/assurance':
+        specifier: workspace:*
+        version: link:../assurance
       '@pharos/core':
         specifier: workspace:*
         version: link:../core

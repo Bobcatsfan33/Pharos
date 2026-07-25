@@ -16,6 +16,7 @@
     "generate": "tsx scripts/generate.ts"
   },
   "dependencies": {
+    "@pharos/assurance": "workspace:*",
     "@pharos/core": "workspace:*",
     "@pharos/judge": "workspace:*"
   }
