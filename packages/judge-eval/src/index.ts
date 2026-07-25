@@ -51,3 +51,18 @@ export {
   type ControlMetrics,
 } from "./report.js";
 export { renderMarkdown, type ReportMeta } from "./renderMarkdown.js";
+export {
+  runGate,
+  gateConcern,
+  loadTolerances,
+  loadBaselineLock,
+  validateBaselineLock,
+  artifactHash,
+  baselineModelsDir,
+  renderGateDiff,
+  type GateResult,
+  type MetricVerdict,
+  type Tolerances,
+  type BaselineLock,
+  type Direction,
+} from "./gate.js";
