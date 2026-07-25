@@ -16,9 +16,15 @@ export interface ChainAnchor {
   tenantId: string;
   sequence: number;
   headHash: string;
+  /** Trusted-time authority: `local` (simulated) or `rfc3161` (real TSA). Absent ⇒ legacy local. */
+  provider: "local" | "rfc3161";
   tsaTime: string;
-  tsaSignature: string;
-  tsaKeyId: string;
+  // local provider:
+  tsaSignature: string | null;
+  tsaKeyId: string | null;
+  // rfc3161 provider:
+  /** Base64 DER RFC 3161 TimeStampToken (self-verifiable). */
+  tsaToken: string | null;
 }
 
 export interface ClaimsPackRow {
@@ -109,16 +115,19 @@ export class EvidenceOpsStore {
   // --- Trusted-time anchors ---
   async createAnchor(input: ChainAnchor): Promise<void> {
     await this.pool.query(
-      `INSERT INTO chain_anchors (id, tenant_id, sequence, head_hash, tsa_time, tsa_signature, tsa_key_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      `INSERT INTO chain_anchors
+         (id, tenant_id, sequence, head_hash, tsa_provider, tsa_time, tsa_signature, tsa_key_id, tsa_token)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
       [
         input.id,
         input.tenantId,
         input.sequence,
         input.headHash,
+        input.provider,
         input.tsaTime,
         input.tsaSignature,
         input.tsaKeyId,
+        input.tsaToken,
       ],
     );
   }
@@ -133,9 +142,12 @@ export class EvidenceOpsStore {
       tenantId: r.tenant_id as string,
       sequence: Number(r.sequence),
       headHash: r.head_hash as string,
+      // Legacy rows (pre-Sprint-4) have no provider column value ⇒ they are local.
+      provider: ((r.tsa_provider as string) ?? "local") as "local" | "rfc3161",
       tsaTime: r.tsa_time as string,
-      tsaSignature: r.tsa_signature as string,
-      tsaKeyId: r.tsa_key_id as string,
+      tsaSignature: (r.tsa_signature as string) ?? null,
+      tsaKeyId: (r.tsa_key_id as string) ?? null,
+      tsaToken: (r.tsa_token as string) ?? null,
     }));
   }
 

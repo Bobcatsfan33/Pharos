@@ -31,6 +31,12 @@ const ConfigSchema = z.object({
     /** Optional endpoint override for a KMS emulator (dev/CI); omit for real AWS. */
     awsEndpoint: z.string().optional(),
   }),
+  tsa: z.object({
+    /** Trusted-time authority: `local` (simulated, hermetic) or `rfc3161` (a real TSA). */
+    provider: z.enum(["local", "rfc3161"]).default("local"),
+    /** RFC 3161 TSA endpoint (rfc3161 only). Dev default FreeTSA; DigiCert/Sectigo in prod. */
+    url: z.string().optional(),
+  }),
   api: z.object({
     port: z.coerce.number().int().positive().default(4000),
     verdictDeadlineMs: z.coerce.number().int().positive().default(800),
@@ -84,6 +90,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
       keystoreDir: env.PHAROS_KMS_KEYSTORE_DIR,
       awsRegion: env.PHAROS_KMS_AWS_REGION,
       awsEndpoint: env.PHAROS_KMS_AWS_ENDPOINT,
+    },
+    tsa: {
+      provider: env.PHAROS_TSA_PROVIDER,
+      url: env.PHAROS_TSA_URL,
     },
     api: {
       port: env.PHAROS_API_PORT,

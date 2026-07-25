@@ -76,21 +76,22 @@ self-hosted-without-AWS, but not an HSM boundary.
 key-migration / rotation runbook (**S3-T3**); Vault Transit is the stretch **S3-T4**. This
 entry shrinks to "default is local-kms" once those land.
 
-## 4. Trusted-time anchoring uses a simulated TSA, not a real RFC 3161 authority
+## 4. Trusted-time anchoring: real RFC 3161 supported; `local` is the default for hermetic dev
 
 > **Tracking issue:** [#35](https://github.com/Bobcatsfan33/Pharos/issues/35)
 
-**Today:** each chain head is timestamped and signed by an **independent signing key that
-stands in for an RFC 3161 timestamp authority** — a simulated TSA
-([`packages/evidence/src/timestamp.ts`](../packages/evidence/src/timestamp.ts), whose own
-comment says so). The tamper-evidence property (an anchor signed by a key Pharos does not
-control) is real in design, but the token is **not** a real RFC 3161 token from a third-party
-TSA, so it carries no independent legal weight today.
+**Today (S4-T1 landed):** anchoring supports a **real RFC 3161 TSA**
+([`packages/evidence/src/rfc3161.ts`](../packages/evidence/src/rfc3161.ts)) selected via
+`PHAROS_TSA_PROVIDER=rfc3161` + `PHAROS_TSA_URL`. Pharos builds the `TimeStampReq` (DER/ASN.1
+via `pkijs`/`asn1js`, not hand-rolled), stores the full DER `TimeStampToken`, and the token
+**verifies fully offline** against its embedded TSA certificate — a third-party token that
+carries independent legal weight. The default provider is still **`local`** (a simulated TSA:
+a separate key stamps the time), which keeps CI and local dev hermetic; a `local` token is not
+a third-party RFC 3161 token and carries no independent legal weight.
 
-**Production:** a real RFC 3161 client — build the `TimeStampReq` (DER/ASN.1 via `pkijs`),
-POST to a configurable TSA, verify the response against the TSA cert chain, store the full
-DER token, and validate it in the offline verifier; keep the simulated TSA as a `local`
-provider for hermetic tests — roadmap task **S4-T1** (scheduled anchoring service: **S4-T2**).
+**Remaining:** the default deployment ships `local`; operators must configure a production TSA
+(DigiCert/Sectigo) to get third-party weight. Scheduled per-tenant anchoring, chain-view
+surfacing, and missing-anchor gap warnings are roadmap task **S4-T2**.
 
 ## 5. The policy compiler is a constrained-grammar compiler (v1), not a natural-language compiler
 

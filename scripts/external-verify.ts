@@ -15,13 +15,23 @@
  *     tsx scripts/external-verify.ts <tenantId> [apiBaseUrl]
  */
 import { readFileSync } from "node:fs";
-import { verifyChain, type ActionRecord, type PublicKeyEntry } from "../packages/core/src/index.js";
+import {
+  verifyChain,
+  keysetVerifier,
+  type ActionRecord,
+  type PublicKeyEntry,
+} from "../packages/core/src/index.js";
+import { verifyTimestamp, type TrustedTimestamp } from "../packages/evidence/src/index.js";
 
 type EvidenceBundle = {
   tenantId?: string;
   records: ActionRecord[];
   keyset?: PublicKeyEntry[];
   keys?: PublicKeyEntry[];
+  /** Trusted-time anchors over chain heads (local-signed or RFC 3161 tokens). */
+  anchors?: TrustedTimestamp[];
+  /** Published TSA public keys (for `local` anchors; rfc3161 tokens self-verify). */
+  tsaKeyset?: PublicKeyEntry[];
 };
 
 const args = process.argv.slice(2);
@@ -58,6 +68,8 @@ function readBundle(path: string): {
   tenantId: string;
   records: ActionRecord[];
   keys: PublicKeyEntry[];
+  anchors: TrustedTimestamp[];
+  tsaKeys: PublicKeyEntry[];
 } {
   const bundle = JSON.parse(readFileSync(path, "utf8")) as EvidenceBundle;
   const keys = bundle.keyset ?? bundle.keys;
@@ -71,10 +83,45 @@ function readBundle(path: string): {
     tenantId: bundle.tenantId ?? bundle.records[0]!.content.tenantId,
     records: bundle.records,
     keys,
+    anchors: bundle.anchors ?? [],
+    tsaKeys: bundle.tsaKeyset ?? [],
   };
 }
 
-function printReport(records: ActionRecord[], keys: PublicKeyEntry[]): void {
+/** Verify trusted-time anchors offline: local anchors against the TSA keyset, rfc3161 tokens
+ *  against their own embedded cert. Reports and fails on any invalid or unanchored-head case. */
+function verifyAnchors(
+  anchors: TrustedTimestamp[],
+  tsaKeys: PublicKeyEntry[],
+  headHash: string,
+): boolean {
+  if (anchors.length === 0) return true; // anchors are optional in a bundle
+  const verifyTsa = keysetVerifier(tsaKeys);
+  let headAnchored = false;
+  let allOk = true;
+  for (const a of anchors) {
+    const ok = verifyTimestamp(a, verifyTsa);
+    const kind = a.provider ?? "local";
+    console.log(
+      `  ${ok ? "OK " : "BAD"} anchor [${kind}] ${a.hash.slice(0, 12)}… @ ${a.time}` +
+        (a.hash === headHash ? "  (head)" : ""),
+    );
+    if (!ok) allOk = false;
+    if (ok && a.hash === headHash) headAnchored = true;
+  }
+  if (!headAnchored) {
+    console.error("  BAD no valid anchor covers the head record");
+    allOk = false;
+  }
+  return allOk;
+}
+
+function printReport(
+  records: ActionRecord[],
+  keys: PublicKeyEntry[],
+  anchors: TrustedTimestamp[] = [],
+  tsaKeys: PublicKeyEntry[] = [],
+): void {
   console.log(
     `Verifying ${records.length} records with @pharos/core ONLY (no DB, no signer, no platform calls)...\n`,
   );
@@ -93,6 +140,16 @@ function printReport(records: ActionRecord[], keys: PublicKeyEntry[]): void {
     console.error("Errors:", report.errors);
     process.exit(1);
   }
+
+  if (anchors.length > 0) {
+    const headHash = records[records.length - 1]!.seal.contentHash;
+    console.log(`\nTrusted-time anchors (${anchors.length}):`);
+    const anchorsOk = verifyAnchors(anchors, tsaKeys, headHash);
+    console.log(
+      `\nAnchor verification: ${anchorsOk ? "PASS - head existed before the stamped time" : "FAIL"}`,
+    );
+    if (!anchorsOk) process.exit(1);
+  }
   console.log("");
 }
 
@@ -101,7 +158,7 @@ async function main(): Promise<void> {
     if (!bundlePath) throw new Error("--bundle requires a path");
     const bundle = readBundle(bundlePath);
     console.log(`\n=== Offline evidence bundle verification for tenant "${bundle.tenantId}" ===`);
-    printReport(bundle.records, bundle.keys);
+    printReport(bundle.records, bundle.keys, bundle.anchors, bundle.tsaKeys);
     return;
   }
 

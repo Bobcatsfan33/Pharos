@@ -4,7 +4,6 @@ import { z } from "zod";
 import {
   assembleClaimsPack,
   verifyClaimsPack,
-  createTimestamp,
   generateRegulatoryExport,
   type Audience,
   type RegulatoryFormat,
@@ -156,20 +155,17 @@ export function registerSealRoutes(app: FastifyInstance, platform: Platform): vo
 
       // Anchor the pack's head with the independent TSA so the bundle proves its head's time.
       const headHash = records[records.length - 1]!.record.seal.contentHash;
-      const ts = await createTimestamp(
-        platform.tsa,
-        `tsa-${platform.config.env}`,
-        headHash,
-        new Date().toISOString(),
-      );
+      const ts = await platform.tsa.timestamp(headHash);
       await platform.evidenceOps.createAnchor({
         id: randomUUID(),
         tenantId,
         sequence: pack.toSequence,
         headHash,
+        provider: ts.provider ?? "local",
         tsaTime: ts.time,
-        tsaSignature: ts.signature,
-        tsaKeyId: ts.keyId,
+        tsaSignature: ts.signature ?? null,
+        tsaKeyId: ts.keyId ?? null,
+        tsaToken: ts.token ?? null,
       });
 
       const bundle = assembleClaimsPack({
@@ -182,7 +178,7 @@ export function registerSealRoutes(app: FastifyInstance, platform: Platform): vo
         redactFields: pack.redactFields,
         records,
         keyset: await platform.signer.publishKeyset(),
-        tsaKeyset: await platform.tsa.publishKeyset(),
+        tsaKeyset: await platform.tsaKeyset(),
         anchors: [ts],
         sealedBy: principal.subject,
         sealedAt: new Date().toISOString(),
