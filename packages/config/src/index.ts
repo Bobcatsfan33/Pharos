@@ -36,6 +36,8 @@ const ConfigSchema = z.object({
     provider: z.enum(["local", "rfc3161"]).default("local"),
     /** RFC 3161 TSA endpoint (rfc3161 only). Dev default FreeTSA; DigiCert/Sectigo in prod. */
     url: z.string().optional(),
+    /** Scheduled anchoring interval (ms). Default 1h. 0 disables the background scheduler. */
+    intervalMs: z.coerce.number().int().min(0).default(3_600_000),
   }),
   api: z.object({
     port: z.coerce.number().int().positive().default(4000),
@@ -94,6 +96,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
     tsa: {
       provider: env.PHAROS_TSA_PROVIDER,
       url: env.PHAROS_TSA_URL,
+      intervalMs: env.PHAROS_TSA_ANCHOR_INTERVAL_MS,
     },
     api: {
       port: env.PHAROS_API_PORT,

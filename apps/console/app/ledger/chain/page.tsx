@@ -6,6 +6,13 @@ interface ChainVerification {
   recordsChecked: number;
   firstBrokenSequence: number | null;
   errors: string[];
+  warnings?: string[];
+  anchoring?: {
+    headSequence: number | null;
+    latestAnchorSequence: number | null;
+    latestAnchorTime: string | null;
+    headAnchored: boolean;
+  };
 }
 
 export default async function ChainPage() {
@@ -45,6 +52,34 @@ export default async function ChainPage() {
             <ul style={{ color: "#fca5a5", fontSize: 13, marginTop: 8 }}>
               {report.errors.map((e, i) => (
                 <li key={i}>{e}</li>
+              ))}
+            </ul>
+          )}
+          {report.anchoring && (
+            <div style={{ color: "#9ca3af", marginTop: 10, fontSize: 13 }}>
+              Trusted-time anchor:{" "}
+              {report.anchoring.latestAnchorSequence === null ? (
+                <span style={{ color: "#fbbf24" }}>none yet</span>
+              ) : (
+                <>
+                  covers sequence {report.anchoring.latestAnchorSequence}
+                  {report.anchoring.latestAnchorTime && (
+                    <> · {new Date(report.anchoring.latestAnchorTime).toISOString()}</>
+                  )}{" "}
+                  ·{" "}
+                  {report.anchoring.headAnchored ? (
+                    <span style={{ color: "#34d399" }}>head anchored</span>
+                  ) : (
+                    <span style={{ color: "#fbbf24" }}>head not yet anchored</span>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+          {report.warnings && report.warnings.length > 0 && (
+            <ul style={{ color: "#fcd34d", fontSize: 13, marginTop: 8 }}>
+              {report.warnings.map((w, i) => (
+                <li key={i}>⚠ {w}</li>
               ))}
             </ul>
           )}
