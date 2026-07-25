@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0.0",
+  "frozenAt": "2026-07-25T00:00:00.000Z",
+  "note": "Frozen decision thresholds per concern (roadmap §7-10(e)). These match today's served logistic artifacts (threshold 0.5). Baseline and every successor are compared AT these points. Changing a threshold is a separately reviewed product decision with a new baseline — it is not a way to win an eval.",
+  "thresholds": {
+    "finra-promissory": 0.5,
+    "phi-in-context": 0.5,
+    "funds-movement-intent": 0.5
+  }
+}
