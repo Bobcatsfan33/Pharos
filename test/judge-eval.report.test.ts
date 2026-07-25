@@ -93,8 +93,10 @@ describe("evaluateConcern (real logistic judge, frozen threshold)", () => {
       generatedNote: "test",
       operatingPointsHash: op.hash,
       datasetHashes: { "funds-movement-intent": "abc" },
+      hardNegativeShare: { "funds-movement-intent": 0.97 },
       humanReviewStatus: "pending-qualified-review",
       generatorIdentity: "test",
+      nativeLanguageMethod: "test",
       sharedFamilyLimitation: "test",
     });
     expect(md).toContain("Base-rate box");
