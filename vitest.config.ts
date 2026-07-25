@@ -10,6 +10,7 @@ export default defineConfig({
       "@pharos/config": r("./packages/config/src/index.ts"),
       "@pharos/identity": r("./packages/identity/src/index.ts"),
       "@pharos/judge": r("./packages/judge/src/index.ts"),
+      "@pharos/judge-eval": r("./packages/judge-eval/src/index.ts"),
       "@pharos/cascade": r("./packages/cascade/src/index.ts"),
       "@pharos/evidence": r("./packages/evidence/src/index.ts"),
       "@pharos/policy": r("./packages/policy/src/index.ts"),

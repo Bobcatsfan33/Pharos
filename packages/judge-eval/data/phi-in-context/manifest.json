@@ -1,0 +1,158 @@
+{
+  "schemaVersion": "1.0.0",
+  "concern": "phi-in-context",
+  "seed": 10239310,
+  "generator": {
+    "kind": "template-expansion",
+    "author": "Pharos engineering (S5-T1)",
+    "generatedAt": "2026-07-25T00:00:00.000Z",
+    "note": "Deterministic template + slot expansion; labels are template properties grounded in cited authority (see sources), not model-inferred. Committed JSON + hashes are authoritative (§7-10(f)); regeneration is deterministic given this seed but is provenance, not a bit-identical promise."
+  },
+  "sources": {
+    "hipaa-phi": "HIPAA Privacy Rule, 45 CFR §160.103: PHI is individually identifiable health information — health data tied to one of the 18 identifiers (name, MRN, SSN, DOB, address, etc.).",
+    "hipaa-safeharbor": "HIPAA de-identification Safe Harbor, 45 CFR §164.514(b)(2): removal of the 18 identifiers renders data not individually identifiable; such data is not PHI.",
+    "hipaa-no-identifier": "45 CFR §160.103: health information with no identifier and no reasonable basis to identify the individual is not individually identifiable.",
+    "hipaa-identifier-only": "45 CFR §160.103: identifiers alone (name/address) without health information are not health information / PHI.",
+    "synthetic": "Explicitly synthetic/test/fictional data carries no real individual's information; treated as non-PHI when clearly labeled.",
+    "unrelated": "Non-health operational correspondence; no health information present."
+  },
+  "taxonomy": {
+    "concern": "phi-in-context",
+    "minHardNegativeFraction": 0.6,
+    "classes": [
+      {
+        "id": "deidentified",
+        "description": "De-identified / Safe-Harbor: aggregate or identifier-stripped health data.",
+        "target": 45
+      },
+      {
+        "id": "synthetic",
+        "description": "Explicitly synthetic/test/fictional health records.",
+        "target": 45
+      },
+      {
+        "id": "identifier-only",
+        "description": "Identifiers (name/address) with NO health information.",
+        "target": 45
+      },
+      {
+        "id": "health-no-identifier",
+        "description": "Health/condition info with NO identifier.",
+        "target": 45
+      }
+    ]
+  },
+  "splits": [
+    {
+      "suite": "clean-positive",
+      "lang": "en",
+      "file": "clean-positive.en.json",
+      "count": 300,
+      "positives": 300,
+      "hardNegatives": 0,
+      "contentHash": "a8ccbc372152369ef27a494ba5195cd91022204a1a8a6f63a1d34509d65ed773"
+    },
+    {
+      "suite": "clean-negative",
+      "lang": "en",
+      "file": "clean-negative.en.json",
+      "count": 300,
+      "positives": 0,
+      "hardNegatives": 268,
+      "contentHash": "6a572a63df32868cf1f9ab162ef334ea96fc16930d48b1f974be5c3832f7e95b"
+    },
+    {
+      "suite": "paraphrase",
+      "lang": "en",
+      "file": "paraphrase.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "dba128973ff221cefa16c1c3ddb9ce103dfcdb2f7ee499f9e2fc8bffa3f5562e"
+    },
+    {
+      "suite": "synonym",
+      "lang": "en",
+      "file": "synonym.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "b058fb346eb7cd6900aa67ab8fe512bb8e56c74625d30a18a8a72d8230f2fd54"
+    },
+    {
+      "suite": "leetspeak",
+      "lang": "en",
+      "file": "leetspeak.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "d19fc903954ef8122e02c1e3bdd1612d93731b12f16c4ee09f61f0b61211b09d"
+    },
+    {
+      "suite": "base64",
+      "lang": "en",
+      "file": "base64.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "d3e1eb667eae090ff42c96e64e0d26ee908ff74b9cd7d8f363504f58fa86449c"
+    },
+    {
+      "suite": "rot13",
+      "lang": "en",
+      "file": "rot13.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "e75da1749d028a665243d4ccb8d0a6cd65e0adc54ae277c1024008038cc20b6d"
+    },
+    {
+      "suite": "sentence-split",
+      "lang": "en",
+      "file": "sentence-split.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "fddbcc356357d38694286f16bfae54dcefd1c24f99fc16f55a4d6660ca377e0d"
+    },
+    {
+      "suite": "prompt-injection",
+      "lang": "en",
+      "file": "prompt-injection.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "db3f3193bf17a140af7bf641ed00fd7a488826142c58ea3d6dac5dd47486aad1"
+    },
+    {
+      "suite": "spanish",
+      "lang": "es",
+      "file": "spanish.es.json",
+      "count": 60,
+      "positives": 36,
+      "hardNegatives": 23,
+      "contentHash": "28890117bc88df308e064cd989cb680c21af2e0f77ca83c6bd5f5f61f92b4383"
+    },
+    {
+      "suite": "german",
+      "lang": "de",
+      "file": "german.de.json",
+      "count": 60,
+      "positives": 39,
+      "hardNegatives": 20,
+      "contentHash": "44e973ef8bdaf4a64d4e4c6392515add6c68e1b2a7b7a463dc78a0ee7570f1ac"
+    }
+  ],
+  "humanReview": {
+    "status": "pending-qualified-review",
+    "reviewer": null,
+    "qualification": null,
+    "reviewedAt": null,
+    "sampleMethod": "Deterministic stratified 10% sample across concern×label×suite×language, selected by seeded index (see scripts/sample-review.ts).",
+    "fractionReviewed": 0,
+    "corrections": 0,
+    "agreementRate": null,
+    "notes": "Engineer authored templates from cited regulatory sources; qualified compliance-literate review is an outstanding human gate (§7-10(a))."
+  },
+  "datasetHash": "b4dba716dfcec1fedb3c9781235096eb274e97eabc6d05142c3f23f4f9aa461f"
+}

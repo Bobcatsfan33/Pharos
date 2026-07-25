@@ -128,6 +128,15 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/judge-eval:
+    dependencies:
+      '@pharos/core':
+        specifier: workspace:*
+        version: link:../core
+      '@pharos/judge':
+        specifier: workspace:*
+        version: link:../judge
+
   packages/middleware:
     dependencies:
       '@getpharos/sdk':

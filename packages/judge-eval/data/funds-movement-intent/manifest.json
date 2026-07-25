@@ -1,0 +1,164 @@
+{
+  "schemaVersion": "1.0.0",
+  "concern": "funds-movement-intent",
+  "seed": 8022876,
+  "generator": {
+    "kind": "template-expansion",
+    "author": "Pharos engineering (S5-T1)",
+    "generatedAt": "2026-07-25T00:00:00.000Z",
+    "note": "Deterministic template + slot expansion; labels are template properties grounded in cited authority (see sources), not model-inferred. Committed JSON + hashes are authoritative (§7-10(f)); regeneration is deterministic given this seed but is provenance, not a bit-identical promise."
+  },
+  "sources": {
+    "intent-executable": "Payment-operations control principle: an instruction that directs an immediate transfer of funds (wire/ACH/payment 'now') is executable movement intent.",
+    "sr11-7-control": "SR 11-7 (model risk management) control framing: distinguish an actionable instruction from a report/observation; only the former triggers a funds-movement control.",
+    "report-not-intent": "Balance/reporting statements describe state, not an instruction to move funds; no executable intent.",
+    "conditional-not-intent": "Hypothetical/conditional statements ('if approved, we would…') are not an executable instruction.",
+    "cancelled-not-intent": "Cancelled/failed/reversed transfers describe a non-occurring movement; no executable intent now.",
+    "historical-not-intent": "Past-tense references to completed transfers are historical facts, not a new instruction.",
+    "unrelated": "Non-financial operational correspondence; no funds referenced."
+  },
+  "taxonomy": {
+    "concern": "funds-movement-intent",
+    "minHardNegativeFraction": 0.6,
+    "classes": [
+      {
+        "id": "balance-reporting",
+        "description": "Balance/reporting statements about money, no instruction.",
+        "target": 40
+      },
+      {
+        "id": "conditional",
+        "description": "Hypothetical/conditional 'if approved, we would transfer'.",
+        "target": 40
+      },
+      {
+        "id": "cancelled",
+        "description": "Cancelled/failed/reversed transfers.",
+        "target": 40
+      },
+      {
+        "id": "historical",
+        "description": "Past-tense completed transfers (historical).",
+        "target": 40
+      },
+      {
+        "id": "info-request",
+        "description": "Requests for information about transfers, no instruction.",
+        "target": 20
+      }
+    ]
+  },
+  "splits": [
+    {
+      "suite": "clean-positive",
+      "lang": "en",
+      "file": "clean-positive.en.json",
+      "count": 300,
+      "positives": 300,
+      "hardNegatives": 0,
+      "contentHash": "fb1d6268d8e9c9898b572de06b5755f4c27dc922958688e0ceec3d9eb59af7c1"
+    },
+    {
+      "suite": "clean-negative",
+      "lang": "en",
+      "file": "clean-negative.en.json",
+      "count": 300,
+      "positives": 0,
+      "hardNegatives": 292,
+      "contentHash": "076b343c341ff1709c3716556fe8ffb6f5933c862107448b4ec76254f78281e2"
+    },
+    {
+      "suite": "paraphrase",
+      "lang": "en",
+      "file": "paraphrase.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "bf665647495f2f8a119163064d4ddd956410e96d30ad38f1328f17877f0174ac"
+    },
+    {
+      "suite": "synonym",
+      "lang": "en",
+      "file": "synonym.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "0904f60cf2918f213d54faabcdd7c27d52b5df24a24e23014ccd15087d95f67e"
+    },
+    {
+      "suite": "leetspeak",
+      "lang": "en",
+      "file": "leetspeak.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "6a8b941b82155aae9fe06a5bc0f429a492740c58520ca4456bcade76d907f951"
+    },
+    {
+      "suite": "base64",
+      "lang": "en",
+      "file": "base64.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "05f94467f3f21e53b53d269ae74a7b55ae41400123a558fafed6986e714b7300"
+    },
+    {
+      "suite": "rot13",
+      "lang": "en",
+      "file": "rot13.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "f361226d69f5e1cdb727d2213ec05f9b450504b2d99d061787186f3f8f541e81"
+    },
+    {
+      "suite": "sentence-split",
+      "lang": "en",
+      "file": "sentence-split.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "8bd214fa5598bf8a1ebe99c43f3f37fc0d22da1341d1e957fa46b4a4146d9f16"
+    },
+    {
+      "suite": "prompt-injection",
+      "lang": "en",
+      "file": "prompt-injection.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "090e15e8c3011817441d37b3356ea068656c0b3b244c7db65f03f4ba8215f4c5"
+    },
+    {
+      "suite": "spanish",
+      "lang": "es",
+      "file": "spanish.es.json",
+      "count": 60,
+      "positives": 36,
+      "hardNegatives": 23,
+      "contentHash": "3a673b1c5db58e86c27cdd434a34ba73bc8724d7aa1441664dbc15b254a0aa0a"
+    },
+    {
+      "suite": "german",
+      "lang": "de",
+      "file": "german.de.json",
+      "count": 60,
+      "positives": 36,
+      "hardNegatives": 23,
+      "contentHash": "67218d700caa9910af657bb37feae69878e033347cd124a141da8551d35fa09a"
+    }
+  ],
+  "humanReview": {
+    "status": "pending-qualified-review",
+    "reviewer": null,
+    "qualification": null,
+    "reviewedAt": null,
+    "sampleMethod": "Deterministic stratified 10% sample across concern×label×suite×language, selected by seeded index (see scripts/sample-review.ts).",
+    "fractionReviewed": 0,
+    "corrections": 0,
+    "agreementRate": null,
+    "notes": "Engineer authored templates from cited regulatory sources; qualified compliance-literate review is an outstanding human gate (§7-10(a))."
+  },
+  "datasetHash": "b7c38f45933839499f4de54ec86deb3a3f36ec7ee47a8dd427c0a04f4238bdbe"
+}

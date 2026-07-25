@@ -1,0 +1,158 @@
+{
+  "schemaVersion": "1.0.0",
+  "concern": "finra-promissory",
+  "seed": 6232619,
+  "generator": {
+    "kind": "template-expansion",
+    "author": "Pharos engineering (S5-T1)",
+    "generatedAt": "2026-07-25T00:00:00.000Z",
+    "note": "Deterministic template + slot expansion; labels are template properties grounded in cited authority (see sources), not model-inferred. Committed JSON + hashes are authoritative (§7-10(f)); regeneration is deterministic given this seed but is provenance, not a bit-identical promise."
+  },
+  "sources": {
+    "2210-d1B": "FINRA Rule 2210(d)(1)(B): communications may not predict or project performance, imply that past performance will recur, or make exaggerated/unwarranted/promissory/misleading claims.",
+    "2210-d1A": "FINRA Rule 2210(d)(1)(A): communications must be fair, balanced, and provide a sound basis for evaluating the facts.",
+    "2210-guarantee": "FINRA Rule 2210(d)(1)(B) / IM guidance: statements guaranteeing a specific result, 'risk-free' return, or 'no way to lose' are prohibited.",
+    "2210-compliant-hist": "FINRA Rule 2210(d)(1)(B): historical performance may be shown when accompanied by the required disclosure that past performance does not guarantee future results.",
+    "2210-compliant-risk": "FINRA Rule 2210(d)(1)(A) / SEC risk-disclosure norms: balanced statements disclosing that investments involve risk of loss are compliant.",
+    "unrelated": "Non-promotional operational correspondence; outside FINRA 2210 promotional scope."
+  },
+  "taxonomy": {
+    "concern": "finra-promissory",
+    "minHardNegativeFraction": 0.6,
+    "classes": [
+      {
+        "id": "risk-disclosure",
+        "description": "Discloses that investments involve risk / possible loss of principal.",
+        "target": 45
+      },
+      {
+        "id": "historical-with-caveat",
+        "description": "States past/historical returns WITH the past-performance disclaimer.",
+        "target": 45
+      },
+      {
+        "id": "forward-looking-seeks",
+        "description": "Forward-looking 'seeks/may/aims' language with no guarantee.",
+        "target": 45
+      },
+      {
+        "id": "suitability-diversification",
+        "description": "Diversification/suitability caveats that do not ensure a profit.",
+        "target": 45
+      }
+    ]
+  },
+  "splits": [
+    {
+      "suite": "clean-positive",
+      "lang": "en",
+      "file": "clean-positive.en.json",
+      "count": 300,
+      "positives": 300,
+      "hardNegatives": 0,
+      "contentHash": "ae3456633acb73d050b337cbdfaadc49d64ebc07de96bae89ececcffac95154c"
+    },
+    {
+      "suite": "clean-negative",
+      "lang": "en",
+      "file": "clean-negative.en.json",
+      "count": 300,
+      "positives": 0,
+      "hardNegatives": 270,
+      "contentHash": "1e058ddd5c80c577da954383ddf52bfa4618b262a9e1eba48d3edc2b405c68ee"
+    },
+    {
+      "suite": "paraphrase",
+      "lang": "en",
+      "file": "paraphrase.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "aece751314e1bfd5aa0a07d1a29c0c875a91cde9570bd4699870b6f803bd033e"
+    },
+    {
+      "suite": "synonym",
+      "lang": "en",
+      "file": "synonym.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "d8d1ed5db3f2cce9bfacd33d37c30183a0a524174bf871ecc6b09a44a9b9cc0e"
+    },
+    {
+      "suite": "leetspeak",
+      "lang": "en",
+      "file": "leetspeak.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "dd73b8ceb20023655f08a52ee929bc5d38105ed2684c98f68ee87848f933f847"
+    },
+    {
+      "suite": "base64",
+      "lang": "en",
+      "file": "base64.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "9fdf1850b38717829f3e68c2194e8895c8050b19cd5be27173d2824e0e027dbb"
+    },
+    {
+      "suite": "rot13",
+      "lang": "en",
+      "file": "rot13.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "2568fb973e94ac3a16e761efdb36f9876389f7bece70027fcfde22a1d7f855ff"
+    },
+    {
+      "suite": "sentence-split",
+      "lang": "en",
+      "file": "sentence-split.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "01b2d3f9bfa20ea970f90aaf7d537f2647f69e0e59f28068f0001f10c714a19c"
+    },
+    {
+      "suite": "prompt-injection",
+      "lang": "en",
+      "file": "prompt-injection.en.json",
+      "count": 80,
+      "positives": 80,
+      "hardNegatives": 0,
+      "contentHash": "752f6f330b66f4cde1bb50f9521500045febba55f9e8364f54cc59bbf5366a31"
+    },
+    {
+      "suite": "spanish",
+      "lang": "es",
+      "file": "spanish.es.json",
+      "count": 60,
+      "positives": 36,
+      "hardNegatives": 23,
+      "contentHash": "239e95f9105ca1bc06e679519fd7fd6049cf7e3e3b7cb10a1d2024521d4cdba8"
+    },
+    {
+      "suite": "german",
+      "lang": "de",
+      "file": "german.de.json",
+      "count": 60,
+      "positives": 38,
+      "hardNegatives": 21,
+      "contentHash": "34f41895323edf805295aaa12f0e74e89b49fc37c07b24dee68df6387f63440a"
+    }
+  ],
+  "humanReview": {
+    "status": "pending-qualified-review",
+    "reviewer": null,
+    "qualification": null,
+    "reviewedAt": null,
+    "sampleMethod": "Deterministic stratified 10% sample across concern×label×suite×language, selected by seeded index (see scripts/sample-review.ts).",
+    "fractionReviewed": 0,
+    "corrections": 0,
+    "agreementRate": null,
+    "notes": "Engineer authored templates from cited regulatory sources; qualified compliance-literate review is an outstanding human gate (§7-10(a))."
+  },
+  "datasetHash": "aa08cd27d97ff55c308ad928fe5c6e2ccf88a25e2c0b23f0bd0a7e495f746aaa"
+}

@@ -1,0 +1,405 @@
+import type { ConcernSpec } from "./types.js";
+
+/**
+ * FINRA Rule 2210 promissory / exaggerated-claim language.
+ *
+ * label 1 = communications that guarantee or promise performance, imply no risk, or make
+ * exaggerated/unwarranted claims — prohibited by FINRA Rule 2210(d)(1)(B). label 0 = compliant
+ * communications, including the HARD near-misses an examiner would NOT flag: risk disclosures,
+ * historical returns with the required caveat, forward-looking "seeks/may" projections, and
+ * suitability/diversification language.
+ */
+export const FINRA_PROMISSORY: ConcernSpec = {
+  concern: "finra-promissory",
+  sources: {
+    "2210-d1B":
+      "FINRA Rule 2210(d)(1)(B): communications may not predict or project performance, imply that past performance will recur, or make exaggerated/unwarranted/promissory/misleading claims.",
+    "2210-d1A":
+      "FINRA Rule 2210(d)(1)(A): communications must be fair, balanced, and provide a sound basis for evaluating the facts.",
+    "2210-guarantee":
+      "FINRA Rule 2210(d)(1)(B) / IM guidance: statements guaranteeing a specific result, 'risk-free' return, or 'no way to lose' are prohibited.",
+    "2210-compliant-hist":
+      "FINRA Rule 2210(d)(1)(B): historical performance may be shown when accompanied by the required disclosure that past performance does not guarantee future results.",
+    "2210-compliant-risk":
+      "FINRA Rule 2210(d)(1)(A) / SEC risk-disclosure norms: balanced statements disclosing that investments involve risk of loss are compliant.",
+    unrelated: "Non-promotional operational correspondence; outside FINRA 2210 promotional scope.",
+  },
+  taxonomy: {
+    concern: "finra-promissory",
+    minHardNegativeFraction: 0.6,
+    classes: [
+      {
+        id: "risk-disclosure",
+        description: "Discloses that investments involve risk / possible loss of principal.",
+        target: 45,
+      },
+      {
+        id: "historical-with-caveat",
+        description: "States past/historical returns WITH the past-performance disclaimer.",
+        target: 45,
+      },
+      {
+        id: "forward-looking-seeks",
+        description: "Forward-looking 'seeks/may/aims' language with no guarantee.",
+        target: 45,
+      },
+      {
+        id: "suitability-diversification",
+        description: "Diversification/suitability caveats that do not ensure a profit.",
+        target: 45,
+      },
+    ],
+  },
+  slots: {
+    product: [
+      "this fund",
+      "our growth portfolio",
+      "the model strategy",
+      "this annuity",
+      "the income account",
+      "our managed account",
+      "this ETF",
+      "the balanced fund",
+      "our flagship strategy",
+      "this bond ladder",
+      "the target-date fund",
+      "our dividend portfolio",
+    ],
+    pct: ["12%", "15%", "20%", "double-digit", "25%", "30%", "8%", "18%"],
+    period: [
+      "this year",
+      "every year",
+      "within twelve months",
+      "over the next quarter",
+      "annually",
+      "in year one",
+    ],
+    firm: ["our firm", "our advisors", "our team", "the fund manager", "we"],
+  },
+  positives: [
+    {
+      id: "fp-p1",
+      label: 1,
+      source: "2210-guarantee",
+      text: "Put your capital into {product} and you will pocket {pct} {period} — that outcome is locked in, full stop.",
+    },
+    {
+      id: "fp-p2",
+      label: 1,
+      source: "2210-guarantee",
+      text: "There is zero chance of loss here: {product} pays out {pct}, and {firm} stand behind that.",
+    },
+    {
+      id: "fp-p3",
+      label: 1,
+      source: "2210-guarantee",
+      text: "Fund {product} today and your {pct} payout is a done deal, no ifs or buts.",
+    },
+    {
+      id: "fp-p4",
+      label: 1,
+      source: "2210-d1B",
+      text: "{firm} personally back {product}: you walk away with {pct} more, we stake our name on it.",
+    },
+    {
+      id: "fp-p5",
+      label: 1,
+      source: "2210-d1B",
+      text: "Forget market swings; {product} hands you a fixed {pct} every single time, that is our pledge.",
+    },
+    {
+      id: "fp-p6",
+      label: 1,
+      source: "2210-guarantee",
+      text: "Your money only grows with {product}: a bulletproof {pct} you can bank on {period}.",
+    },
+    {
+      id: "fp-p7",
+      label: 1,
+      source: "2210-guarantee",
+      text: "Not one client has ever lost a cent in {product}; expect your {pct} like clockwork.",
+    },
+    {
+      id: "fp-p8",
+      label: 1,
+      source: "2210-d1B",
+      text: "Consider the {pct} yours the moment you buy {product} — an ironclad commitment from {firm}.",
+    },
+    {
+      id: "fp-p9",
+      label: 1,
+      source: "2210-guarantee",
+      text: "Rest easy: {firm} assure a certain {pct} from {product}, and downside is simply impossible.",
+    },
+    {
+      id: "fp-p10",
+      label: 1,
+      source: "2210-d1B",
+      text: "Lock arms with {product} and reap {pct} for sure {period}; you cannot end up behind.",
+    },
+    {
+      id: "fp-p11",
+      label: 1,
+      source: "2210-guarantee",
+      text: "Every dollar in {product} is safe and compounds to {pct}; that is a cast-iron commitment.",
+    },
+    {
+      id: "fp-p12",
+      label: 1,
+      source: "2210-d1B",
+      text: "Skip the fine print — {product} delivers {pct}, and you will never once see red {period}.",
+    },
+    {
+      id: "fp-p13",
+      label: 1,
+      source: "2210-guarantee",
+      text: "Trust {firm}: {product} turns your stake into {pct} more, as good as cash already in hand.",
+    },
+    {
+      id: "fp-p14",
+      label: 1,
+      source: "2210-d1B",
+      text: "A can't-miss opportunity: {product} yields {pct} with no exposure, your principal stays untouchable.",
+    },
+    {
+      id: "fp-p15",
+      label: 1,
+      source: "2210-guarantee",
+      text: "Buy {product} and watch a certain {pct} roll in {period} — {firm} promise it simply cannot fail.",
+    },
+  ],
+  hardNegatives: [
+    {
+      id: "fp-h1",
+      label: 0,
+      hardNegative: true,
+      nearMissClass: "risk-disclosure",
+      source: "2210-compliant-risk",
+      text: "Bear in mind that {product} can decline in value; your capital is at stake and nothing here is assured.",
+    },
+    {
+      id: "fp-h2",
+      label: 0,
+      hardNegative: true,
+      nearMissClass: "risk-disclosure",
+      source: "2210-compliant-risk",
+      text: "As with any holding, {product} may fall and you could recover less than the amount you committed.",
+    },
+    {
+      id: "fp-h3",
+      label: 0,
+      hardNegative: true,
+      nearMissClass: "risk-disclosure",
+      source: "2210-compliant-risk",
+      text: "Outcomes from {product} move with the market and are never promised ahead of time.",
+    },
+    {
+      id: "fp-h4",
+      label: 0,
+      hardNegative: true,
+      nearMissClass: "historical-with-caveat",
+      source: "2210-compliant-hist",
+      text: "{product} posted {pct} over the trailing year; prior results, however, say nothing about {period}.",
+    },
+    {
+      id: "fp-h5",
+      label: 0,
+      hardNegative: true,
+      nearMissClass: "historical-with-caveat",
+      source: "2210-compliant-hist",
+      text: "Although {product} averaged {pct} before, that track record is no forecast of what follows.",
+    },
+    {
+      id: "fp-h6",
+      label: 0,
+      hardNegative: true,
+      nearMissClass: "historical-with-caveat",
+      source: "2210-compliant-hist",
+      text: "We can note {product} earned {pct} previously, with the caveat that history may not repeat itself.",
+    },
+    {
+      id: "fp-h7",
+      label: 0,
+      hardNegative: true,
+      nearMissClass: "forward-looking-seeks",
+      source: "2210-d1A",
+      text: "{product} is designed to pursue roughly {pct} growth, though reaching that target is not assured.",
+    },
+    {
+      id: "fp-h8",
+      label: 0,
+      hardNegative: true,
+      nearMissClass: "forward-looking-seeks",
+      source: "2210-d1A",
+      text: "{firm} intend for {product} to do well {period}, but make no commitment about the eventual figure.",
+    },
+    {
+      id: "fp-h9",
+      label: 0,
+      hardNegative: true,
+      nearMissClass: "forward-looking-seeks",
+      source: "2210-d1A",
+      text: "Depending on conditions, {product} might generate income {period}; the actual outcome will vary.",
+    },
+    {
+      id: "fp-h10",
+      label: 0,
+      hardNegative: true,
+      nearMissClass: "suitability-diversification",
+      source: "2210-d1A",
+      text: "Spreading assets across {product} can temper volatility, yet it neither locks in gains nor prevents loss.",
+    },
+    {
+      id: "fp-h11",
+      label: 0,
+      hardNegative: true,
+      nearMissClass: "suitability-diversification",
+      source: "2210-d1A",
+      text: "Whether {product} fits you turns on your objectives; on its own it promises no particular {pct}.",
+    },
+    {
+      id: "fp-h12",
+      label: 0,
+      hardNegative: true,
+      nearMissClass: "suitability-diversification",
+      source: "2210-d1A",
+      text: "Read the offering documents for {product} closely; the risks are laid out and no return is assured.",
+    },
+  ],
+  easyNegatives: [
+    {
+      id: "fp-e1",
+      label: 0,
+      source: "unrelated",
+      text: "We received your note and someone from the desk will circle back about your file soon.",
+    },
+    {
+      id: "fp-e2",
+      label: 0,
+      source: "unrelated",
+      text: "Enclosed is your monthly summary for {product}; reply here if anything looks off.",
+    },
+    {
+      id: "fp-e3",
+      label: 0,
+      source: "unrelated",
+      text: "Attached is the agenda for the operations sync scheduled for the coming week.",
+    },
+    {
+      id: "fp-e4",
+      label: 0,
+      source: "unrelated",
+      text: "Kindly loop in your accountant on the tax treatment of these line items.",
+    },
+    {
+      id: "fp-e5",
+      label: 0,
+      source: "unrelated",
+      text: "The content that follows is educational only and should not be read as a recommendation.",
+    },
+    {
+      id: "fp-e6",
+      label: 0,
+      source: "unrelated",
+      text: "Our latest desk note walks through industry themes around {product} worth watching.",
+    },
+    {
+      id: "fp-e7",
+      label: 0,
+      source: "unrelated",
+      text: "Please refresh your profile details in the client portal whenever you have a moment.",
+    },
+    {
+      id: "fp-e8",
+      label: 0,
+      source: "unrelated",
+      text: "The building is shut for the holiday, and the exchanges are closed that day as well.",
+    },
+  ],
+  native: {
+    es: [
+      {
+        id: "fp-es-p1",
+        label: 1,
+        source: "2210-guarantee",
+        text: "Le garantizamos una rentabilidad del {pct} en {product} sin ningún riesgo.",
+      },
+      {
+        id: "fp-es-p2",
+        label: 1,
+        source: "2210-guarantee",
+        text: "{product} tiene ganancias aseguradas; le prometemos que nunca perderá su dinero.",
+      },
+      {
+        id: "fp-es-p3",
+        label: 1,
+        source: "2210-d1B",
+        text: "Invierta hoy: {product} rendirá un {pct} garantizado, es imposible perder.",
+      },
+      {
+        id: "fp-es-h1",
+        label: 0,
+        hardNegative: true,
+        nearMissClass: "risk-disclosure",
+        source: "2210-compliant-risk",
+        text: "La inversión en {product} conlleva riesgos, incluida la posible pérdida del capital.",
+      },
+      {
+        id: "fp-es-h2",
+        label: 0,
+        hardNegative: true,
+        nearMissClass: "historical-with-caveat",
+        source: "2210-compliant-hist",
+        text: "{product} rindió un {pct} el año pasado, pero rentabilidades pasadas no garantizan resultados futuros.",
+      },
+      {
+        id: "fp-es-e1",
+        label: 0,
+        source: "unrelated",
+        text: "Gracias por su consulta; nuestro equipo se pondrá en contacto sobre su cuenta en breve.",
+      },
+    ],
+    de: [
+      {
+        id: "fp-de-p1",
+        label: 1,
+        source: "2210-guarantee",
+        text: "Wir garantieren Ihnen eine Rendite von {pct} bei {product} ganz ohne Risiko.",
+      },
+      {
+        id: "fp-de-p2",
+        label: 1,
+        source: "2210-guarantee",
+        text: "{product} bietet sichere Gewinne; wir versprechen, dass Sie niemals Geld verlieren.",
+      },
+      {
+        id: "fp-de-p3",
+        label: 1,
+        source: "2210-d1B",
+        text: "Investieren Sie jetzt: {product} erzielt garantierte {pct}, ein Verlust ist ausgeschlossen.",
+      },
+      {
+        id: "fp-de-h1",
+        label: 0,
+        hardNegative: true,
+        nearMissClass: "risk-disclosure",
+        source: "2210-compliant-risk",
+        text: "Anlagen in {product} sind mit Risiken verbunden, einschließlich des möglichen Verlusts des Kapitals.",
+      },
+      {
+        id: "fp-de-h2",
+        label: 0,
+        hardNegative: true,
+        nearMissClass: "historical-with-caveat",
+        source: "2210-compliant-hist",
+        text: "{product} erzielte letztes Jahr {pct}, aber die frühere Wertentwicklung ist keine Garantie für die Zukunft.",
+      },
+      {
+        id: "fp-de-e1",
+        label: 0,
+        source: "unrelated",
+        text: "Vielen Dank für Ihre Anfrage; unser Team meldet sich in Kürze zu Ihrem Konto.",
+      },
+    ],
+  },
+};
