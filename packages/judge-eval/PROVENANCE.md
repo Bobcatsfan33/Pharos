@@ -66,6 +66,26 @@ annotates the sample, and records qualification, date, sample method, correction
 rate back into each manifest. The generator author performed an engineering pre-review; the
 qualified compliance review is a human gate the tech lead assigns.
 
+## CI eval gate (S5-T4)
+
+`src/gate.ts` compares a candidate scorer against a **frozen baseline** (`data/baseline-models/`,
+locked by `data/baseline-models/lock.json`) at the frozen operating points. Each sliced metric —
+clean recall/precision, PR-AUC, ECE, hard-negative FPR, and **every** adversarial-suite recall —
+gets a deterministic **paired stratified-bootstrap** 95% delta interval (candidate − baseline). A
+metric fails **only when the entire interval is worse** than its committed tolerance
+(`data/eval-tolerances.json`) — never on point-estimate noise — so aggregate gains cannot hide a
+sliced regression. The gate validates the operating-points hash and the frozen-artifact hashes
+**before** comparing.
+
+It runs in CI via `test/judge-eval.gate.test.ts` (the `test` job runs on every PR, so no workflow
+change is needed — amendment 7(c)): the live test compares the actual `packages/judge/models`
+against the frozen baseline, so weakening a served judge fails CI. `pnpm judges:gate` runs the same
+gate locally with a readable per-slice diff.
+
+**Updating the baseline** (only for a legitimately better model): land the new artifact, refresh
+`data/baseline-models/` + `lock.json`, regenerate `docs/benchmarks/judge-evals.{json,md}`, and note
+the new baseline in the PR — a reviewed step, not an automatic one.
+
 ## Reproducibility framing (§7-10(f))
 
 The committed dataset + `datasetHash` are authoritative. `src/loader.ts` verifies every split's

@@ -28,6 +28,7 @@
     "api:dev": "tsx --env-file=.env services/api/src/server.ts",
     "judges:train": "tsx scripts/train-judges.ts",
     "judges:eval": "tsx scripts/eval-judges.ts",
+    "judges:gate": "tsx scripts/eval-gate.ts",
     "bench:latency": "tsx --env-file=.env scripts/bench-latency.ts"
   },
   "devDependencies": {

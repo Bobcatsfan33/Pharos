@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Metric-specific regression tolerances committed BEFORE evaluating any candidate (roadmap §7-10(c)). A candidate FAILS only when the ENTIRE 95% paired-bootstrap delta interval (candidate − baseline) is worse than the tolerance — never on point-estimate noise. Every sliced metric is gated so an aggregate gain cannot hide a sliced regression.",
+  "metrics": {
+    "clean-recall": { "direction": "higher", "tolerance": -0.03 },
+    "clean-precision": { "direction": "higher", "tolerance": -0.03 },
+    "pr-auc": { "direction": "higher", "tolerance": -0.02 },
+    "ece": { "direction": "lower", "tolerance": 0.02 },
+    "hard-negative-fpr": { "direction": "lower", "tolerance": 0.03 },
+    "adversarial-recall": { "direction": "higher", "tolerance": -0.05 }
+  }
+}
