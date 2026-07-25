@@ -7,7 +7,17 @@ export {
   type EvidenceStoreDeps,
   type RecordDisclosure,
 } from "./evidenceStore.js";
-export { ChainIntegrityService, type ChainIntegrityDeps } from "./chainIntegrity.js";
+export {
+  ChainIntegrityService,
+  type ChainIntegrityDeps,
+  type ChainIntegrityReport,
+  type AnchorSummary,
+} from "./chainIntegrity.js";
+export {
+  AnchorScheduler,
+  type AnchorSchedulerDeps,
+  type AnchorSweepResult,
+} from "./anchorScheduler.js";
 export { VerdictCache } from "./cache.js";
 export { TenantStore, type Tenant, type TenantStatus } from "./tenantStore.js";
 export { ApiKeyStore, type ApiKeyRecord, type VerifiedApiKey } from "./apiKeyStore.js";

@@ -23,6 +23,23 @@ supported ([`timestamp.ts`](../packages/evidence/src/timestamp.ts)):
 Anchors are stored in `chain_anchors` (provider + DER token) and embedded in claims packs; the
 offline verifier (`scripts/external-verify.ts --bundle`) validates them with no Pharos access.
 
+### Scheduling & gap detection
+
+Heads are anchored two ways:
+
+- **On demand** — `POST /v1/tenants/:tenantId/anchor` anchors a tenant's current head; sealing a
+  claims pack also anchors the pack's head so the exported bundle carries its own proof.
+- **On a schedule** — the [`AnchorScheduler`](../packages/storage/src/anchorScheduler.ts) anchors
+  every tenant's head on a fixed interval (default **hourly**, `PHAROS_TSA_ANCHOR_INTERVAL_MS`; set
+  `0` to disable). A per-tenant failure is logged and never aborts the sweep.
+
+The chain-integrity sweep cross-checks anchoring: if a tenant's head has advanced past its newest
+anchor, if no anchor exists, or if the newest anchor is older than `2×` the schedule interval, it
+raises a **non-fatal `chainIntegrity` warning** (it does not flip `ok` — a missing anchor is not a
+chain break). The warnings and the anchoring summary (`latestAnchorSequence`, `headAnchored`) are
+returned by `GET /v1/chain/:tenantId/verify` and surfaced in the console's **Ledger → Chain
+integrity** view.
+
 ## Field-level redaction (selective disclosure)
 
 Every record commits to each payload field at seal time

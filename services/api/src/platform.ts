@@ -12,6 +12,7 @@ import {
 import { LocalTsa, Rfc3161Tsa, type TsaProvider } from "@pharos/evidence";
 import {
   AccessAuditLog,
+  AnchorScheduler,
   ApiKeyStore,
   AssuranceStore,
   ChainIntegrityService,
@@ -67,6 +68,8 @@ export interface Platform {
   tsaKeyset: () => Promise<PublicKeyEntry[]>;
   /** Anchor a tenant's current chain head with a trusted timestamp. */
   anchorHead: (tenantId: string) => Promise<{ sequence: number; headHash: string } | null>;
+  /** Scheduled per-tenant anchoring (default hourly); started by the server entrypoint. */
+  anchorScheduler: AnchorScheduler;
   tenants: TenantStore;
   apiKeys: ApiKeyStore;
   accessAudit: AccessAuditLog;
@@ -180,15 +183,6 @@ export async function buildPlatform(
     ...shippedArtifacts,
     ...((await policyStore.getActiveArtifacts(tenantId)) as PolicyArtifact[]),
   ];
-  const integrity = new ChainIntegrityService({
-    store,
-    signer,
-    onBreak: (report) => {
-      // Structured alert; Sprint 8 wires this into the observability/alerting stack.
-      console.error("[chain-integrity] BREAK detected", JSON.stringify(report.errors));
-    },
-  });
-
   const tenants = new TenantStore(pool);
   const apiKeys = new ApiKeyStore(pool);
   const accessAudit = new AccessAuditLog(pool);
@@ -204,6 +198,18 @@ export async function buildPlatform(
   });
   const reviewSla = new ReviewSlaService({ tenants, escalations, notifier });
   const evidenceOps = new EvidenceOpsStore(pool);
+
+  const integrity = new ChainIntegrityService({
+    store,
+    signer,
+    // Surface missing/stale trusted-time anchors as non-fatal chainIntegrity warnings.
+    listAnchors: (tenantId) => evidenceOps.listAnchors(tenantId),
+    anchorMaxAgeMs: config.tsa.intervalMs > 0 ? config.tsa.intervalMs * 2 : undefined,
+    onBreak: (report) => {
+      // Structured alert; Sprint 8 wires this into the observability/alerting stack.
+      console.error("[chain-integrity] BREAK detected", JSON.stringify(report.errors));
+    },
+  });
 
   const anchorHead = async (tenantId: string) => {
     const head = await store.getHead(tenantId);
@@ -222,6 +228,14 @@ export async function buildPlatform(
     });
     return { sequence: head.sequence, headHash: head.hash };
   };
+
+  const anchorScheduler = new AnchorScheduler({
+    listTenants: () => store.listTenants(),
+    anchorTenant: anchorHead,
+    onError: (tenantId, err) =>
+      console.error(`[anchor-scheduler] failed for ${tenantId}:`, (err as Error).message),
+  });
+
   const oidcIssuers = options.oidcIssuers ?? (config.oidc as OidcIssuerConfig[]);
   const oidc = new OidcVerifier(oidcIssuers);
 
@@ -245,6 +259,7 @@ export async function buildPlatform(
     tsa,
     tsaKeyset,
     anchorHead,
+    anchorScheduler,
     tenants,
     apiKeys,
     accessAudit,
@@ -255,6 +270,7 @@ export async function buildPlatform(
     oidc,
     close: async () => {
       integrity.stop();
+      anchorScheduler.stop();
       reviewSla.stop();
       await cache.close().catch(() => {});
       await pool.end();

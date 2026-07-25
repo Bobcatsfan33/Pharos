@@ -3,7 +3,7 @@ import { buildPlatform } from "./platform.js";
 
 /**
  * Server entrypoint. Boots the durable platform, starts continuous chain-integrity
- * verification, and serves the ingestion API.
+ * verification and scheduled trusted-time anchoring, and serves the ingestion API.
  */
 async function main(): Promise<void> {
   const platform = await buildPlatform();
@@ -12,6 +12,11 @@ async function main(): Promise<void> {
   });
   platform.integrity.start(60_000);
   platform.reviewSla.start(30_000);
+  const anchorIntervalMs = platform.config.tsa.intervalMs;
+  if (anchorIntervalMs > 0) {
+    platform.anchorScheduler.start(anchorIntervalMs);
+    console.log(`[startup] scheduled anchoring every ${Math.round(anchorIntervalMs / 60000)} min`);
+  }
 
   const app = await buildApp(platform);
   await app.listen({ port: platform.config.api.port, host: "0.0.0.0" });
