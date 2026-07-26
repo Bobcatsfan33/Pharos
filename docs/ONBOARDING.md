@@ -179,3 +179,24 @@ are all git-ignored.
 | `verify:external` → `ECONNREFUSED` | API not running | start `pnpm api:dev` in another terminal first |
 | A single Causeway test flakes | timing sensitivity under load | re-run `pnpm test` |
 | Console won't start | `sharp` build was skipped | `pnpm approve-builds` (console is optional) |
+
+## Landing changes (committers)
+
+How a change reaches `main` depends on what it touches — pick the lightest path that works:
+
+- **Docs-only or a small single-file edit** (a roadmap amendment, a README/doc fix): edit the
+  file on a fresh branch off `main` and commit it directly — `git checkout -b my-change origin/main`,
+  edit, `git commit -s`, `git push`, open the PR. Do **not** route these through a
+  patch/transfer round-trip; a dirty working tree or a leftover `git am` session turns a
+  one-line docs change into a multi-step recovery (learned the hard way — roadmap §7 amendment 9
+  neighbours). Label the PR `no-changeset` when no publishable package changed.
+- **Multi-file code changes**: normal branch → PR → review → CI-green → squash-merge, one task
+  per PR, no stacking (roadmap §7 amendment 9). Every commit is DCO-signed (`git commit -s`);
+  add a changeset when a publishable package (`@getpharos/*`) changes.
+- **`.github/workflows/` files**: a GitHub App / automation token **cannot** push workflow
+  changes (roadmap §7 amendment 7(c)) — these must be committed by a maintainer with a
+  human-scoped token/PAT, as a separate commit if an automated PR needs them.
+
+Before merging any PR: confirm its **base ref is `main`** and, after landing a sprint, confirm
+`main` actually contains the changes (roadmap §7 amendment 9). "Automatically delete head
+branches" is on, so merged branches clean themselves up.
