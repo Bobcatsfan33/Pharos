@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "1.0.0",
+  "note": "Served transformer-judge artifacts. Blobs are GitHub Release assets, fetched and sha256-verified against this manifest at load time (never committed to git). modelVersion pins each identity.",
+  "release": {
+    "repo": "Bobcatsfan33/Pharos",
+    "tag": "judge-models-v1",
+    "baseUrl": "https://github.com/Bobcatsfan33/Pharos/releases/download/judge-models-v1"
+  },
+  "models": {
+    "finra-promissory": {
+      "modelVersion": "finra-promissory@4cef02698045",
+      "kind": "onnx-transformer",
+      "baseModel": "distilbert-base-multilingual-cased",
+      "maxLen": 128,
+      "temperature": 0.6109424233436584,
+      "threshold": 0.5,
+      "served": "model.int8.onnx",
+      "assets": {
+        "model": {
+          "asset": "finra-promissory.model.int8.onnx",
+          "sha256": "c1bb669450e281515de5aaa78d347be4d6a0bc4fbbebf08ba58294a7f527934c"
+        },
+        "tokenizer": {
+          "asset": "finra-promissory.tokenizer.json",
+          "sha256": "672146ee6867dc02a01c474090e237789f8a066ee7247bb2cb6c8688a27536a8"
+        }
+      }
+    },
+    "funds-movement-intent": {
+      "modelVersion": "funds-movement-intent@00b6163b8dd7",
+      "kind": "onnx-transformer",
+      "baseModel": "distilbert-base-multilingual-cased",
+      "maxLen": 128,
+      "temperature": 0.6218407154083252,
+      "threshold": 0.5,
+      "served": "model.int8.onnx",
+      "assets": {
+        "model": {
+          "asset": "funds-movement-intent.model.int8.onnx",
+          "sha256": "270daec08b83c94beae761c3a3669068295c059ee79eadb57e80178cea9f2dba"
+        },
+        "tokenizer": {
+          "asset": "funds-movement-intent.tokenizer.json",
+          "sha256": "672146ee6867dc02a01c474090e237789f8a066ee7247bb2cb6c8688a27536a8"
+        }
+      }
+    },
+    "phi-in-context": {
+      "modelVersion": "phi-in-context@f307c3117aad",
+      "kind": "onnx-transformer",
+      "baseModel": "distilbert-base-multilingual-cased",
+      "maxLen": 128,
+      "temperature": 0.6132460832595825,
+      "threshold": 0.5,
+      "served": "model.onnx",
+      "assets": {
+        "model": {
+          "asset": "phi-in-context.model.onnx",
+          "sha256": "c3c076da74f49f8f45679f8c3bd7a4c6744bf01916bf3b03f574a7753980c465"
+        },
+        "tokenizer": {
+          "asset": "phi-in-context.tokenizer.json",
+          "sha256": "672146ee6867dc02a01c474090e237789f8a066ee7247bb2cb6c8688a27536a8"
+        }
+      }
+    }
+  }
+}

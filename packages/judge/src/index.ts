@@ -7,3 +7,14 @@ export {
   loadDefaultRegistry,
   DEFAULT_MODELS_DIR,
 } from "./registry.js";
+export {
+  ensureArtifact,
+  loadManifest,
+  sha256Hex,
+  defaultCacheDir,
+  type ModelManifest,
+  type ModelManifestEntry,
+  type AssetRef,
+  type FetchedArtifact,
+  type EnsureOptions,
+} from "./artifactStore.js";
