@@ -184,6 +184,24 @@ no user input (no forms/params). React auto-escaping covers rendered API data.
 
 ---
 
+## 7a. Transformer-judge artifact fetch (`packages/judge/src/artifactStore.ts`)
+
+The served transformer-judge ONNX + tokenizer blobs are GitHub Release assets (too large for git),
+fetched at load time and verified against the committed manifest. This is a fetch-a-blob-from-a-
+config-file-and-cache-it surface; its controls, and the two CodeQL findings dismissed as
+false-positives here (so the reasoning lives in-repo, not only in the GitHub Security UI):
+
+| STRIDE | Threat | Mitigation (code) |
+|--------|--------|-------------------|
+| **T** | Serve a wrong/tampered blob | Every asset is **sha256-verified against the committed manifest** before use and re-verified on read; mismatch throws and refuses to serve ([`artifactStore.ts`](../../packages/judge/src/artifactStore.ts), `ensureAsset`). The manifest hash is what `modelVersion()` pins |
+| **S/SSRF** | Redirect the fetch to an attacker host | **Dismissed CodeQL `js/file-access-to-http` (FP).** The request **authority is a hardcoded constant** (`RELEASE_ORIGIN = https://github.com`); only path segments (repo/tag/asset) come from the committed manifest, each **regex-validated with the match returned** (not raw input) as a barrier. No file data can change the request host. Proven by the `badRepo` + traversal tests |
+| **T** | Path-traversal / arbitrary write via the cache path | **Dismissed CodeQL `js/http-to-file-access` (FP).** The cache path is a **validated hex digest + a constant extension** — no manifest string reaches the filesystem sink (traversal test proves it) — and bytes are hash-verified before the write. Writes are **atomic (temp + rename)**, so a crash mid-write cannot leave a truncated cache file (`js/file-system-race` fixed, not dismissed) |
+
+Dismissal-with-reason is triage, not suppression: the CodeQL queries stay **armed everywhere else in
+the repo** (no config exclude) so a genuinely-unsafe future fetch/write is still caught.
+
+---
+
 ## 8. Key rotation & compromise model
 
 Derived from [runbooks/key-rotation.md](../runbooks/key-rotation.md); proven end-to-end by

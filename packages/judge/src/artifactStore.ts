@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
@@ -113,10 +113,22 @@ async function ensureAsset(
   const url = releaseUrl(repo, tag, safeName);
   // Content-addressed cache path built only from the validated hex digest + a constant extension.
   const cached = join(cacheDir, `${digest}.${ext}`);
-  if (existsSync(cached) && sha256Hex(readFileSync(cached)) === digest) return cached;
+
+  // Cache hit: read-and-verify with no check-then-act race (no existsSync gate). A torn/partial
+  // file simply fails the hash and is refetched.
+  try {
+    if (sha256Hex(readFileSync(cached)) === digest) return cached;
+  } catch {
+    // cache miss or unreadable → fetch below
+  }
 
   let bytes: Uint8Array;
   try {
+    // SECURITY (js/file-access-to-http, dismissed FP): the request AUTHORITY is a hardcoded
+    // constant (RELEASE_ORIGIN); only path segments (repo/tag/asset) come from the committed
+    // manifest and each is regex-validated with the MATCH (not raw input) returned as a barrier
+    // (see releaseUrl/validated; the badRepo + traversal tests prove rejection). No file data can
+    // redirect the request to an arbitrary host. See docs/security/THREAT_MODEL.md (artifact fetch).
     bytes = await fetchImpl(url);
   } catch (err) {
     throw new Error(
@@ -131,7 +143,13 @@ async function ensureAsset(
     );
   }
   mkdirSync(dirname(cached), { recursive: true });
-  writeFileSync(cached, bytes);
+  // SECURITY (js/http-to-file-access, dismissed FP): bytes are sha256-verified against the committed
+  // manifest digest ABOVE before this write and RE-verified on read; the path is a validated hex
+  // digest + constant extension (no manifest string reaches the FS sink; traversal test proves it).
+  // Atomic temp+rename so a crash mid-write never leaves a truncated cache file (js/file-system-race).
+  const tmp = join(cacheDir, `.${digest}.${ext}.${process.pid}.tmp`);
+  writeFileSync(tmp, bytes);
+  renameSync(tmp, cached);
   return cached;
 }
 
