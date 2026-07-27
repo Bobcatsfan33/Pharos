@@ -9,3 +9,5 @@ NOTICE
 *.md
 # Committed, generated eval datasets — content-hashed, not hand-formatted (see judge-eval).
 packages/judge-eval/data
+# Python training pipeline (venv, model blobs, generated corpus/lockbox JSON).
+training
