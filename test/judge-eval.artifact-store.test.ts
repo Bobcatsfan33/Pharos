@@ -96,7 +96,7 @@ describe("model artifact store", () => {
     );
   });
 
-  it("rejects a path-traversal asset name and a non-GitHub host (SSRF/traversal barrier)", async () => {
+  it("rejects a path-traversal asset name and a bad repo (SSRF/traversal barrier)", async () => {
     const cacheDir = mkdtempSync(join(tmpdir(), "pharos-models-"));
     const good = fakeManifest(new Uint8Array([1]), new Uint8Array([2]));
     const fetchImpl = async () => new Uint8Array([1]);
@@ -105,13 +105,14 @@ describe("model artifact store", () => {
     traversal.models.demo!.assets.model.asset = "../../etc/passwd";
     await expect(
       ensureArtifact("demo", { manifest: traversal, cacheDir, fetchImpl }),
-    ).rejects.toThrow(/unsafe artifact asset name/);
+    ).rejects.toThrow(/unsafe asset name/);
 
-    const badHost: ModelManifest = JSON.parse(JSON.stringify(good));
-    badHost.release.baseUrl = "https://evil.example.com/dl";
+    // The host is a hardcoded constant; only validated repo/tag segments come from the manifest.
+    const badRepo: ModelManifest = JSON.parse(JSON.stringify(good));
+    badRepo.release.repo = "evil.com/../../x";
     await expect(
-      ensureArtifact("demo", { manifest: badHost, cacheDir, fetchImpl }),
-    ).rejects.toThrow(/host not allowed/);
+      ensureArtifact("demo", { manifest: badRepo, cacheDir, fetchImpl }),
+    ).rejects.toThrow(/unsafe repo/);
   });
 
   it("throws on an unknown concern", async () => {

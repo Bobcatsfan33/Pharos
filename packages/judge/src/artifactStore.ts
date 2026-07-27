@@ -75,48 +75,44 @@ async function defaultFetch(url: string): Promise<Uint8Array> {
   return new Uint8Array(await res.arrayBuffer());
 }
 
-// Asset names come from the (committed, but still validated) manifest. Constrain them to a strict
-// charset so they can never traverse the cache directory or inject into the fetch URL.
+// The fetch destination host + scheme are HARDCODED constants — never derived from the manifest —
+// so the outbound request's authority cannot be influenced by file data (SSRF barrier). Only
+// path segments come from the manifest, and each is validated to a strict charset below.
+const RELEASE_ORIGIN = "https://github.com";
 const SAFE_ASSET = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
-// Release downloads originate from GitHub; pin the host so a bad manifest can't point the fetch at
-// an arbitrary server (SSRF barrier). Redirects to objects.githubusercontent.com are followed by fetch.
-const ALLOWED_HOSTS = new Set(["github.com", "objects.githubusercontent.com"]);
+const SAFE_REPO = /^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/;
+const SAFE_TAG = /^[A-Za-z0-9._-]+$/;
+const SAFE_DIGEST = /^[0-9a-f]{64}$/;
 
-/**
- * Sanitize a manifest asset reference into values safe to use at the network + filesystem sinks.
- * Returns NEW strings derived only from validated components — the tainted manifest fields never
- * reach a sink directly (barrier). Throws on traversal names, non-https, non-GitHub host, or a
- * non-hex digest.
- */
-function sanitizeRef(
-  baseUrl: string,
-  ref: AssetRef,
-): { url: string; safeName: string; digest: string } {
-  const match = SAFE_ASSET.exec(ref.asset);
-  if (!match) throw new Error(`unsafe artifact asset name: ${JSON.stringify(ref.asset)}`);
-  const safeName = match[0]; // reconstructed from the validated match, not the raw input
-  const digestMatch = /^[0-9a-f]{64}$/.exec(ref.sha256);
-  if (!digestMatch) throw new Error(`invalid sha256 in manifest for ${safeName}`);
-  const digest = digestMatch[0];
-  const url = new URL(`${baseUrl.replace(/\/$/, "")}/${safeName}`);
-  if (url.protocol !== "https:") throw new Error(`artifact baseUrl must be https: ${baseUrl}`);
-  if (!ALLOWED_HOSTS.has(url.hostname))
-    throw new Error(`artifact host not allowed: ${url.hostname}`);
-  // Rebuild the URL from validated parts so the value reaching fetch() carries no raw manifest data.
-  return { url: `https://${url.hostname}${url.pathname}`, safeName, digest };
+function validated(re: RegExp, value: string, what: string): string {
+  const m = re.exec(value);
+  if (!m) throw new Error(`unsafe ${what} in manifest: ${JSON.stringify(value)}`);
+  return m[0]; // the returned value comes from the regex match, not the raw input (barrier)
 }
 
-/** Return a cached asset path, fetching + verifying from the Release if not already cached. */
+/** Build the Release download URL from a constant origin + validated path segments only. */
+function releaseUrl(repo: string, tag: string, safeName: string): string {
+  const r = validated(SAFE_REPO, repo, "repo");
+  const t = validated(SAFE_TAG, tag, "tag");
+  return `${RELEASE_ORIGIN}/${r}/releases/download/${t}/${safeName}`;
+}
+
+/** Return a cached asset path, fetching + verifying from the Release if not already cached.
+ *  `ext` is a fixed code constant, so the cache path is `<hex-digest>.<ext>` — no manifest string
+ *  reaches the filesystem sink (path-injection barrier). */
 async function ensureAsset(
-  baseUrl: string,
+  repo: string,
+  tag: string,
   ref: AssetRef,
+  ext: "onnx" | "json",
   cacheDir: string,
   fetchImpl: (url: string) => Promise<Uint8Array>,
 ): Promise<string> {
-  // Barrier: every value used at a sink below is derived from a validated match, not raw manifest.
-  const { url, safeName, digest } = sanitizeRef(baseUrl, ref);
-  // Cache by content hash so a manifest bump never serves a stale blob.
-  const cached = join(cacheDir, `${digest}-${safeName}`);
+  const safeName = validated(SAFE_ASSET, ref.asset, "asset name");
+  const digest = validated(SAFE_DIGEST, ref.sha256, "sha256");
+  const url = releaseUrl(repo, tag, safeName);
+  // Content-addressed cache path built only from the validated hex digest + a constant extension.
+  const cached = join(cacheDir, `${digest}.${ext}`);
   if (existsSync(cached) && sha256Hex(readFileSync(cached)) === digest) return cached;
 
   let bytes: Uint8Array;
@@ -153,9 +149,10 @@ export async function ensureArtifact(
   const entry = manifest.models[concern];
   if (!entry) throw new Error(`no manifest entry for judge concern "${concern}"`);
 
+  const { repo, tag } = manifest.release;
   const [modelPath, tokenizerPath] = await Promise.all([
-    ensureAsset(manifest.release.baseUrl, entry.assets.model, cacheDir, fetchImpl),
-    ensureAsset(manifest.release.baseUrl, entry.assets.tokenizer, cacheDir, fetchImpl),
+    ensureAsset(repo, tag, entry.assets.model, "onnx", cacheDir, fetchImpl),
+    ensureAsset(repo, tag, entry.assets.tokenizer, "json", cacheDir, fetchImpl),
   ]);
   return {
     concern,
