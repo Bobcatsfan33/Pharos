@@ -82,15 +82,28 @@ const SAFE_ASSET = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 // an arbitrary server (SSRF barrier). Redirects to objects.githubusercontent.com are followed by fetch.
 const ALLOWED_HOSTS = new Set(["github.com", "objects.githubusercontent.com"]);
 
-/** Validate + build the asset URL. Throws on path-traversal names, non-https, or non-GitHub hosts. */
-function safeAssetUrl(baseUrl: string, asset: string): string {
-  if (!SAFE_ASSET.test(asset))
-    throw new Error(`unsafe artifact asset name: ${JSON.stringify(asset)}`);
-  const url = new URL(`${baseUrl.replace(/\/$/, "")}/${asset}`);
+/**
+ * Sanitize a manifest asset reference into values safe to use at the network + filesystem sinks.
+ * Returns NEW strings derived only from validated components — the tainted manifest fields never
+ * reach a sink directly (barrier). Throws on traversal names, non-https, non-GitHub host, or a
+ * non-hex digest.
+ */
+function sanitizeRef(
+  baseUrl: string,
+  ref: AssetRef,
+): { url: string; safeName: string; digest: string } {
+  const match = SAFE_ASSET.exec(ref.asset);
+  if (!match) throw new Error(`unsafe artifact asset name: ${JSON.stringify(ref.asset)}`);
+  const safeName = match[0]; // reconstructed from the validated match, not the raw input
+  const digestMatch = /^[0-9a-f]{64}$/.exec(ref.sha256);
+  if (!digestMatch) throw new Error(`invalid sha256 in manifest for ${safeName}`);
+  const digest = digestMatch[0];
+  const url = new URL(`${baseUrl.replace(/\/$/, "")}/${safeName}`);
   if (url.protocol !== "https:") throw new Error(`artifact baseUrl must be https: ${baseUrl}`);
   if (!ALLOWED_HOSTS.has(url.hostname))
     throw new Error(`artifact host not allowed: ${url.hostname}`);
-  return url.toString();
+  // Rebuild the URL from validated parts so the value reaching fetch() carries no raw manifest data.
+  return { url: `https://${url.hostname}${url.pathname}`, safeName, digest };
 }
 
 /** Return a cached asset path, fetching + verifying from the Release if not already cached. */
@@ -100,28 +113,25 @@ async function ensureAsset(
   cacheDir: string,
   fetchImpl: (url: string) => Promise<Uint8Array>,
 ): Promise<string> {
-  // Validate the asset name + URL BEFORE it touches the filesystem or the network (SSRF /
-  // path-traversal barrier); the sha256 also constrains the cache filename to a safe hex prefix.
-  const url = safeAssetUrl(baseUrl, ref.asset);
-  if (!/^[0-9a-f]{64}$/.test(ref.sha256))
-    throw new Error(`invalid sha256 in manifest for ${ref.asset}`);
+  // Barrier: every value used at a sink below is derived from a validated match, not raw manifest.
+  const { url, safeName, digest } = sanitizeRef(baseUrl, ref);
   // Cache by content hash so a manifest bump never serves a stale blob.
-  const cached = join(cacheDir, `${ref.sha256}-${ref.asset}`);
-  if (existsSync(cached) && sha256Hex(readFileSync(cached)) === ref.sha256) return cached;
+  const cached = join(cacheDir, `${digest}-${safeName}`);
+  if (existsSync(cached) && sha256Hex(readFileSync(cached)) === digest) return cached;
 
   let bytes: Uint8Array;
   try {
     bytes = await fetchImpl(url);
   } catch (err) {
     throw new Error(
-      `Could not fetch judge artifact ${ref.asset} from ${url}: ${(err as Error).message}. ` +
+      `Could not fetch judge artifact ${safeName} from ${url}: ${(err as Error).message}. ` +
         `Has the maintainer uploaded the blobs to the Release yet?`,
     );
   }
   const got = sha256Hex(bytes);
-  if (got !== ref.sha256) {
+  if (got !== digest) {
     throw new Error(
-      `sha256 mismatch for ${ref.asset}: manifest ${ref.sha256} != fetched ${got} (refusing to serve).`,
+      `sha256 mismatch for ${safeName}: manifest ${digest} != fetched ${got} (refusing to serve).`,
     );
   }
   mkdirSync(dirname(cached), { recursive: true });
