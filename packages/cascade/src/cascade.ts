@@ -179,7 +179,8 @@ export class VerdictCascade {
     const results: JudgeResult[] = [];
     for (const binding of this.deps.packs) {
       if (!this.deps.registry.has(binding.packId)) continue;
-      results.push(this.deps.registry.judge(binding.packId, text));
+      // judgeAsync dispatches on kind: logistic (sync, resolved) or served ONNX transformer (async).
+      results.push(await this.deps.registry.judgeAsync(binding.packId, text));
     }
     return results;
   }

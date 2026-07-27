@@ -15,6 +15,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@pharos/core": "workspace:*"
+    "@pharos/core": "workspace:*",
+    "onnxruntime-node": "1.20.1"
   }
 }

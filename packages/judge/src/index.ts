@@ -8,6 +8,22 @@ export {
   DEFAULT_MODELS_DIR,
 } from "./registry.js";
 export {
+  OnnxJudge,
+  loadOnnxJudge,
+  type AsyncJudge,
+  type LoadOnnxOptions,
+  type OnnxSession,
+  type OnnxTensor,
+  type TensorCtor,
+  type OnnxJudgeMeta,
+} from "./onnxModel.js";
+export {
+  BertTokenizer,
+  tokenizerConfigFromJson,
+  type TokenizerConfig,
+  type Encoding,
+} from "./tokenizer.js";
+export {
   ensureArtifact,
   loadManifest,
   sha256Hex,

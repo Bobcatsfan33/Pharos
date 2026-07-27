@@ -1,0 +1,109 @@
+{
+  "concern": "finra-promissory",
+  "served": "model.int8.onnx",
+  "modelVersion": "finra-promissory@4cef02698045",
+  "temperature": 0.6109424233436584,
+  "threshold": 0.5,
+  "maxLen": 128,
+  "records": [
+    {
+      "text": "We guarantee a fixed return, no risk.",
+      "inputIds": [101, 12865, 75980, 24367, 47738, 169, 37770, 15079, 117, 10192, 24179, 119, 102],
+      "probability": 0.9999752
+    },
+    {
+      "text": "Le garantizamos una rentabilidad asegurada.",
+      "inputIds": [
+        101, 10281, 24457, 12752, 40556, 10310, 10153, 79105, 37530, 10146, 40876, 19162, 119, 102
+      ],
+      "probability": 0.74689388
+    },
+    {
+      "text": "Wir garantieren Ihnen eine feste Rendite.",
+      "inputIds": [
+        101, 51732, 24457, 73762, 10969, 146, 40405, 10359, 84671, 52712, 59627, 119, 102
+      ],
+      "probability": 0.99993658
+    },
+    {
+      "text": "Straße für 5,00 € — jährlich, ohne Risiko.",
+      "inputIds": [
+        101, 17241, 10307, 126, 117, 11025, 1775, 100, 42685, 117, 15032, 155, 14553, 10440, 119,
+        102
+      ],
+      "probability": 0.99660695
+    },
+    {
+      "text": "El niño preguntó: ¿está seguro? ¡Sí!",
+      "inputIds": [
+        101, 10224, 50289, 12229, 32657, 16555, 131, 224, 11559, 81746, 136, 199, 156, 10545, 106,
+        102
+      ],
+      "probability": 0.99959642
+    },
+    {
+      "text": "Please transfer $1,234.56 to account #4821 now.",
+      "inputIds": [
+        101, 47464, 21110, 109, 122, 117, 24966, 119, 11628, 10114, 23200, 108, 46810, 10759, 11858,
+        119, 102
+      ],
+      "probability": 0.99873239
+    },
+    {
+      "text": "café résumé naïve coöperate Zürich",
+      "inputIds": [
+        101, 34551, 186, 11042, 10465, 10333, 10132, 27514, 10612, 11170, 97387, 64474, 19985, 102
+      ],
+      "probability": 0.99187344
+    },
+    {
+      "text": "a.b-c/d_e (test) [x] {y} <z>",
+      "inputIds": [
+        101, 169, 119, 170, 118, 171, 120, 172, 168, 173, 113, 15839, 114, 164, 192, 166, 195, 193,
+        197, 133, 194, 135, 102
+      ],
+      "probability": 0.89263111
+    },
+    {
+      "text": "007 42 3.14159 100% +/-",
+      "inputIds": [101, 35964, 11276, 124, 119, 59265, 11373, 10407, 110, 116, 120, 118, 102],
+      "probability": 0.99824983
+    },
+    {
+      "text": "Hello, 世界! 你好 mixed-script test.",
+      "inputIds": [
+        101, 31178, 117, 2087, 5621, 106, 2262, 3240, 23742, 118, 31810, 15839, 119, 102
+      ],
+      "probability": 0.99980527
+    },
+    {
+      "text": "MRN 620148: patient started on dialysis.",
+      "inputIds": [
+        101, 52157, 11537, 35942, 39900, 11396, 131, 38607, 13457, 10135, 10671, 52176, 10291, 119,
+        102
+      ],
+      "probability": 0.28273919
+    },
+    {
+      "text": "   extra   whitespace\tand\ttabs   ",
+      "inputIds": [101, 19868, 15263, 109351, 10111, 100781, 10107, 102],
+      "probability": 0.99558026
+    },
+    {
+      "text": "ALL CAPS SHOUTING GUARANTEE",
+      "inputIds": [
+        101, 47271, 11369, 24707, 46983, 38702, 11403, 65729, 50183, 144, 12022, 52188, 41275,
+        29833, 11259, 102
+      ],
+      "probability": 0.99934596
+    },
+    {
+      "text": "out-of-vocab emoji rocket and symbols test",
+      "inputIds": [
+        101, 10950, 118, 10108, 118, 12556, 10425, 10457, 10266, 32451, 68415, 10111, 81467, 15839,
+        102
+      ],
+      "probability": 0.94628006
+    }
+  ]
+}
