@@ -29,7 +29,11 @@ describe("model artifact store", () => {
 
   const fakeManifest = (modelBytes: Uint8Array, tokBytes: Uint8Array): ModelManifest => ({
     schemaVersion: "1.0.0",
-    release: { repo: "x/y", tag: "t", baseUrl: "https://example.invalid/dl" },
+    release: {
+      repo: "x/y",
+      tag: "t",
+      baseUrl: "https://github.com/x/y/releases/download/t",
+    },
     models: {
       demo: {
         modelVersion: "demo@000000000000",
@@ -90,6 +94,24 @@ describe("model artifact store", () => {
     await expect(ensureArtifact("demo", { manifest, cacheDir, fetchImpl })).rejects.toThrow(
       /uploaded the blobs to the Release/,
     );
+  });
+
+  it("rejects a path-traversal asset name and a non-GitHub host (SSRF/traversal barrier)", async () => {
+    const cacheDir = mkdtempSync(join(tmpdir(), "pharos-models-"));
+    const good = fakeManifest(new Uint8Array([1]), new Uint8Array([2]));
+    const fetchImpl = async () => new Uint8Array([1]);
+
+    const traversal: ModelManifest = JSON.parse(JSON.stringify(good));
+    traversal.models.demo!.assets.model.asset = "../../etc/passwd";
+    await expect(
+      ensureArtifact("demo", { manifest: traversal, cacheDir, fetchImpl }),
+    ).rejects.toThrow(/unsafe artifact asset name/);
+
+    const badHost: ModelManifest = JSON.parse(JSON.stringify(good));
+    badHost.release.baseUrl = "https://evil.example.com/dl";
+    await expect(
+      ensureArtifact("demo", { manifest: badHost, cacheDir, fetchImpl }),
+    ).rejects.toThrow(/host not allowed/);
   });
 
   it("throws on an unknown concern", async () => {

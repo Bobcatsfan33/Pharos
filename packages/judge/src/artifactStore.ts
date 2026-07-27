@@ -75,6 +75,24 @@ async function defaultFetch(url: string): Promise<Uint8Array> {
   return new Uint8Array(await res.arrayBuffer());
 }
 
+// Asset names come from the (committed, but still validated) manifest. Constrain them to a strict
+// charset so they can never traverse the cache directory or inject into the fetch URL.
+const SAFE_ASSET = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+// Release downloads originate from GitHub; pin the host so a bad manifest can't point the fetch at
+// an arbitrary server (SSRF barrier). Redirects to objects.githubusercontent.com are followed by fetch.
+const ALLOWED_HOSTS = new Set(["github.com", "objects.githubusercontent.com"]);
+
+/** Validate + build the asset URL. Throws on path-traversal names, non-https, or non-GitHub hosts. */
+function safeAssetUrl(baseUrl: string, asset: string): string {
+  if (!SAFE_ASSET.test(asset))
+    throw new Error(`unsafe artifact asset name: ${JSON.stringify(asset)}`);
+  const url = new URL(`${baseUrl.replace(/\/$/, "")}/${asset}`);
+  if (url.protocol !== "https:") throw new Error(`artifact baseUrl must be https: ${baseUrl}`);
+  if (!ALLOWED_HOSTS.has(url.hostname))
+    throw new Error(`artifact host not allowed: ${url.hostname}`);
+  return url.toString();
+}
+
 /** Return a cached asset path, fetching + verifying from the Release if not already cached. */
 async function ensureAsset(
   baseUrl: string,
@@ -82,11 +100,15 @@ async function ensureAsset(
   cacheDir: string,
   fetchImpl: (url: string) => Promise<Uint8Array>,
 ): Promise<string> {
+  // Validate the asset name + URL BEFORE it touches the filesystem or the network (SSRF /
+  // path-traversal barrier); the sha256 also constrains the cache filename to a safe hex prefix.
+  const url = safeAssetUrl(baseUrl, ref.asset);
+  if (!/^[0-9a-f]{64}$/.test(ref.sha256))
+    throw new Error(`invalid sha256 in manifest for ${ref.asset}`);
   // Cache by content hash so a manifest bump never serves a stale blob.
   const cached = join(cacheDir, `${ref.sha256}-${ref.asset}`);
   if (existsSync(cached) && sha256Hex(readFileSync(cached)) === ref.sha256) return cached;
 
-  const url = `${baseUrl}/${ref.asset}`;
   let bytes: Uint8Array;
   try {
     bytes = await fetchImpl(url);
