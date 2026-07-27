@@ -10,7 +10,12 @@ import {
 } from "./schema.js";
 import { CONCERN_SPECS, type ConcernSpec, type Template } from "./concerns/index.js";
 import { mulberry32, pick } from "./prng.js";
-import { TRANSFORMS, type TransformName } from "./transforms.js";
+import {
+  TRANSFORMS,
+  base64WrapHardened,
+  rot13WrapHardened,
+  type TransformName,
+} from "./transforms.js";
 
 const CLEAN_TARGET = 300; // ≥300 clean positives and ≥300 clean negatives (roadmap S5-T1)
 const ADVERSARIAL_TARGET = 80; // obfuscated positives per adversarial suite
@@ -87,11 +92,13 @@ function makeSplit(
   };
 }
 
-/** Generate every split for one concern, deterministically from `seed`. */
+/** Generate every split for one concern, deterministically from `seed`. `hardenedEncoding` swaps
+ *  the base64/rot13 wrappers for the plausible-carrier variants (lockbox — tests decoding). */
 export function generateConcern(
   concern: ConcernSpec["concern"],
   seed: number,
   generatedAt: string,
+  opts: { hardenedEncoding?: boolean } = {},
 ): { splits: EvalSplit[]; manifest: ConcernManifest } {
   const spec = CONCERN_SPECS[concern];
   const rng = mulberry32(seed);
@@ -133,13 +140,19 @@ export function generateConcern(
     "prompt-injection",
   ];
   for (const t of transforms) {
+    const fn =
+      opts.hardenedEncoding && t === "base64"
+        ? base64WrapHardened
+        : opts.hardenedEncoding && t === "rot13"
+          ? rot13WrapHardened
+          : TRANSFORMS[t];
     const examples = seeds.map((seed_, i) =>
       toExample(
         concern,
         t as Suite,
         "en",
         i,
-        TRANSFORMS[t](seed_.text),
+        fn(seed_.text),
         // preserve the source template's label(=1) + provenance
         { id: seed_.templateId, label: 1, source: seed_.source, text: "" },
       ),

@@ -19,7 +19,12 @@ export {
   DATA_DIR,
   type LoadedConcern,
 } from "./loader.js";
-export { TRANSFORMS, type TransformName } from "./transforms.js";
+export {
+  TRANSFORMS,
+  base64WrapHardened,
+  rot13WrapHardened,
+  type TransformName,
+} from "./transforms.js";
 export * from "./metrics.js";
 export { bootstrapCI, pairedBootstrapDeltaCI, DEFAULT_RESAMPLES, type CI } from "./bootstrap.js";
 export {

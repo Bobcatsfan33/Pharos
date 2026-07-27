@@ -1,0 +1,7 @@
+# Model artifacts (blobs) live in the external artifact store (GitHub Release assets),
+# fetched hash-verified against the committed manifest — NEVER committed to git.
+models/
+# uv-managed virtualenv + caches
+.venv/
+__pycache__/
+*.pyc
