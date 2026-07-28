@@ -24,6 +24,14 @@ export {
   type Encoding,
 } from "./tokenizer.js";
 export {
+  checkJudgeReadiness,
+  readCardVersion,
+  MODELS_DIR,
+  type JudgeReadinessCheck,
+  type JudgeReadinessResult,
+  type ReadinessDeps,
+} from "./readiness.js";
+export {
   ensureArtifact,
   loadManifest,
   sha256Hex,
