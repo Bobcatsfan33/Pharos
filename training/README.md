@@ -52,6 +52,12 @@ uv run python eval_final.py --concern finra-promissory   # numbers of record (de
 | phi-in-context | fp32 (516MB) | 73.0% → **100%** | 41.0% → **16.0%** | 7/7 |
 | funds-movement-intent | int8 (129MB) | 98.7% → **100%** | 82.5% → **33.2%** | 6/7 |
 
+- **Batch-1 (serving-faithful) numbers of record** — dynamic int8 ONNX is **batch-sensitive** (the
+  per-tensor activation scale spans the whole batch), so only single-inference matches the
+  deterministic batch-1 serving path (`OnnxJudge.scoreBatch` runs batch-1 for reproducible verdicts).
+  fp32 is batch-invariant. The earlier batch-32 eval was an artifact; the serving numbers are: finra
+  int8 clean recall **97.0%** / hard-neg FPR 11.1%; funds int8 recall 100% / hard-neg FPR **36.3%**;
+  phi fp32 unchanged (100% / 16.0%). The beats-baseline claim holds at batch-1.
 - Optimism (dev→lockbox) ≤ 2.7 pt — the lockbox held.
 - **phi ships fp32:** int8 dev-recalibration (threshold 0.74) left lockbox hard-neg FPR at 20.5% vs
   fp32 16% (+4.5% > +3% tolerance); recall was never the limiter. CPU-latency cost measured in S7-T1.

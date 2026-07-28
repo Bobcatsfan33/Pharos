@@ -7,6 +7,7 @@ import {
   judge as judgeWith,
   modelVersion,
 } from "./model.js";
+import { type AsyncJudge } from "./onnxModel.js";
 
 /** The directory of committed, trained model artifacts shipped with the package. */
 export const DEFAULT_MODELS_DIR = fileURLToPath(new URL("../models", import.meta.url));
@@ -21,6 +22,11 @@ export const DEFAULT_MODELS_DIR = fileURLToPath(new URL("../models", import.meta
 export class ModelRegistry {
   private active = new Map<string, JudgeModelArtifact>();
   private byVersion = new Map<string, JudgeModelArtifact>();
+  // Served async judges (e.g. ONNX transformers). The registry is polymorphic on artifact kind:
+  // a pack is served by a logistic artifact OR an async judge; the version-is-content-hash rule is
+  // unchanged (a served judge reports its manifest modelVersion).
+  private served = new Map<string, AsyncJudge>();
+  private servedByVersion = new Map<string, AsyncJudge>();
 
   register(artifact: JudgeModelArtifact): string {
     const version = modelVersion(artifact);
@@ -29,8 +35,16 @@ export class ModelRegistry {
     return version;
   }
 
+  /** Register a served async judge (ONNX transformer) alongside the logistic artifacts. */
+  registerServed(judge: AsyncJudge): string {
+    const version = judge.version();
+    this.served.set(judge.packId, judge);
+    this.servedByVersion.set(version, judge);
+    return version;
+  }
+
   has(packId: string): boolean {
-    return this.active.has(packId);
+    return this.active.has(packId) || this.served.has(packId);
   }
 
   get(packId: string): JudgeModelArtifact | undefined {
@@ -42,20 +56,38 @@ export class ModelRegistry {
   }
 
   activeVersion(packId: string): string | undefined {
+    const served = this.served.get(packId);
+    if (served) return served.version();
     const a = this.active.get(packId);
     return a ? modelVersion(a) : undefined;
   }
 
   listVersions(): Array<{ packId: string; concern: string; version: string }> {
-    return [...this.byVersion.entries()].map(([version, a]) => ({
+    const logistic = [...this.byVersion.entries()].map(([version, a]) => ({
       packId: a.packId,
       concern: a.concern,
       version,
     }));
+    const served = [...this.servedByVersion.values()].map((j) => ({
+      packId: j.packId,
+      concern: j.concern,
+      version: j.version(),
+    }));
+    return [...logistic, ...served];
   }
 
-  /** Judge text with a pack's active model. */
+  /** Judge text with a pack's active LOGISTIC model (synchronous). Throws for served async judges —
+   *  callers that must support both kinds use `judgeAsync`. */
   judge(packId: string, text: string): JudgeResult {
+    const artifact = this.active.get(packId);
+    if (!artifact) throw new Error(`No logistic judge registered for pack: ${packId}`);
+    return judgeWith(artifact, text);
+  }
+
+  /** Judge text with a pack's active model, dispatching on kind (served async judge preferred). */
+  async judgeAsync(packId: string, text: string): Promise<JudgeResult> {
+    const served = this.served.get(packId);
+    if (served) return (await served.scoreBatch([text]))[0]!;
     const artifact = this.active.get(packId);
     if (!artifact) throw new Error(`No judge model registered for pack: ${packId}`);
     return judgeWith(artifact, text);

@@ -60,7 +60,10 @@ def softmax_pos(logits, temperature):
     return (e / e.sum(axis=-1, keepdims=True))[:, 1]
 
 
-def onnx_scores(sess, tok, texts, temperature, batch=32):
+# batch=1 is serving-faithful: dynamic-int8 ONNX is batch-sensitive (per-tensor activation scales
+# span the batch), so only batch-1 matches the deterministic, reproducible batch-1 serving path
+# (OnnxJudge.scoreBatch). fp32 is batch-invariant. Never raise this above 1 for served-model eval.
+def onnx_scores(sess, tok, texts, temperature, batch=1):
     out = []
     for i in range(0, len(texts), batch):
         enc = tok(texts[i:i + batch], padding="max_length", truncation=True, max_length=MAX_LEN, return_tensors="np")
