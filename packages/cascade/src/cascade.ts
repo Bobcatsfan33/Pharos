@@ -9,6 +9,7 @@ import { type ModelRegistry, type JudgeResult } from "@pharos/judge";
 import { type PolicyArtifact, evaluateArtifact } from "@pharos/policy";
 import { scoreRisk } from "./riskScorer.js";
 import { DeadlineExceeded, withDeadline } from "./deadline.js";
+import { normalizedVariants } from "./normalize.js";
 
 /**
  * The tiered decision cascade — the central technical claim of Pharos.
@@ -175,12 +176,21 @@ export class VerdictCascade {
   private async runJudges(req: VerdictRequest): Promise<JudgeResult[]> {
     if (this.deps.faults?.judgeThrows) throw new JudgeFault("injected judge failure");
     if (this.deps.faults?.judgeDelayMs) await sleep(this.deps.faults.judgeDelayMs);
-    const text = actionText(req);
+    const raw = actionText(req);
+    // Cascade-owned normalization (ADR 0004): score the RAW text AND the normalized variants
+    // (unicode-canonicalized + reversibly-decoded), and take the MORE-SEVERE verdict per pack.
+    // Obfuscation can only ADD detections — it can never mask a plaintext signal. Models stay bare.
+    const texts = [...new Set([raw, ...normalizedVariants(raw)])];
     const results: JudgeResult[] = [];
     for (const binding of this.deps.packs) {
       if (!this.deps.registry.has(binding.packId)) continue;
-      // judgeAsync dispatches on kind: logistic (sync, resolved) or served ONNX transformer (async).
-      results.push(await this.deps.registry.judgeAsync(binding.packId, text));
+      let worst: JudgeResult | null = null;
+      for (const t of texts) {
+        // judgeAsync dispatches on kind: logistic (sync, resolved) or served ONNX (async).
+        const r = await this.deps.registry.judgeAsync(binding.packId, t);
+        if (!worst || r.probability > worst.probability) worst = r;
+      }
+      if (worst) results.push(worst);
     }
     return results;
   }

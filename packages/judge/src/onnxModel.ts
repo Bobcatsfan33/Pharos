@@ -117,9 +117,10 @@ export async function loadOnnxJudge(opts: LoadOnnxOptions): Promise<OnnxJudge> {
   const fetched = await ensureArtifact(opts.concern, opts);
   const tokenizer = BertTokenizer.fromJson(JSON.parse(readFileSync(fetched.tokenizerPath, "utf8")));
   // onnxruntime-node ships no resolvable types for the dynamic-import default; pin the shape we use.
-  // @ts-expect-error -- no bundled declaration for the CJS default import
-  const ortModule = (await import("onnxruntime-node")).default;
-  const ort = ortModule as {
+  // CJS/ESM interop varies (default vs namespace), so accept either.
+  // @ts-expect-error -- no bundled declaration for the module
+  const ortModule = await import("onnxruntime-node");
+  const ort = (ortModule.default ?? ortModule) as {
     InferenceSession: { create(path: string): Promise<OnnxSession> };
     Tensor: TensorCtor;
   };

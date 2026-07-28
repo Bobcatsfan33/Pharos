@@ -57,6 +57,13 @@ export {
 } from "./report.js";
 export { renderMarkdown, type ReportMeta } from "./renderMarkdown.js";
 export {
+  ENCODING_SUITE,
+  ENCODINGS,
+  encode,
+  type EncodingExample,
+  type EncodingName,
+} from "./encoding-suite.js";
+export {
   runGate,
   gateConcern,
   loadTolerances,

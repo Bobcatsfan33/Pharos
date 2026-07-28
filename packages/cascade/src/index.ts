@@ -2,6 +2,12 @@ export { scoreRisk, type RiskBreakdown } from "./riskScorer.js";
 export { DeadlineExceeded, withDeadline } from "./deadline.js";
 export { fingerprintVerdict, verdictsIdentical } from "./reproduce.js";
 export {
+  canonicalize,
+  decodeCandidates,
+  normalizedVariants,
+  NORMALIZER_VERSION,
+} from "./normalize.js";
+export {
   VerdictCascade,
   actionText,
   type CascadeDeps,
