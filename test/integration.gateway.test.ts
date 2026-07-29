@@ -2,16 +2,17 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import Fastify, { type FastifyInstance } from "fastify";
 import { PharosClient } from "@getpharos/sdk";
 import { createGatewayApp } from "@pharos/gateway";
+import { PostgresHeldRequestStore, heldRequestKeyProviderFromMaster } from "@pharos/storage";
 
 /**
  * M3 (Causeway) gateway path: an UNMODIFIED agent — one that imports no Pharos SDK and only
  * sends normal HTTP — is governed purely by routing its egress through the gateway. It acts,
  * gets blocked, gets escalated, receives a human verdict, and resumes correctly with
- * exactly-once side effects.
+ * restart-safe held-request delivery with an upstream idempotency key.
  */
 const keystoreDir = mkdtempSync(join(tmpdir(), "pharos-gw-keystore-"));
 process.env.PHAROS_ENV = "local";
@@ -39,6 +40,37 @@ let gatewayUrl = "";
 let pharosUrl = "";
 let apiKey = "";
 let upstreamHits = 0;
+let upstreamIdempotencyKey: string | undefined;
+let targetUrl = "";
+let gatewayClient: PharosClient;
+const gatewayHoldMasterKey = randomBytes(32);
+
+async function startGateway(): Promise<void> {
+  if (!platform) throw new Error("platform is not initialized");
+  gatewayApp = createGatewayApp({
+    client: gatewayClient,
+    tenantId: TENANT,
+    agentId: "unmodified-agent",
+    target: targetUrl,
+    heldRequestStore: new PostgresHeldRequestStore(
+      platform.pool,
+      heldRequestKeyProviderFromMaster(gatewayHoldMasterKey),
+      { leaseMs: 500 },
+    ),
+    mapAction: (req) => ({
+      action: { type: "message.send", payload: req.body as Record<string, unknown> },
+      liability: {
+        mandate: null,
+        oversightMode: "human_on_loop",
+        blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" },
+        modelMetadata: null,
+      },
+    }),
+  });
+  await gatewayApp.listen({ port: 0, host: "127.0.0.1" });
+  const address = gatewayApp.server.address();
+  gatewayUrl = typeof address === "object" && address ? `http://127.0.0.1:${address.port}` : "";
+}
 
 beforeAll(async () => {
   try {
@@ -61,34 +93,18 @@ beforeAll(async () => {
 
     // The upstream the agent actually wanted to reach (counts side effects).
     targetApp = Fastify();
-    targetApp.post("/send", async () => {
+    targetApp.post("/send", async (request) => {
       upstreamHits++;
+      upstreamIdempotencyKey = request.headers["idempotency-key"];
       return { sent: true };
     });
     await targetApp.listen({ port: 0, host: "127.0.0.1" });
     const ta = targetApp.server.address();
-    const targetUrl = typeof ta === "object" && ta ? `http://127.0.0.1:${ta.port}` : "";
+    targetUrl = typeof ta === "object" && ta ? `http://127.0.0.1:${ta.port}` : "";
 
     // The gateway: governs egress, forwards to target. The agent points here.
-    const client = new PharosClient({ baseUrl: pharosUrl, apiKey, deadlineMs: 2000 });
-    gatewayApp = createGatewayApp({
-      client,
-      tenantId: TENANT,
-      agentId: "unmodified-agent",
-      target: targetUrl,
-      mapAction: (req) => ({
-        action: { type: "message.send", payload: req.body as Record<string, unknown> },
-        liability: {
-          mandate: null,
-          oversightMode: "human_on_loop",
-          blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" },
-          modelMetadata: null,
-        },
-      }),
-    });
-    await gatewayApp.listen({ port: 0, host: "127.0.0.1" });
-    const ga = gatewayApp.server.address();
-    gatewayUrl = typeof ga === "object" && ga ? `http://127.0.0.1:${ga.port}` : "";
+    gatewayClient = new PharosClient({ baseUrl: pharosUrl, apiKey, deadlineMs: 2000 });
+    await startGateway();
   } catch (err) {
     console.warn("[gateway] infrastructure unavailable, skipping:", (err as Error).message);
     available = false;
@@ -112,6 +128,57 @@ async function agentSend(body: unknown) {
 }
 
 describe("Gateway — zero-code governance of an unmodified agent", () => {
+  it("leases held requests exclusively and recovers an abandoned lease", async (ctx) => {
+    if (!available) return ctx.skip();
+    const escalationId = randomUUID();
+    const store = new PostgresHeldRequestStore(
+      platform!.pool,
+      heldRequestKeyProviderFromMaster(gatewayHoldMasterKey),
+      { leaseMs: 20 },
+    );
+    await store.save(TENANT, escalationId, {
+      method: "POST",
+      path: "/lease-test",
+      body: { secret: "encrypted" },
+      headers: {},
+    });
+
+    const first = await store.acquire(TENANT, escalationId);
+    expect(first.status).toBe("acquired");
+    expect(await store.acquire(TENANT, escalationId)).toEqual({ status: "busy" });
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const recovered = await store.acquire(TENANT, escalationId);
+    expect(recovered.status).toBe("acquired");
+    if (first.status !== "acquired" || recovered.status !== "acquired") {
+      throw new Error("test setup did not acquire held-request leases");
+    }
+    expect(recovered.leaseToken).not.toBe(first.leaseToken);
+    expect(await store.complete(TENANT, escalationId, first.leaseToken)).toBe(false);
+    expect(await store.release(TENANT, escalationId, recovered.leaseToken, "retry")).toBe(true);
+
+    const final = await store.acquire(TENANT, escalationId);
+    if (final.status !== "acquired") throw new Error("released lease was not reacquired");
+    expect(await store.complete(TENANT, escalationId, final.leaseToken)).toBe(true);
+  });
+
+  it("rejects oversized held requests before persistence", async (ctx) => {
+    if (!available) return ctx.skip();
+    const store = new PostgresHeldRequestStore(
+      platform!.pool,
+      heldRequestKeyProviderFromMaster(gatewayHoldMasterKey),
+      { maxBytes: 64 },
+    );
+    await expect(
+      store.save(TENANT, randomUUID(), {
+        method: "POST",
+        path: "/size-test",
+        body: { content: "x".repeat(128) },
+        headers: {},
+      }),
+    ).rejects.toThrow(/limit is 64 bytes/);
+  });
+
   it("forwards a benign action to the upstream", async (ctx) => {
     if (!available) return ctx.skip();
     const before = upstreamHits;
@@ -131,7 +198,7 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
     expect(upstreamHits).toBe(before); // never forwarded
   });
 
-  it("holds an escalation, resumes after a human verdict, forwards exactly once", async (ctx) => {
+  it("holds an escalation across restart and resumes with a stable idempotency key", async (ctx) => {
     if (!available) return ctx.skip();
     const before = upstreamHits;
     const res = await agentSend({
@@ -142,6 +209,28 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
     expect(escalationId).toBeTruthy();
     expect(upstreamHits).toBe(before); // not forwarded yet
 
+    const raw = await platform!.pool.query<{ ciphertext: Buffer }>(
+      `SELECT ciphertext FROM gateway_held_requests
+       WHERE tenant_id = $1 AND escalation_id = $2`,
+      [TENANT, escalationId],
+    );
+    expect(raw.rows).toHaveLength(1);
+    expect(raw.rows[0]!.ciphertext.toString("utf8")).not.toContain("Patient John Smith");
+
+    const otherTenantStore = new PostgresHeldRequestStore(
+      platform!.pool,
+      heldRequestKeyProviderFromMaster(gatewayHoldMasterKey),
+    );
+    expect(await otherTenantStore.acquire(`${TENANT}-other`, escalationId)).toEqual({
+      status: "missing",
+    });
+
+    // The held body is in Postgres, not process memory. Replace the gateway process
+    // before review and prove a fresh instance can still deliver it.
+    await gatewayApp?.close();
+    gatewayApp = null;
+    await startGateway();
+
     // Reviewer approves via Pharos.
     await fetch(`${pharosUrl}/v1/tenants/${TENANT}/escalations/${escalationId}/resolve`, {
       method: "POST",
@@ -149,10 +238,11 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
       body: JSON.stringify({ decision: "approve", rationale: "reviewed PHI exposure, cleared" }),
     });
 
-    // Agent (or operator) resumes via the gateway — forwarded exactly once.
+    // Agent (or operator) resumes via the gateway; this successful delivery is removed.
     const resume1 = await fetch(`${gatewayUrl}/__resume/${escalationId}`, { method: "POST" });
     expect(resume1.status).toBe(200);
     expect(upstreamHits).toBe(before + 1);
+    expect(upstreamIdempotencyKey).toBe(`pharos-escalation-${escalationId}`);
 
     // A second resume must not forward again.
     const resume2 = await fetch(`${gatewayUrl}/__resume/${escalationId}`, { method: "POST" });

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@getpharos/sdk": "workspace:*",
+    "@pharos/storage": "workspace:*",
     "fastify": "^5.10.0"
   }
 }

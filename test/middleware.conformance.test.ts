@@ -13,9 +13,9 @@ import type { ClaimResult, Escalation, SubmitInput, SubmitResult } from "@getpha
  * One conformance contract, exercised through every framework adapter. A governed tool must:
  *   allow            → run the tool, return its result
  *   block            → throw PharosBlockedError, never run the tool
- *   escalate+approve → run the tool exactly once after the human verdict
+ *   escalate+approve → one caller runs the tool after the human verdict
  *   escalate+reject  → throw, never run the tool
- *   double-resume    → run the tool at most once (exactly-once)
+ *   double-resume    → authorize the tool at most once
  */
 class FakeGovernor implements Governor {
   private claimed = new Set<string>();
@@ -118,7 +118,7 @@ for (const fw of FRAMEWORKS) {
       expect(runs).toBe(0);
     });
 
-    it("escalate + approve → runs the tool exactly once", async () => {
+    it("escalate + approve → one caller runs the tool", async () => {
       let runs = 0;
       const invoke = fw.make(new FakeGovernor("escalate", "approved"), () => {
         runs++;
@@ -138,7 +138,7 @@ for (const fw of FRAMEWORKS) {
       expect(runs).toBe(0);
     });
 
-    it("double-resume of one escalation runs the tool at most once (exactly-once)", async () => {
+    it("double-resume of one escalation authorizes the tool at most once", async () => {
       let runs = 0;
       const gov = new FakeGovernor("escalate", "approved");
       const invoke = fw.make(gov, () => {

@@ -117,27 +117,28 @@ existing `evaluateArtifact` seam — roadmap task **S9-T1** (Phase 3). This is a
 scope correction, not a defect: the lifecycle (compile → dry-run → shadow → active →
 rollback) is genuinely implemented and tested.
 
-## 6. The gateway holds escalated request bodies in memory (not durable across restart)
+## 6. Generic HTTP delivery is exactly-once only when the upstream honors idempotency
 
 > **Tracking issue:** [#38](https://github.com/Bobcatsfan33/Pharos/issues/38)
 
-**Today:** the zero-code HTTP gateway keeps the bodies of **escalated, held** requests in an
-in-memory `Map` ([`services/gateway/src/gateway.ts`](../services/gateway/src/gateway.ts), the
-`held` map). If the gateway process restarts while a request is parked awaiting a human
-verdict, that held request body is lost and the agent's call cannot be resumed through the
-gateway.
+**Today:** S8-T1 is implemented. `PostgresHeldRequestStore` encrypts the complete held
+request with AES-256-GCM under an HKDF-derived tenant key, binds its tenant and escalation
+id as authenticated data, enforces a 1 MiB cap, applies Postgres RLS, and leases delivery so
+two gateway replicas cannot race. The production server refuses to start without Postgres
+and the externally supplied master key. The integration test parks a request, replaces the
+gateway process, verifies the database holds no plaintext, proves a different tenant cannot
+acquire it, and resumes from a fresh instance.
 
-**Important scope:** this is **only** the gateway's transient request-body state. The
-**server-side escalation record is durable in Postgres**
-([`packages/storage/src/escalationStore.ts`](../packages/storage/src/escalationStore.ts)),
-and the exactly-once resume guarantee is anchored on that server-side claim, not on the
-in-memory map. No evidence and no verdict is lost on a gateway restart — only the parked
-request body.
+**Protocol limit:** the Pharos claim is an atomic **at-most-once authorization**, not a
+distributed transaction with an arbitrary HTTP target. A crash after the target commits but
+before the gateway records completion creates an ambiguous outcome. Recovery sends the
+stable `Idempotency-Key: pharos-escalation-{id}` header, so an upstream that persists and
+honors idempotency keys executes exactly once. An upstream that ignores the header can still
+duplicate on that narrow failure boundary; claiming otherwise would be false.
 
-**Production:** a Postgres-backed `heldRequestStore` (size-capped, encrypted at rest with a
-tenant data key), so a held request survives a gateway restart and forwards exactly once —
-roadmap task **S8-T1** (Phase 3). Header/body fidelity and multi-target routing are **S8-T2,
-S8-T3**.
+**Remaining:** require and conformance-test upstream idempotency before advertising
+exactly-once delivery for a connector. Header/body fidelity and multi-target routing remain
+**S8-T2, S8-T3**.
 
 ---
 

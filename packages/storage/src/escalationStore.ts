@@ -47,8 +47,8 @@ interface EscalationRow {
  *
  * An escalated action parks here with full context. A human verdict (approve/modify/reject)
  * resolves it; the agent's SDK then resumes. claimResume() flips resumed_at atomically so
- * exactly one resumer wins — guaranteeing the pending side effect executes exactly once even
- * under concurrent or retried resumes.
+ * one resumer wins — guaranteeing at-most-once authorization under concurrent resumes.
+ * Crash-safe exactly-once execution still requires target-side idempotency or an outbox.
  */
 export class EscalationStore {
   constructor(private readonly pool: Pool) {}
@@ -204,7 +204,7 @@ export class EscalationStore {
   /**
    * Atomically claim the right to resume. Returns the escalation only to the first caller
    * after an approve/modify resolution; subsequent calls return null. This is the
-   * exactly-once gate for the agent's pending side effect.
+   * at-most-once authorization gate for the agent's pending side effect.
    */
   async claimResume(tenantId: string, id: string): Promise<Escalation | null> {
     const res = await this.pool.query<EscalationRow>(
