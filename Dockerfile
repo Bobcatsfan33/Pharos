@@ -7,9 +7,11 @@
 # export ./src/*.ts directly, so a dist-only image would require rewriting
 # 15+ package.json exports. tsx keeps the image faithful to how CI runs.
 
-FROM node:22-bookworm-slim AS build
+ARG NODE_IMAGE=node:22-bookworm-slim@sha256:7af03b14a13c8cdd38e45058fd957bf00a72bbe17feac43b1c15a689c029c732
+FROM ${NODE_IMAGE} AS build
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
+RUN corepack enable \
+  && corepack prepare pnpm@10.32.1+sha512.a706938f0e89ac1456b6563eab4edf1d1faf3368d1191fc5c59790e96dc918e4456ab2e67d613de1043d2e8c81f87303e6b40d4ffeca9df15ef1ad567348f2be --activate
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
 COPY packages ./packages
 COPY services ./services
@@ -18,7 +20,9 @@ RUN pnpm install --frozen-lockfile
 # Build is a validation gate (typecheck via tsc project builds), not the runtime artifact.
 RUN pnpm build
 
-FROM node:22-bookworm-slim
+FROM ${NODE_IMAGE}
+ARG NODE_IMAGE
+LABEL org.opencontainers.image.base.name="${NODE_IMAGE}"
 WORKDIR /app
 ENV NODE_ENV=production
 # Local-kms keystore location; docker-compose.prod.yml mounts a named volume

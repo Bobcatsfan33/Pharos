@@ -17,8 +17,9 @@ implemented in-product; the attestations are external/human gates tracked here.
 
 > **Attestation status (external gates).** SOC 2 Type I report issuance and the Type II
 > observation window are auditor engagements; this document is the control inventory the
-> auditor maps against. The supply-chain CI (CodeQL/Trivy/SBOM in `ci.yml` and the broader
-> roadmap) supports the evidence.
+> auditor maps against. The supply-chain CI (CodeQL plus the digest-pinned
+> Trivy/SBOM/signature/provenance image gate in `image.yml`) supports the
+> evidence.
 
 ## Vendor security questionnaire (SIG / CAIQ) — answer pack
 

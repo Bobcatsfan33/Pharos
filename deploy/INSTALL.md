@@ -31,29 +31,40 @@ curl -sXPOST http://localhost:4000/v1/admin/tenants \
 
 ## Verifying the signed image
 
-The API image is published to GHCR and signed with [cosign](https://docs.sigstore.dev/)
-keyless (Sigstore/OIDC) by [`.github/workflows/image.yml`](../.github/workflows/image.yml),
-with a [syft](https://github.com/anchore/syft) SBOM (SPDX-JSON) attached as an attestation.
-**Verify before you deploy.**
+The API image is built from a digest-pinned base, blocked on fixable
+High/Critical findings, published to GHCR, and signed with
+[cosign](https://docs.sigstore.dev/) keyless (Sigstore/OIDC) by
+[`.github/workflows/image.yml`](../.github/workflows/image.yml). A
+[syft](https://github.com/anchore/syft) SPDX SBOM and GitHub build provenance
+are attached to the exact digest. **Verify the digest before you deploy.**
 
 ```bash
-IMAGE=ghcr.io/bobcatsfan33/pharos-api:0.1.0
+TAG=v0.1.0
+IMAGE=ghcr.io/bobcatsfan33/pharos-api
+DIGEST=sha256:<approved-release-digest>
+SUBJECT="${IMAGE}@${DIGEST}"
+IDENTITY="https://github.com/Bobcatsfan33/Pharos/.github/workflows/image.yml@refs/tags/${TAG}"
 
-# 1. Verify the signature. The identity is the release workflow; the issuer is GitHub's OIDC.
-cosign verify "$IMAGE" \
-  --certificate-identity-regexp "^https://github.com/Bobcatsfan33/Pharos/.github/workflows/image.yml@.*$" \
+# 1. Verify the signature against the exact release ref.
+cosign verify "$SUBJECT" \
+  --certificate-identity "$IDENTITY" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 
 # 2. Verify + download the SBOM attestation (SPDX-JSON).
-cosign verify-attestation "$IMAGE" --type spdxjson \
-  --certificate-identity-regexp "^https://github.com/Bobcatsfan33/Pharos/.github/workflows/image.yml@.*$" \
+cosign verify-attestation "$SUBJECT" --type spdxjson \
+  --certificate-identity "$IDENTITY" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
   | jq -r '.payload | @base64d | fromjson | .predicate' > sbom.spdx.json
+
+# 3. Verify GitHub build provenance for the same registry subject.
+gh attestation verify "oci://${SUBJECT}" --repo Bobcatsfan33/Pharos
 ```
 
-A successful `cosign verify` prints the verified signature entries and exits `0`. Pin by
-digest (`ghcr.io/bobcatsfan33/pharos-api@sha256:...`) in production. The Helm chart's
-`image.repository` already points at this GHCR path.
+A successful verification prints the matching entries and exits `0`. The
+approved deployment record must allowlist `DIGEST`; a valid signature from this
+workflow is necessary but does not authorize every version it built. See
+[`docs/security/release-assurance.md`](../docs/security/release-assurance.md).
+The Helm chart's `image.repository` already points at this GHCR path.
 
 ## Option B — Kubernetes (multi-AZ, production)
 
