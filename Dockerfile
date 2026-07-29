@@ -28,6 +28,18 @@ ARG NODE_IMAGE
 LABEL org.opencontainers.image.base.name="${NODE_IMAGE}"
 WORKDIR /app
 ENV NODE_ENV=production
+# Consume Debian security updates at image-build time and remove Node's global
+# package-management toolchain. The service only needs the node runtime plus
+# its deployed production closure; retaining npm/corepack in production adds
+# unused archive, glob, and signing clients to the attack surface.
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && rm -rf /var/lib/apt/lists/* \
+    /usr/local/lib/node_modules/npm \
+    /usr/local/lib/node_modules/corepack \
+  && rm -f /usr/local/bin/npm /usr/local/bin/npx \
+    /usr/local/bin/corepack /usr/local/bin/pnpm /usr/local/bin/pnpx \
+    /usr/local/bin/yarn /usr/local/bin/yarnpkg
 # Local-kms keystore location; docker-compose.prod.yml mounts a named volume
 # here so signing keys survive container replacement.
 ENV PHAROS_KMS_KEYSTORE_DIR=/var/lib/pharos/keys/keystore
