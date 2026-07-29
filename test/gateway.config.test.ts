@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { loadGatewayDurabilityConfig } from "@pharos/gateway";
+import { loadGatewayDurabilityConfig, loadGatewayServerConfig } from "@pharos/gateway";
 
 describe("gateway durable-store production gate", () => {
   for (const environment of ["prod", "production"]) {
@@ -44,5 +44,52 @@ describe("gateway durable-store production gate", () => {
 
   it("allows the in-memory adapter only outside production", () => {
     expect(loadGatewayDurabilityConfig({ PHAROS_ENV: "local" })).toBeNull();
+  });
+});
+
+describe("gateway server production gate", () => {
+  const completeProductionEnv = {
+    PHAROS_ENV: "prod",
+    PHAROS_API_BASE: "http://pharos-api",
+    PHAROS_API_KEY: "secret",
+    PHAROS_TENANT: "tenant-a",
+    GATEWAY_AGENT_ID: "agent-a",
+    GATEWAY_TARGET: "https://upstream.example.test/v1",
+    GATEWAY_PORT: "4100",
+    PHAROS_VERDICT_DEADLINE_MS: "800",
+  };
+
+  it.each([
+    "PHAROS_API_BASE",
+    "PHAROS_API_KEY",
+    "PHAROS_TENANT",
+    "GATEWAY_AGENT_ID",
+    "GATEWAY_TARGET",
+  ])("requires %s in production", (name) => {
+    const env = { ...completeProductionEnv };
+    delete env[name as keyof typeof env];
+    expect(() => loadGatewayServerConfig(env)).toThrow(`production gateway requires ${name}`);
+  });
+
+  it("rejects unsafe URL credentials and invalid numeric bounds", () => {
+    expect(() =>
+      loadGatewayServerConfig({
+        ...completeProductionEnv,
+        GATEWAY_TARGET: "https://user:password@upstream.example.test",
+      }),
+    ).toThrow("GATEWAY_TARGET must not contain credentials");
+    expect(() =>
+      loadGatewayServerConfig({ ...completeProductionEnv, GATEWAY_PORT: "70000" }),
+    ).toThrow("GATEWAY_PORT must be between 1 and 65535");
+  });
+
+  it("returns normalized explicit production configuration", () => {
+    expect(loadGatewayServerConfig(completeProductionEnv)).toMatchObject({
+      apiBase: "http://pharos-api",
+      tenantId: "tenant-a",
+      target: "https://upstream.example.test/v1",
+      port: 4100,
+      verdictDeadlineMs: 800,
+    });
   });
 });

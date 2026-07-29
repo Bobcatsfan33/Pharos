@@ -22,6 +22,40 @@ jobs:
           --namespace pharos
           --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           --set config.tsaUrl=https://tsa.example.com/tsr
+      - name: lint and render production gateway
+        run: |
+          args=(
+            --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+            --set config.tsaUrl=https://tsa.example.com/tsr
+            --set gateway.enabled=true
+            --set gateway.secretName=pharos-gateway-secrets
+            --set gateway.tenantId=tenant-a
+            --set gateway.agentId=agent-a
+            --set gateway.target=https://upstream.example.test
+            --set-string gateway.networkPolicy.ingressPodSelector.app=agent
+            --set-string gateway.networkPolicy.target.podSelector.app=upstream
+            --set-string 'gateway.networkPolicy.database.cidrs[0]=10.20.0.0/24'
+          )
+          helm lint deploy/helm "${args[@]}"
+          helm template pharos deploy/helm --namespace pharos "${args[@]}" > rendered.yaml
+          grep -q 'name: pharos-gateway' rendered.yaml
+          grep -q 'kind: HorizontalPodAutoscaler' rendered.yaml
+          grep -q 'kind: NetworkPolicy' rendered.yaml
+          grep -q 'path: /__pharos/readyz' rendered.yaml
+      - name: production gateway must fail closed without network allowlists
+        run: |
+          if helm template pharos deploy/helm \
+            --namespace pharos \
+            --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+            --set config.tsaUrl=https://tsa.example.com/tsr \
+            --set gateway.enabled=true \
+            --set gateway.secretName=pharos-gateway-secrets \
+            --set gateway.tenantId=tenant-a \
+            --set gateway.agentId=agent-a \
+            --set gateway.target=https://upstream.example.test; then
+            echo "production gateway unexpectedly rendered without network allowlists"
+            exit 1
+          fi
 
   lint:
     runs-on: ubuntu-latest

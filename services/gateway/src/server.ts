@@ -7,7 +7,7 @@ import {
   type HeldRequestStore,
   type Pool,
 } from "@pharos/storage";
-import { loadGatewayDurabilityConfig } from "./config.js";
+import { loadGatewayDurabilityConfig, loadGatewayServerConfig } from "./config.js";
 import { createGatewayApp } from "./gateway.js";
 
 /**
@@ -17,6 +17,7 @@ import { createGatewayApp } from "./gateway.js";
  *   PHAROS_PG_URL, PHAROS_GATEWAY_HOLD_MASTER_KEY_B64
  */
 async function main(): Promise<void> {
+  const config = loadGatewayServerConfig(process.env);
   let heldRequestStore: HeldRequestStore | undefined;
   let pool: Pool | undefined;
   const durability = loadGatewayDurabilityConfig(process.env);
@@ -30,27 +31,38 @@ async function main(): Promise<void> {
   }
 
   const client = new PharosClient({
-    baseUrl: process.env.PHAROS_API_BASE ?? "http://localhost:4000",
-    apiKey: process.env.PHAROS_API_KEY ?? "",
-    deadlineMs: Number(process.env.PHAROS_VERDICT_DEADLINE_MS ?? 800),
+    baseUrl: config.apiBase,
+    apiKey: config.apiKey,
+    deadlineMs: config.verdictDeadlineMs,
   });
   const app = createGatewayApp({
     client,
-    tenantId: process.env.PHAROS_TENANT ?? "default",
-    agentId: process.env.GATEWAY_AGENT_ID ?? "gateway-agent",
-    target: process.env.GATEWAY_TARGET ?? "http://localhost:8080",
+    tenantId: config.tenantId,
+    agentId: config.agentId,
+    target: config.target,
     heldRequestStore,
+    readinessCheck: pool ? async () => void (await pool.query("SELECT 1")) : undefined,
   });
   if (pool) {
     app.addHook("onClose", async () => {
       await pool?.end();
     });
   }
-  const port = Number(process.env.GATEWAY_PORT ?? 4100);
-  await app.listen({ port, host: "0.0.0.0" });
-  console.log(
-    `Pharos gateway listening on :${port} → ${process.env.GATEWAY_TARGET ?? "http://localhost:8080"}`,
-  );
+  let shuttingDown = false;
+  const shutdown = async (signal: string): Promise<void> => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`Pharos gateway received ${signal}; draining`);
+    const forcedExit = setTimeout(() => process.exit(1), 25_000);
+    forcedExit.unref();
+    await app.close();
+    clearTimeout(forcedExit);
+  };
+  process.once("SIGTERM", () => void shutdown("SIGTERM"));
+  process.once("SIGINT", () => void shutdown("SIGINT"));
+
+  await app.listen({ port: config.port, host: "0.0.0.0" });
+  console.log(`Pharos gateway listening on :${config.port} → ${config.target}`);
 }
 
 main().catch((err) => {

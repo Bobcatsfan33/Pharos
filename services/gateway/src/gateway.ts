@@ -32,6 +32,8 @@ export interface GatewayOptions {
     mandateId?: string;
   };
   fetchImpl?: typeof fetch;
+  /** Dependency probe used by /__pharos/readyz. Throw to report not-ready. */
+  readinessCheck?: () => Promise<void>;
   /**
    * Durable deployments inject PostgresHeldRequestStore. The in-memory default is
    * intentionally limited to local/test composition; server.ts refuses it in production.
@@ -89,6 +91,17 @@ export function createGatewayApp(opts: GatewayOptions): FastifyInstance {
   const app = Fastify({ logger: false });
   const fetchImpl = opts.fetchImpl ?? fetch;
   const held = opts.heldRequestStore ?? new InMemoryHeldRequestStore();
+
+  // Reserved operational endpoints bypass governance and are not proxied upstream.
+  app.get("/__pharos/healthz", async () => ({ status: "ok" }));
+  app.get("/__pharos/readyz", async (_request, reply) => {
+    try {
+      await opts.readinessCheck?.();
+      return { status: "ready" };
+    } catch {
+      return reply.code(503).send({ status: "not_ready" });
+    }
+  });
 
   async function forward(
     req: HeldGatewayRequest,

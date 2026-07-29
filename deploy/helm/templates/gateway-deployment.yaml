@@ -1,0 +1,147 @@
+{{- if .Values.gateway.enabled }}
+{{- if not .Values.gateway.secretName }}
+{{- fail "gateway.enabled requires gateway.secretName" }}
+{{- end }}
+{{- if not .Values.gateway.tenantId }}
+{{- fail "gateway.enabled requires gateway.tenantId" }}
+{{- end }}
+{{- if not .Values.gateway.agentId }}
+{{- fail "gateway.enabled requires gateway.agentId" }}
+{{- end }}
+{{- if not .Values.gateway.target }}
+{{- fail "gateway.enabled requires gateway.target" }}
+{{- end }}
+{{- if gt (int .Values.gateway.autoscaling.minReplicas) (int .Values.gateway.autoscaling.maxReplicas) }}
+{{- fail "gateway.autoscaling.minReplicas must not exceed maxReplicas" }}
+{{- end }}
+{{- if eq .Values.config.env "prod" }}
+{{- if not .Values.gateway.networkPolicy.enabled }}
+{{- fail "production gateway requires gateway.networkPolicy.enabled=true" }}
+{{- end }}
+{{- if empty .Values.gateway.networkPolicy.ingressPodSelector }}
+{{- fail "production gateway requires a non-empty gateway.networkPolicy.ingressPodSelector" }}
+{{- end }}
+{{- if and (empty .Values.gateway.networkPolicy.target.cidrs) (empty .Values.gateway.networkPolicy.target.podSelector) }}
+{{- fail "production gateway requires a target pod selector or target CIDR allowlist" }}
+{{- end }}
+{{- if and (empty .Values.gateway.networkPolicy.database.cidrs) (empty .Values.gateway.networkPolicy.database.podSelector) }}
+{{- fail "production gateway requires a database pod selector or database CIDR allowlist" }}
+{{- end }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pharos-gateway
+  labels:
+    app.kubernetes.io/name: pharos
+    app.kubernetes.io/component: gateway
+spec:
+  {{- if not .Values.gateway.autoscaling.enabled }}
+  replicas: {{ .Values.gateway.replicaCount }}
+  {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pharos
+      app.kubernetes.io/component: gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pharos
+        app.kubernetes.io/component: gateway
+    spec:
+      serviceAccountName: pharos-gateway
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharos
+              app.kubernetes.io/component: gateway
+      containers:
+        - name: gateway
+          image: "{{ .Values.image.repository }}{{ if .Values.image.digest }}@{{ .Values.image.digest }}{{ else }}:{{ .Values.image.tag }}{{ end }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - node_modules/.bin/tsx
+            - services/gateway/src/server.ts
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.gateway.port }}
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: {{ .Values.gateway.secretName }}
+          env:
+            - name: PHAROS_ENV
+              value: {{ .Values.config.env | quote }}
+            - name: PHAROS_API_BASE
+              value: {{ .Values.gateway.apiBase | quote }}
+            - name: PHAROS_TENANT
+              value: {{ .Values.gateway.tenantId | quote }}
+            - name: GATEWAY_AGENT_ID
+              value: {{ .Values.gateway.agentId | quote }}
+            - name: GATEWAY_TARGET
+              value: {{ .Values.gateway.target | quote }}
+            - name: GATEWAY_PORT
+              value: {{ .Values.gateway.port | quote }}
+            - name: PHAROS_VERDICT_DEADLINE_MS
+              value: {{ .Values.gateway.verdictDeadlineMs | quote }}
+          startupProbe:
+            httpGet:
+              path: /__pharos/healthz
+              port: http
+            failureThreshold: 30
+            periodSeconds: 2
+          readinessProbe:
+            httpGet:
+              path: /__pharos/readyz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /__pharos/healthz
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.gateway.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pharos-gateway
+  labels:
+    app.kubernetes.io/name: pharos
+    app.kubernetes.io/component: gateway
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: pharos
+    app.kubernetes.io/component: gateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+{{- end }}
