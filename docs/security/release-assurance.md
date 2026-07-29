@@ -5,8 +5,11 @@ and `main` build the same Dockerfile and digest-pinned Node base used for a
 release, then prove:
 
 - the image records the approved base digest and runs as the `node` user;
-- Node starts with no network, no capabilities, a read-only root filesystem,
-  `no-new-privileges`, and only a bounded `noexec` temporary mount;
+- the API TypeScript runtime starts with no network, no capabilities, a
+  read-only root filesystem, `no-new-privileges`, and only a bounded `noexec`
+  temporary mount;
+- the runtime contains the API production dependency closure and excludes the
+  console, Vitest, Vite, and other build/test tooling;
 - Syft can inventory the complete image into SPDX JSON;
 - Trivy finds no fixable High or Critical OS or library vulnerability.
 

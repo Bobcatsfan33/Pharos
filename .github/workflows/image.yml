@@ -65,8 +65,23 @@ jobs:
           --cap-drop ALL
           --security-opt no-new-privileges
           --tmpfs /tmp:rw,noexec,nosuid,size=32m
-          --entrypoint node
+          --entrypoint /app/node_modules/.bin/tsx
           "${LOCAL_IMAGE}" --version
+
+      - name: verify build tooling is absent from the runtime
+        run: >-
+          docker run --rm
+          --read-only
+          --network none
+          --cap-drop ALL
+          --security-opt no-new-privileges
+          --entrypoint node
+          "${LOCAL_IMAGE}"
+          -e
+          "const fs=require('node:fs');
+          for(const p of ['/app/node_modules/.bin/vitest','/app/node_modules/.bin/vite','/app/apps']){
+          if(fs.existsSync(p)){console.error('unexpected runtime path: '+p);process.exit(1)}}
+          if(!fs.existsSync('/app/node_modules/.bin/tsx')){process.exit(1)}"
 
       - name: generate SPDX SBOM
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610

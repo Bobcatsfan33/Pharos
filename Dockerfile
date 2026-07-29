@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Pharos API image — referenced by deploy/docker-compose.prod.yml
 # (${PHAROS_IMAGE:-pharos/api:latest}) and deploy/helm/values.yaml, which
 # shipped without any Dockerfile in the repo.
@@ -19,6 +18,10 @@ COPY apps ./apps
 RUN pnpm install --frozen-lockfile
 # Build is a validation gate (typecheck via tsc project builds), not the runtime artifact.
 RUN pnpm build
+# Materialize only the API's production dependency closure. This excludes the
+# console, Vitest/Vite, linters, compilers, and other build-only workspace
+# dependencies from the artifact that is scanned, signed, and deployed.
+RUN pnpm --filter @pharos/api deploy --prod --legacy /prod
 
 FROM ${NODE_IMAGE}
 ARG NODE_IMAGE
@@ -28,10 +31,10 @@ ENV NODE_ENV=production
 # Local-kms keystore location; docker-compose.prod.yml mounts a named volume
 # here so signing keys survive container replacement.
 ENV PHAROS_KMS_KEYSTORE_DIR=/var/lib/pharos/keys/keystore
-COPY --from=build --chown=node:node /app /app
+COPY --from=build --chown=node:node /prod /app
 RUN mkdir -p /var/lib/pharos/keys && chown -R node:node /var/lib/pharos
 USER node
 EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PHAROS_API_PORT||4000)+'/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-CMD ["node_modules/.bin/tsx", "services/api/src/server.ts"]
+CMD ["node_modules/.bin/tsx", "src/server.ts"]
