@@ -91,7 +91,9 @@ Secrets, Secrets Store CSI, or an equivalent approved by your platform team) wit
 - `PHAROS_API_KEY`: tenant-scoped key with only the action/review permissions the gateway
   needs;
 - `PHAROS_PG_URL`: TLS-verifying Postgres connection for durable held requests; and
-- `PHAROS_GATEWAY_HOLD_MASTER_KEY_B64`: at least 32 random bytes, canonical base64.
+- `PHAROS_GATEWAY_HOLD_ACTIVE_KEY_ID`: the identifier used for new ciphertext; and
+- `PHAROS_GATEWAY_HOLD_KEYS_B64`: a JSON object mapping retained key identifiers to
+  canonical-base64 secrets of at least 32 random bytes each.
 
 Do not reuse `pharos-secrets`: doing so gives the gateway unrelated API credentials. Copy
 [`helm/examples/gateway-production.values.yaml`](helm/examples/gateway-production.values.yaml),
@@ -114,10 +116,10 @@ for managed endpoints with changing addresses, use the cluster CNI's audited FQD
 and keep the portable chart policy aligned. The target must persist and honor
 `Idempotency-Key` before you claim exactly-once side effects.
 
-The held-request master key currently has no online key-ring migration. Keep it in a
-versioned secret manager, back it up under dual control, and do not replace it while held
-requests exist; see `docs/LIMITATIONS.md`. Native online rotation remains a release blocker
-for unattended long-lived gateway deployments.
+Keep the key ring in a versioned secret manager and back it up under dual control. Rotation
+is an expand → activate → re-encrypt → contract procedure; never remove an old key merely
+because a new one is active. Follow
+[`docs/runbooks/gateway-held-key-rotation.md`](../docs/runbooks/gateway-held-key-rotation.md).
 
 ## Key management (read this before production)
 

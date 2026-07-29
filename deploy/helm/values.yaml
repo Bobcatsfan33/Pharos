@@ -31,8 +31,9 @@ gateway:
   target: ""
   apiBase: "http://pharos-api"
   verdictDeadlineMs: 800
-  # Must contain only PHAROS_API_KEY, PHAROS_PG_URL, and
-  # PHAROS_GATEWAY_HOLD_MASTER_KEY_B64. Do not reuse the broader API Secret.
+  # Must contain only PHAROS_API_KEY, PHAROS_PG_URL,
+  # PHAROS_GATEWAY_HOLD_ACTIVE_KEY_ID, and PHAROS_GATEWAY_HOLD_KEYS_B64.
+  # Do not reuse the broader API Secret.
   secretName: ""
   serviceAccount:
     annotations: {}

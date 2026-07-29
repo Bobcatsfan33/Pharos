@@ -365,6 +365,22 @@ export const MIGRATIONS: Migration[] = [
         WITH CHECK (tenant_id = current_setting('pharos.tenant_id', true));
     `,
   },
+  {
+    version: "0012_gateway_hold_key_versions",
+    sql: /* sql */ `
+      -- Existing ciphertext used one implicit master key. Label it "legacy" so a
+      -- versioned key ring can decrypt it and move it online to a new active key.
+      ALTER TABLE gateway_held_requests
+        ADD COLUMN IF NOT EXISTS key_id TEXT NOT NULL DEFAULT 'legacy';
+      ALTER TABLE gateway_held_requests
+        DROP CONSTRAINT IF EXISTS gateway_held_requests_key_id_format;
+      ALTER TABLE gateway_held_requests
+        ADD CONSTRAINT gateway_held_requests_key_id_format
+        CHECK (key_id ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$');
+      CREATE INDEX IF NOT EXISTS gateway_held_requests_key_id_idx
+        ON gateway_held_requests (tenant_id, key_id);
+    `,
+  },
 ];
 
 export async function runMigrations(pool: Pool): Promise<string[]> {

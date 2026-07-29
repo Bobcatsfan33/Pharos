@@ -68,9 +68,11 @@ governed: `allow` forwards to the upstream, `block` returns 403 with citations, 
 encrypts the request in a tenant-isolated Postgres store and returns a continuation handle.
 `POST /__resume/:id` acquires a bounded lease, claims, and forwards with a stable
 `Idempotency-Key`. The production server requires `PHAROS_PG_URL` and
-`PHAROS_GATEWAY_HOLD_MASTER_KEY_B64`; it will not silently fall back to memory. The
-integration test replaces the gateway between hold and resume and proves the fresh process
-can deliver it without exposing plaintext or crossing tenant boundaries.
+an explicit versioned encryption key ring; it will not silently fall back to memory. Each
+ciphertext stores its key id, and a bounded, row-locked migration re-encrypts pending rows
+under a newly active key without stopping delivery. The integration test replaces the
+gateway between hold and resume, rotates a retained request online, and proves a fresh
+process can deliver it without exposing plaintext or crossing tenant boundaries.
 
 The production Helm workload adds two replicas minimum, zone spreading, a disruption
 budget, stabilized autoscaling, graceful shutdown, and dependency-aware readiness. It uses
