@@ -11,3 +11,5 @@ NOTICE
 packages/judge-eval/data
 # Python training pipeline (venv, model blobs, generated corpus/lockbox JSON).
 training
+# Helm templates contain Go template directives that Prettier's YAML parser cannot parse.
+deploy/helm/templates

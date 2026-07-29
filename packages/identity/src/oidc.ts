@@ -25,6 +25,12 @@ export interface OidcIssuerConfig {
   jwksUri?: string;
   /** Inline JWKS (tests / static keys). One of jwksUri or jwks is required. */
   jwks?: JSONWebKeySet;
+  /** Hard timeout for one remote JWKS fetch. Defaults to 5 seconds. */
+  jwksTimeoutMs?: number;
+  /** Minimum delay between unknown-key refreshes. Defaults to 30 seconds. */
+  jwksCooldownMs?: number;
+  /** Maximum age of a successfully fetched JWKS. Defaults to 10 minutes. */
+  jwksCacheMaxAgeMs?: number;
   claims: {
     tenant: string; // claim holding the tenant id, e.g. "pharos_tenant"
     roles: string; // claim holding a string[] of roles, e.g. "pharos_roles"
@@ -40,7 +46,11 @@ export class OidcVerifier {
       const getKey = cfg.jwks
         ? createLocalJWKSet(cfg.jwks)
         : cfg.jwksUri
-          ? createRemoteJWKSet(new URL(cfg.jwksUri))
+          ? createRemoteJWKSet(new URL(cfg.jwksUri), {
+              timeoutDuration: cfg.jwksTimeoutMs ?? 5_000,
+              cooldownDuration: cfg.jwksCooldownMs ?? 30_000,
+              cacheMaxAge: cfg.jwksCacheMaxAgeMs ?? 600_000,
+            })
           : (() => {
               throw new Error(`OIDC issuer ${cfg.issuer} needs jwksUri or jwks`);
             })();

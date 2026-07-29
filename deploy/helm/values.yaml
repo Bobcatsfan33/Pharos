@@ -4,6 +4,8 @@ image:
   # Verify before deploying — see deploy/INSTALL.md "Verifying the signed image".
   repository: ghcr.io/bobcatsfan33/pharos-api
   tag: "0.1.0"
+  # Prefer a verified sha256:... digest in production; when set, digest wins over tag.
+  digest: ""
   pullPolicy: IfNotPresent
 
 replicaCount: 3 # multi-AZ; spread with topologySpreadConstraints in production
@@ -14,19 +16,51 @@ api:
 # All secrets are required (no defaults). Provide via a Kubernetes Secret named pharos-secrets.
 secretName: pharos-secrets
 
+serviceAccount:
+  # Use this for workload-identity annotations such as eks.amazonaws.com/role-arn.
+  annotations: {}
+
 config:
   env: prod
   s3Bucket: pharos-evidence
   s3Region: us-east-1
   s3ForcePathStyle: "true"
-  # KMS provider: "local-kms" (default) or "aws-kms" (S3-T1).
+  # KMS provider: "aws-kms" (production default) or "local-kms" (development only).
   #  - local-kms: Ed25519 keys in an on-disk keystore. You MUST give the keystore a persistent
   #    volume (PHAROS_KMS_KEYSTORE_DIR) — these keys sign every evidence record.
   #  - aws-kms: AWS KMS asymmetric keys (ECC_NIST_P256). Set PHAROS_KMS_AWS_REGION and provide
   #    credentials via the standard AWS chain (IRSA / instance role / env). No keystore volume
   #    needed — key material never leaves KMS.
-  kmsProvider: local-kms
+  kmsProvider: aws-kms
+  kmsAwsRegion: us-east-1
+  # A real TSA is the production default. Set tsaUrl to the contracted RFC 3161 endpoint.
+  tsaProvider: rfc3161
+  tsaUrl: ""
+  localKms:
+    # Required when kmsProvider=local-kms; the chart never stores signing keys in emptyDir.
+    existingClaim: ""
   allowedOrigins: ""
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+podDisruptionBudget:
+  minAvailable: 2
+
+networkPolicy:
+  enabled: true
 
 resources:
   requests:

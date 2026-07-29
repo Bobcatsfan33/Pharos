@@ -12,8 +12,9 @@ export interface WormStoreConfig {
   endpoint: string;
   region: string;
   bucket: string;
-  accessKey: string;
-  secretKey: string;
+  /** Omit both to use the AWS SDK default chain (IRSA/workload identity/instance role). */
+  accessKey?: string;
+  secretKey?: string;
   forcePathStyle: boolean;
   retentionDays: number;
 }
@@ -35,11 +36,15 @@ export interface WormPutResult {
 export class WormStore {
   private readonly client: S3Client;
   constructor(private readonly cfg: WormStoreConfig) {
+    const credentials =
+      cfg.accessKey && cfg.secretKey
+        ? { credentials: { accessKeyId: cfg.accessKey, secretAccessKey: cfg.secretKey } }
+        : {};
     this.client = new S3Client({
       endpoint: cfg.endpoint,
       region: cfg.region,
       forcePathStyle: cfg.forcePathStyle,
-      credentials: { accessKeyId: cfg.accessKey, secretAccessKey: cfg.secretKey },
+      ...credentials,
     });
   }
 
