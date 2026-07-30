@@ -11,7 +11,9 @@ Production configuration requires `PHAROS_JUDGE_PROVIDER=onnx`. Before the API l
 each replica reads or downloads all three transformer artifacts and tokenizers, verifies every
 SHA-256 digest against `packages/judge/models/manifest.json`, builds every inference session, and
 fails startup if the fleet is partial or misidentified. It never falls back to the linear
-development baseline.
+development baseline. Production also requires a version-pinned drift profile covering every
+exact active model identity; see
+[`docs/runbooks/judge-drift.md`](../docs/runbooks/judge-drift.md).
 
 The default Compose named volume and Helm 2Gi `emptyDir` are writable caches. For restricted or
 restart-sensitive Kubernetes deployments, download the assets from the manifest's pinned Release,
@@ -24,8 +26,8 @@ below.
 Use an RWX claim for multiple replicas, or one pre-staged claim per zone/replica through your
 platform's volume provisioning pattern. The API re-verifies cached bytes on every startup, so
 pre-staging improves availability without weakening artifact identity. The current transformer
-release is still pre-release pending the efficacy, calibration, model-card, drift, and
-production-latency gates in `docs/LIMITATIONS.md`.
+release is still pre-release pending independent efficacy, calibration, reference-profile
+approval, drift exercise, and production-latency gates in `docs/LIMITATIONS.md`.
 
 ## Option A — Docker Compose (single host / pilot)
 
@@ -97,16 +99,21 @@ kubectl create secret generic pharos-secrets \
   --from-literal=PHAROS_S3_ENDPOINT=https://s3.amazonaws.com \
   --from-literal=PHAROS_ADMIN_TOKEN=...
 
-# 2. Install the chart (3 replicas across zones by default). Production defaults
+# 2. Create the independently approved, version-pinned drift ConfigMap.
+kubectl -n pharos create configmap pharos-judge-drift \
+  --from-file=profile.json=/approved/pharos/candidate-profile.json
+
+# 3. Install the chart (3 replicas across zones by default). Production defaults
 # use AWS KMS and RFC 3161; pin the image and independently approved TSA certificate.
 helm install pharos deploy/helm \
   --set image.digest=sha256:<verified-digest> \
   --set-string serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn=arn:aws:iam::<account>:role/pharos \
   --set config.kmsAwsRegion=us-east-1 \
   --set config.tsaUrl=https://<your-tsa>/tsr \
-  --set config.tsaCertSha256=<approved-64-character-leaf-certificate-sha256>
+  --set config.tsaCertSha256=<approved-64-character-leaf-certificate-sha256> \
+  --set judgeDriftProfile.existingConfigMap=pharos-judge-drift
 
-# 3. Verify
+# 4. Verify
 kubectl rollout status deploy/pharos-api
 kubectl port-forward svc/pharos-api 4000:80 & curl -sf localhost:4000/healthz
 ```

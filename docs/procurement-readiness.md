@@ -7,8 +7,10 @@ approval claim while partial controls or blocking gates remain.
 The current decision is **not approved**, and Pharos is **not yet a software release candidate**.
 The repository has strong durability, tenancy, trusted-time, KMS, observability, deployment, and
 release-assurance engineering. Production now requires and preloads hash-verified ONNX
-transformer judges, but their independent efficacy, calibration, drift, model-card, and
-production-latency approval is incomplete. Independent penetration testing, TSA/KMS/legal
+transformer judges. Version-pinned restricted-preproduction model cards and privacy-safe,
+fail-closed drift-monitoring infrastructure now exist, but independent efficacy, calibration,
+reference-distribution approval, drift exercise, and production-latency approval are incomplete.
+Independent penetration testing, TSA/KMS/legal
 onboarding, customer-topology recovery, organizational assurance, and production validation
 also remain required.
 

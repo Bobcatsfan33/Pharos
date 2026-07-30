@@ -16,6 +16,7 @@ function productionEnv(overrides: Partial<NodeJS.ProcessEnv> = {}): NodeJS.Proce
     PHAROS_TSA_CERT_SHA256: "a".repeat(64),
     PHAROS_JUDGE_PROVIDER: "onnx",
     PHAROS_JUDGE_MODEL_DIR: "/var/lib/pharos/judges",
+    PHAROS_JUDGE_DRIFT_PROFILE_PATH: "/etc/pharos/judge-drift/profile.json",
     PHAROS_ADMIN_TOKEN: "a-secure-random-token-with-32-characters",
     ...overrides,
   };
@@ -55,6 +56,11 @@ describe("production configuration posture", () => {
     ["linear judges", { PHAROS_JUDGE_PROVIDER: "linear" }, "judge.provider"],
     ["an implicit judge default", { PHAROS_JUDGE_PROVIDER: undefined }, "judge.provider"],
     ["a missing judge cache", { PHAROS_JUDGE_MODEL_DIR: undefined }, "judge.modelDir"],
+    [
+      "a missing judge drift profile",
+      { PHAROS_JUDGE_DRIFT_PROFILE_PATH: undefined },
+      "judge.driftProfilePath",
+    ],
     ["plaintext object storage", { PHAROS_S3_ENDPOINT: "http://minio:9000" }, "s3.endpoint"],
     [
       "static AWS S3 credentials",

@@ -31,6 +31,7 @@
     "judges:eval": "tsx scripts/eval-judges.ts",
     "judges:gate": "tsx scripts/eval-gate.ts",
     "judges:system-eval": "tsx scripts/system-eval.ts",
+    "judges:drift-profile": "tsx scripts/build-judge-drift-profile.ts",
     "bench:latency": "tsx --env-file=.env scripts/bench-latency.ts"
   },
   "devDependencies": {

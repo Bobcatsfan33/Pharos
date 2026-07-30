@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://getpharos.dev/schemas/judge-drift-profile-v1.json",
+  "title": "Pharos judge drift profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "binUpperBounds",
+    "windowSize",
+    "minSamples",
+    "warningPsi",
+    "criticalPsi",
+    "models"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "binUpperBounds": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "maximum": 1
+      }
+    },
+    "windowSize": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "minSamples": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "warningPsi": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "criticalPsi": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "models": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["concern", "referenceDistribution"],
+        "properties": {
+          "concern": {
+            "type": "string",
+            "minLength": 1
+          },
+          "referenceDistribution": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -109,6 +109,11 @@ judgeModelCache:
   existingClaim: ""
   sizeLimit: 2Gi
 
+judgeDriftProfile:
+  # Required in production. The ConfigMap must contain an independently reviewed `profile.json`
+  # generated from representative ONNX production-judge scores (never from the linear baseline).
+  existingConfigMap: ""
+
 podSecurityContext:
   runAsNonRoot: true
   runAsUser: 1000
