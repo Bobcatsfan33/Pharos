@@ -4,6 +4,27 @@ on:
     branches: [main]
   pull_request:
 jobs:
+  enterprise-readiness:
+    name: enterprise evidence and decision integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - run: node scripts/verify-enterprise-readiness.mjs
+      - name: refuse false production approval
+        run: |
+          node --input-type=module <<'JS'
+          import fs from "node:fs";
+          const source = "docs/enterprise-readiness.json";
+          const target = "/tmp/pharos-false-approval.json";
+          const document = JSON.parse(fs.readFileSync(source, "utf8"));
+          document.assessment.deploymentDecision = "approved";
+          fs.writeFileSync(target, JSON.stringify(document));
+          JS
+          if node scripts/verify-enterprise-readiness.mjs /tmp/pharos-false-approval.json; then
+            echo "readiness verifier accepted false production approval" >&2
+            exit 1
+          fi
+
   helm:
     runs-on: ubuntu-latest
     steps:

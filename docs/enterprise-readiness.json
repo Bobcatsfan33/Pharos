@@ -1,0 +1,264 @@
+{
+  "schemaVersion": 1,
+  "product": "Pharos",
+  "repository": "Bobcatsfan33/Pharos",
+  "assessment": {
+    "asOf": "2026-07-29",
+    "reviewBy": "2026-10-29",
+    "softwareReleaseCandidate": false,
+    "deploymentDecision": "not-approved",
+    "decisionReason": "Production deployment engineering exists, but the judge, independent assurance, organizational, and deployment-specific trust gates remain open."
+  },
+  "frameworks": [
+    {
+      "id": "nist-ssdf-1.1",
+      "name": "NIST SP 800-218 Secure Software Development Framework",
+      "version": "1.1",
+      "url": "https://csrc.nist.gov/pubs/sp/800/218/final"
+    },
+    {
+      "id": "slsa-1.2",
+      "name": "Supply-chain Levels for Software Artifacts",
+      "version": "1.2",
+      "url": "https://slsa.dev/spec/v1.2/"
+    },
+    {
+      "id": "owasp-asvs-5.0.0",
+      "name": "OWASP Application Security Verification Standard",
+      "version": "5.0.0",
+      "url": "https://owasp.org/www-project-application-security-verification-standard/"
+    },
+    {
+      "id": "csa-ccm-caiq-4.1",
+      "name": "CSA Cloud Controls Matrix and CAIQ",
+      "version": "4.1",
+      "url": "https://cloudsecurityalliance.org/artifacts/cloud-controls-matrix-v4-1"
+    },
+    {
+      "id": "nist-ai-rmf-1.0",
+      "name": "NIST Artificial Intelligence Risk Management Framework",
+      "version": "1.0",
+      "url": "https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-ai-rmf-10"
+    },
+    {
+      "id": "csa-ai-caiq-1.0.2",
+      "name": "CSA AI Consensus Assessments Initiative Questionnaire",
+      "version": "1.0.2",
+      "url": "https://cloudsecurityalliance.org/artifacts/ai-consensus-assessments-initiative-questionnaire-ai-caiq"
+    }
+  ],
+  "controls": [
+    {
+      "id": "GOV-01",
+      "title": "Security governance and product boundary",
+      "status": "implemented",
+      "frameworks": ["nist-ssdf-1.1", "nist-ai-rmf-1.0"],
+      "evidence": [
+        "SECURITY.md",
+        "docs/LIMITATIONS.md",
+        "docs/ROADMAP.md",
+        "docs/assurance-and-risk.md"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "SDLC-01",
+      "title": "Secure development and change verification",
+      "status": "implemented",
+      "frameworks": ["nist-ssdf-1.1", "owasp-asvs-5.0.0"],
+      "evidence": [
+        ".github/CODEOWNERS",
+        ".github/workflows/ci.yml",
+        ".github/workflows/codeql.yml",
+        ".github/workflows/gitleaks.yml"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "APPSEC-01",
+      "title": "Technical security verification",
+      "status": "partial",
+      "frameworks": ["owasp-asvs-5.0.0", "csa-ccm-caiq-4.1"],
+      "evidence": [
+        "docs/security/THREAT_MODEL.md",
+        "docs/security/pentest-tenant-isolation.md",
+        ".github/workflows/codeql.yml"
+      ],
+      "gaps": [
+        "The encoded tenant-isolation campaign is not a commissioned independent penetration test."
+      ]
+    },
+    {
+      "id": "SUPPLY-01",
+      "title": "Release integrity, SBOM, signing, and provenance",
+      "status": "implemented",
+      "frameworks": ["nist-ssdf-1.1", "slsa-1.2", "csa-ccm-caiq-4.1"],
+      "evidence": [
+        ".github/workflows/image.yml",
+        ".github/workflows/release.yml",
+        "docs/security/release-assurance.md"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "IAM-01",
+      "title": "Identity, authorization, and tenant isolation",
+      "status": "implemented",
+      "frameworks": ["owasp-asvs-5.0.0", "csa-ccm-caiq-4.1", "csa-ai-caiq-1.0.2"],
+      "evidence": [
+        "docs/identity-and-tenancy.md",
+        "docs/security/pentest-tenant-isolation.md",
+        "docs/security/THREAT_MODEL.md"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "CRYPTO-01",
+      "title": "Transport, storage encryption, signing, and key management",
+      "status": "partial",
+      "frameworks": ["owasp-asvs-5.0.0", "csa-ccm-caiq-4.1"],
+      "evidence": [
+        "docs/security/crypto-review-package.md",
+        "docs/runbooks/key-rotation.md",
+        "docs/runbooks/tsa-trust-rotation.md",
+        "docs/LIMITATIONS.md"
+      ],
+      "gaps": [
+        "Contracted TSA onboarding and certificate-pin approval are deployment-specific human gates.",
+        "AWS KMS is the only implemented production HSM provider; non-AWS customer-managed HSM portability remains open."
+      ]
+    },
+    {
+      "id": "DATA-01",
+      "title": "Data protection, privacy, retention, and deletion",
+      "status": "partial",
+      "frameworks": ["csa-ccm-caiq-4.1", "csa-ai-caiq-1.0.2", "nist-ai-rmf-1.0"],
+      "evidence": [
+        "docs/evidence-seal.md",
+        "docs/compliance/soc2-and-procurement.md",
+        "docs/legal/admissibility.md"
+      ],
+      "gaps": [
+        "DPA, retention, deletion, litigation-hold, residency, and legal positions require counsel and customer-specific approval."
+      ]
+    },
+    {
+      "id": "RES-01",
+      "title": "Backup, recovery, failover, and resilience",
+      "status": "partial",
+      "frameworks": ["csa-ccm-caiq-4.1"],
+      "evidence": [
+        "docs/operations.md",
+        "docs/code-audit-durable-stores.md",
+        "docs/runbooks/gateway-held-key-rotation.md"
+      ],
+      "gaps": [
+        "Customer production topology must independently exercise and approve backup restore, region failover, RPO, and RTO."
+      ]
+    },
+    {
+      "id": "OBS-01",
+      "title": "Operational observability and SLO evidence",
+      "status": "implemented",
+      "frameworks": ["csa-ccm-caiq-4.1", "csa-ai-caiq-1.0.2"],
+      "evidence": ["docs/operations.md", "docs/review-operations.md", "docs/benchmarks/latency.md"],
+      "gaps": []
+    },
+    {
+      "id": "IR-01",
+      "title": "Incident and vulnerability response",
+      "status": "partial",
+      "frameworks": ["nist-ssdf-1.1", "csa-ccm-caiq-4.1"],
+      "evidence": ["SECURITY.md", "docs/incident-response.md", "docs/evidence-seal.md"],
+      "gaps": [
+        "Named 24x7 responders, customer notification, and a production incident exercise are organizational gates."
+      ]
+    },
+    {
+      "id": "VM-01",
+      "title": "Dependency and vulnerability management",
+      "status": "implemented",
+      "frameworks": ["nist-ssdf-1.1", "csa-ccm-caiq-4.1"],
+      "evidence": [
+        ".github/dependabot.yml",
+        ".github/workflows/ci.yml",
+        ".github/workflows/gitleaks.yml",
+        ".github/workflows/codeql.yml",
+        ".github/workflows/image.yml"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "AIRISK-01",
+      "title": "Judge efficacy, policy integrity, and AI governance",
+      "status": "partial",
+      "frameworks": ["nist-ai-rmf-1.0", "csa-ai-caiq-1.0.2"],
+      "evidence": [
+        "docs/benchmarks/judge-evals.md",
+        "docs/benchmarks/judge-evals.json",
+        "docs/decision-cascade.md",
+        "docs/LIMITATIONS.md"
+      ],
+      "gaps": [
+        "Tier-3 judges remain linear bag-of-words classifiers with zero measured adversarial-obfuscation recall.",
+        "Production prevalence, transformer judge performance, drift monitoring, and production latency evidence remain open."
+      ]
+    }
+  ],
+  "externalGates": [
+    {
+      "id": "ENG-JUDGES",
+      "title": "Production judge and efficacy promotion",
+      "status": "open",
+      "blocking": true,
+      "ownerRole": "AI Engineering",
+      "acceptanceCriteria": "Production transformer judges, model cards, adversarial and representative evaluation, calibrated operating points, drift monitoring, and production latency evidence pass approved thresholds.",
+      "evidence": []
+    },
+    {
+      "id": "EXT-PENTEST",
+      "title": "Independent penetration test",
+      "status": "open",
+      "blocking": true,
+      "ownerRole": "Product Security",
+      "acceptanceCriteria": "Signed report covers API, gateway, console, SDKs, PDP, tenant isolation, evidence chain, KMS, TSA, WORM, and deployment; critical and high findings are closed or CISO-accepted.",
+      "evidence": []
+    },
+    {
+      "id": "EXT-TRUST",
+      "title": "KMS, TSA, and legal trust onboarding",
+      "status": "open",
+      "blocking": true,
+      "ownerRole": "Security, PKI, and Legal",
+      "acceptanceCriteria": "Approved production KMS keys and roles, independently obtained TSA pins, rotation evidence, and outside-counsel admissibility review are retained.",
+      "evidence": []
+    },
+    {
+      "id": "EXT-OPERATIONS",
+      "title": "Production operations and recovery acceptance",
+      "status": "open",
+      "blocking": true,
+      "ownerRole": "SRE",
+      "acceptanceCriteria": "Customer-topology deployment, backup restore, failover, RPO/RTO, alerts, SLOs, support, incident, escalation, and notification procedures are exercised and signed.",
+      "evidence": []
+    },
+    {
+      "id": "EXT-COMPLIANCE",
+      "title": "Organizational, privacy, and procurement assurance",
+      "status": "open",
+      "blocking": true,
+      "ownerRole": "GRC and Legal",
+      "acceptanceCriteria": "Applicable SOC 2 or ISO evidence, SIG or CAIQ responses, DPA, privacy and residency terms, subprocessors, insurance, accessibility, support, and license terms are approved.",
+      "evidence": []
+    },
+    {
+      "id": "EXT-CUSTOMERS",
+      "title": "Design-partner and production validation",
+      "status": "open",
+      "blocking": true,
+      "ownerRole": "Product",
+      "acceptanceCriteria": "Approved pilot and production references demonstrate adoption, efficacy, operations, and support across the intended regulated-market boundary.",
+      "evidence": []
+    }
+  ]
+}

@@ -56,6 +56,8 @@ Built sprint-by-sprint against [the roadmap](docs/ROADMAP.md). Sequence and proo
 Want to follow along or get involved? Release history lives in **[CHANGELOG.md](CHANGELOG.md)**, contribution guidelines in **[CONTRIBUTING.md](CONTRIBUTING.md)**, and community standards in our **[Code of Conduct](CODE_OF_CONDUCT.md)**.
 
 > **Known gaps and stand-ins.** Several components are implemented today as honest placeholders for their production versions (most importantly the linear judges, plus local-development KMS/TSA defaults). Every one is listed, with the roadmap task that replaces it, in **[docs/LIMITATIONS.md](docs/LIMITATIONS.md)**. Read it before evaluating Pharos against a production bar.
+> The current enterprise deployment decision and expiring evidence index are in
+> **[docs/procurement-readiness.md](docs/procurement-readiness.md)**.
 
 **Sprint 0 (Bedrock) — complete.** A single deployable platform where an agent action receives a verdict and produces a sealed, durable, externally-verifiable evidence record — surviving restarts, verifiable genesis-to-head.
 
