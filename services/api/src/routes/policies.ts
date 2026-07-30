@@ -21,6 +21,24 @@ import { requireAuth } from "../auth.js";
 const CompileSchema = z.object({ name: z.string().min(1), text: z.string().min(1) });
 
 const JUDGE_PACKS = ["finra-promissory", "phi-in-context", "funds-movement-intent"];
+const POLICY_JUDGE_CONCURRENCY = 4;
+
+async function mapBounded<T, R>(
+  items: T[],
+  concurrency: number,
+  work: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < items.length) {
+      const index = cursor++;
+      results[index] = await work(items[index]!);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()));
+  return results;
+}
 
 export function registerPolicyRoutes(app: FastifyInstance, platform: Platform): void {
   // Build EvalContexts from the tenant's historical traffic (recomputing judge probabilities).
@@ -29,7 +47,11 @@ export function registerPolicyRoutes(app: FastifyInstance, platform: Platform): 
     if (!head) return [];
     const from = Math.max(0, head.sequence - window + 1);
     const range = await platform.store.getRange(tenantId, from, head.sequence);
-    return range.map(({ record }) => {
+    // Transformer inference is asynchronous and materially heavier than the old linear scorer.
+    // Bound parallelism so a large historical window cannot enqueue one promise per
+    // record/model and exhaust the API pod. The current synchronous endpoint remains subject to
+    // the documented production-topology performance gate.
+    return mapBounded(range, POLICY_JUDGE_CONCURRENCY, async ({ record }) => {
       const request: VerdictRequest = {
         tenantId,
         action: record.content.action,
@@ -39,7 +61,7 @@ export function registerPolicyRoutes(app: FastifyInstance, platform: Platform): 
       const judgeProbabilities: Record<string, number> = {};
       for (const pack of JUDGE_PACKS)
         if (platform.registry.has(pack))
-          judgeProbabilities[pack] = platform.registry.judge(pack, text).probability;
+          judgeProbabilities[pack] = (await platform.registry.judgeAsync(pack, text)).probability;
       return { request, judgeProbabilities };
     });
   }

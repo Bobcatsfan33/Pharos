@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["image", "replicaCount", "secretName", "gateway", "config"],
+  "required": ["image", "replicaCount", "secretName", "gateway", "config", "judgeModelCache"],
   "properties": {
     "replicaCount": {
       "type": "integer",
@@ -91,7 +91,16 @@
     },
     "config": {
       "type": "object",
-      "required": ["env", "kmsProvider", "kmsAwsRegion", "tsaProvider", "tsaUrl", "tsaCertSha256"],
+      "required": [
+        "env",
+        "kmsProvider",
+        "kmsAwsRegion",
+        "tsaProvider",
+        "tsaUrl",
+        "tsaCertSha256",
+        "judgeProvider",
+        "judgeModelDir"
+      ],
       "properties": {
         "env": {
           "type": "string",
@@ -110,6 +119,22 @@
         "tsaCertSha256": {
           "type": "string",
           "pattern": "^$|^[a-fA-F0-9]{64}(,[a-fA-F0-9]{64})*$"
+        },
+        "judgeProvider": {
+          "type": "string",
+          "enum": ["linear", "onnx"]
+        },
+        "judgeModelDir": { "type": "string", "minLength": 1 }
+      }
+    },
+    "judgeModelCache": {
+      "type": "object",
+      "required": ["existingClaim", "sizeLimit"],
+      "properties": {
+        "existingClaim": { "type": "string" },
+        "sizeLimit": {
+          "type": "string",
+          "pattern": "^[0-9]+(Mi|Gi)$"
         }
       }
     }

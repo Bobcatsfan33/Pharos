@@ -14,6 +14,8 @@ function productionEnv(overrides: Partial<NodeJS.ProcessEnv> = {}): NodeJS.Proce
     PHAROS_TSA_PROVIDER: "rfc3161",
     PHAROS_TSA_URL: "https://timestamp.example.internal",
     PHAROS_TSA_CERT_SHA256: "a".repeat(64),
+    PHAROS_JUDGE_PROVIDER: "onnx",
+    PHAROS_JUDGE_MODEL_DIR: "/var/lib/pharos/judges",
     PHAROS_ADMIN_TOKEN: "a-secure-random-token-with-32-characters",
     ...overrides,
   };
@@ -26,6 +28,7 @@ describe("production configuration posture", () => {
     expect(config.env).toBe("prod");
     expect(config.kms.provider).toBe("aws-kms");
     expect(config.tsa.provider).toBe("rfc3161");
+    expect(config.judge.provider).toBe("onnx");
   });
 
   it.each([
@@ -49,6 +52,9 @@ describe("production configuration posture", () => {
       "tsa.trustedCertSha256",
     ],
     ["disabled anchoring", { PHAROS_TSA_ANCHOR_INTERVAL_MS: "0" }, "tsa.intervalMs"],
+    ["linear judges", { PHAROS_JUDGE_PROVIDER: "linear" }, "judge.provider"],
+    ["an implicit judge default", { PHAROS_JUDGE_PROVIDER: undefined }, "judge.provider"],
+    ["a missing judge cache", { PHAROS_JUDGE_MODEL_DIR: undefined }, "judge.modelDir"],
     ["plaintext object storage", { PHAROS_S3_ENDPOINT: "http://minio:9000" }, "s3.endpoint"],
     [
       "static AWS S3 credentials",
@@ -85,6 +91,7 @@ describe("production configuration posture", () => {
 
     expect(config.kms.provider).toBe("local-kms");
     expect(config.tsa.provider).toBe("local");
+    expect(config.judge.provider).toBe("linear");
   });
 
   it("accepts paired static credentials for self-hosted local object storage", () => {

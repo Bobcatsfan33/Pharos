@@ -21,6 +21,8 @@ services:
       PHAROS_TSA_URL: ${PHAROS_TSA_URL:?set the contracted RFC 3161 endpoint}
       PHAROS_TSA_CERT_SHA256: ${PHAROS_TSA_CERT_SHA256:?set approved TSA certificate pins}
       PHAROS_TSA_ANCHOR_INTERVAL_MS: ${PHAROS_TSA_ANCHOR_INTERVAL_MS:-3600000}
+      PHAROS_JUDGE_PROVIDER: onnx
+      PHAROS_JUDGE_MODEL_DIR: /var/lib/pharos/judges
       PHAROS_ADMIN_TOKEN: ${PHAROS_ADMIN_TOKEN:?set PHAROS_ADMIN_TOKEN}
       PHAROS_ALLOWED_ORIGINS: ${PHAROS_ALLOWED_ORIGINS:-}
     ports:
@@ -28,7 +30,12 @@ services:
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
+    volumes:
+      - pharos-judge-models:/var/lib/pharos/judges
     cap_drop:
       - ALL
     security_opt:
       - no-new-privileges:true
+
+volumes:
+  pharos-judge-models:

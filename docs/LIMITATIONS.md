@@ -1,10 +1,8 @@
 # Limitations — the honest list
 
 Pharos sells trust, so this file is part of the product, not an apology. It is the single
-place that lists every component currently implemented as a **stand-in** for its production
-version, what the stand-in actually is, and the roadmap task that replaces it. The pattern
-for each entry is: *today X is implemented as Y; the production implementation is roadmap
-task Z.*
+place that lists every component still operating as a **stand-in** or awaiting production
+promotion evidence, what exists today, and the gate that retires the limitation.
 
 Nothing here is hidden in a code comment and contradicted in the README. If you find a
 Pharos claim — in the README, the docs, a PR description, or a demo — that this file or the
@@ -22,19 +20,20 @@ roadmap.
 
 ---
 
-## 1. Tier-3 judges are linear bag-of-words classifiers, not transformer judges
+## 1. Transformer judges are wired for production but not yet approved production models
 
 > **Tracking issue:** [#36](https://github.com/Bobcatsfan33/Pharos/issues/36)
 
-**Today:** each Tier-3 "judge" is a bag-of-words (unigram + bigram) **logistic-regression
-classifier** trained on a few dozen hand-written labeled examples per concern
-([`packages/judge/src/model.ts`](../packages/judge/src/model.ts),
-[`src/featurize.ts`](../packages/judge/src/featurize.ts)). The decision is made by learned
-weights rather than hand-written patterns, but a linear model over word counts is **defeated
-by paraphrase, synonym substitution, translation, or trivial obfuscation** and has near-zero
-adversarial recall. This is the biggest gap in the product.
+**Today:** Pharos has two explicit serving postures. Local development defaults to the
+bag-of-words logistic baseline in
+[`packages/judge/src/model.ts`](../packages/judge/src/model.ts). Production configuration
+requires `PHAROS_JUDGE_PROVIDER=onnx`; API startup fetches or reads all three transformer
+artifacts, verifies their committed SHA-256 identities, constructs every CPU inference
+session, and refuses to listen if any model is missing, corrupt, or misidentified. The
+cascade and policy dry-run route both use the async polymorphic registry, so there is no
+linear fallback hidden behind the production configuration.
 
-**Measured (honest baseline):** the eval harness (S5) now quantifies exactly how weak this is —
+**Measured (honest baseline):** the eval harness (S5) quantifies exactly how weak the linear baseline is —
 see **[docs/benchmarks/judge-evals.md](benchmarks/judge-evals.md)**. PR-AUC 68–77%; clean recall
 58–99%; but **every base64/rot13-obfuscated positive is missed (adversarial recall 0%)**, and on
 two concerns the judge over-flags compliant near-misses (hard-negative FPR up to 83%). Operational
@@ -42,11 +41,15 @@ precision is far below the balanced-eval figure once base rates are applied (e.g
 precision at 0.1% prevalence). These are real numbers with 95% intervals and negative-control
 floors — the baseline Sprint 6 must beat at the frozen operating points.
 
-**Production:** transformer judges served on CPU behind the identical cascade interface —
-**gated by an eval harness that must exist first**.
-- Eval harness + adversarial datasets: **S5-T1 … S5-T4** (Phase 2, Sprint 5).
-- Transformer training + ONNX serving + model cards: **S6-T1 … S6-T3** (Sprint 6).
-- Honest re-benchmark and drift monitoring: **S7-T1, S7-T2** (Sprint 7).
+The ONNX system evaluation proves serving/parity and exposes a serious known limit:
+encoded/OOD input is conservatively over-flagged at the current threshold. One live
+encoding evaluation is not a production efficacy approval.
+
+**Remaining production promotion:** independent representative and adversarial evaluation
+for all three concerns, approved prevalence-adjusted operating points, OOD calibration,
+model cards, drift monitoring, and a sustained customer-topology latency/load run. Until
+those pass, the transformer release remains pre-release and the enterprise deployment
+decision remains not approved.
 
 Related: [decision-cascade.md](decision-cascade.md), [benchmarks/latency.md](benchmarks/latency.md).
 

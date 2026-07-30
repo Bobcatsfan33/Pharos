@@ -39,12 +39,28 @@ jobs:
           --set config.tsaUrl=https://tsa.example.com/tsr
           --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
       - name: render production manifests
-        run: >-
-          helm template pharos deploy/helm
-          --namespace pharos
-          --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-          --set config.tsaUrl=https://tsa.example.com/tsr
-          --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        run: |
+          helm template pharos deploy/helm \
+            --namespace pharos \
+            --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+            --set config.tsaUrl=https://tsa.example.com/tsr \
+            --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
+            > rendered-api.yaml
+          grep -q 'name: PHAROS_JUDGE_PROVIDER' rendered-api.yaml
+          grep -q 'value: "onnx"' rendered-api.yaml
+          grep -q 'name: judge-models' rendered-api.yaml
+          grep -q 'sizeLimit: 2Gi' rendered-api.yaml
+      - name: production must reject the linear judge baseline
+        run: |
+          if helm template pharos deploy/helm \
+            --namespace pharos \
+            --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+            --set config.tsaUrl=https://tsa.example.com/tsr \
+            --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
+            --set config.judgeProvider=linear; then
+            echo "production unexpectedly rendered with the linear judge baseline"
+            exit 1
+          fi
       - name: production must fail closed without an approved TSA certificate pin
         run: |
           if helm template pharos deploy/helm \

@@ -10,7 +10,7 @@ verdicts under a hard latency budget. It is implemented in
 |------|------|--------|---------------|
 | 1 | Deterministic rules: mandate limits, expiry, deny lists, irreversible-oversight | [`@pharos/core` VerdictEngine](../packages/core/src/verdict/engine.ts) | a **block** ends the cascade (Tiers 2–3 skipped) |
 | 2 | Statistical risk score (log-scaled financial magnitude, irreversibility, oversight, mandate, action sensitivity) | [`riskScorer.ts`](../packages/cascade/src/riskScorer.ts) | extreme risk (≥ 0.9) escalates without Tier 3 |
-| 3 | Served judge models — today linear bag-of-words classifiers (FINRA promissory, PHI-in-context, funds-movement intent) | [`@pharos/judge`](../packages/judge/src/model.ts) | terminal tier |
+| 3 | Served judge models — linear development baseline or production-required, hash-verified ONNX transformers (FINRA promissory, PHI-in-context, funds-movement intent) | [`@pharos/judge`](../packages/judge/src/onnxModel.ts) | terminal tier |
 
 Each tier is instrumented; `verdict.latency.perTier` records the milliseconds spent in each,
 and the absence of a `"3"` entry is itself evidence that the cascade short-circuited earlier.
@@ -21,20 +21,17 @@ drove the decision.
 
 ## Served judge models
 
-Tier 3 is a model registry of versioned, per-pack binary classifiers. **Today each judge is
-a bag-of-words (unigram + bigram) logistic-regression classifier** trained on a few dozen
-hand-written labeled examples per concern (`pnpm judges:train`, deterministic) — a CPU-cheap
-stand-in for a transformer judge, not a distilled large model. It is defeated by paraphrase
-and has near-zero adversarial recall; that is the product's biggest known gap and is
-addressed in roadmap Phase 2 (real transformer judges, tasks S6-x, gated by the eval harness
-in S5-x). See [docs/LIMITATIONS.md](LIMITATIONS.md).
+Tier 3 is a model registry of versioned, per-pack binary classifiers. Local development
+defaults to the deterministic bag-of-words logistic baseline. Production configuration
+requires and preloads all three content-hashed ONNX transformers, refusing startup rather
+than silently serving a missing model or falling back to the linear baseline. Independent
+efficacy, OOD calibration, drift, model-card, and production-latency promotion evidence is
+still open. See [docs/LIMITATIONS.md](LIMITATIONS.md).
 
-The registry serves the active model per pack and retains historical versions for replay.
-The interface (featurize → score → calibrated probability) is identical to what a transformer
-judge would expose, so the model can be upgraded without touching the cascade. The decision
-about meaning is made by the model's **learned weights**, not hand-written patterns — the only
-regular expression in the judge path is a character-class tokenizer split (see
-[benchmarks/latency.md](benchmarks/latency.md#semantic-evaluation-is-model-scored-not-pattern-matched)).
+The registry serves the active model per pack and retains historical linear versions for
+replay. Both model kinds expose the same calibrated result contract; the cascade awaits the
+polymorphic registry and records the exact content-hashed model version. The decision about
+meaning is made by learned model weights, not hand-written patterns.
 
 ## Deadline & engineered fail modes
 

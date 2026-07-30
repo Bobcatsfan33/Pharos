@@ -76,6 +76,12 @@ const ConfigSchema = z
       /** Scheduled anchoring interval (ms). Default 1h. 0 disables the background scheduler. */
       intervalMs: z.coerce.number().int().min(0).default(3_600_000),
     }),
+    judge: z.object({
+      /** Linear is a measured development baseline; production must preload the ONNX judges. */
+      provider: z.enum(["linear", "onnx"]).default("linear"),
+      /** Content-addressed ONNX/tokenizer cache. Pre-stage this path for restricted networks. */
+      modelDir: z.string().min(1).optional(),
+    }),
     api: z.object({
       port: z.coerce.number().int().positive().default(4000),
       verdictDeadlineMs: z.coerce.number().int().positive().default(800),
@@ -172,6 +178,20 @@ const ConfigSchema = z
         code: "custom",
         path: ["tsa", "intervalMs"],
         message: "production anchoring cannot be disabled",
+      });
+    }
+    if (config.judge.provider !== "onnx") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["judge", "provider"],
+        message: "production requires ONNX transformer judges; linear judges are not permitted",
+      });
+    }
+    if (!config.judge.modelDir) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["judge", "modelDir"],
+        message: "production requires an explicit writable or pre-staged judge model cache",
       });
     }
     if (!isHttpsUrl(config.s3.endpoint)) {
@@ -300,6 +320,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
       url: env.PHAROS_TSA_URL,
       trustedCertSha256: csv(env.PHAROS_TSA_CERT_SHA256),
       intervalMs: env.PHAROS_TSA_ANCHOR_INTERVAL_MS,
+    },
+    judge: {
+      provider: env.PHAROS_JUDGE_PROVIDER,
+      modelDir: env.PHAROS_JUDGE_MODEL_DIR,
     },
     api: {
       port: env.PHAROS_API_PORT,

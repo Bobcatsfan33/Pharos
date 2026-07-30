@@ -196,12 +196,17 @@
       "evidence": [
         "docs/benchmarks/judge-evals.md",
         "docs/benchmarks/judge-evals.json",
+        "docs/benchmarks/system-encoding-eval.md",
+        "packages/judge/models/manifest.json",
+        "packages/judge/src/onnxModel.ts",
+        "services/api/src/platform.ts",
+        "test/platform.judges.test.ts",
         "docs/decision-cascade.md",
         "docs/LIMITATIONS.md"
       ],
       "gaps": [
-        "Tier-3 judges remain linear bag-of-words classifiers with zero measured adversarial-obfuscation recall.",
-        "Production prevalence, transformer judge performance, drift monitoring, and production latency evidence remain open."
+        "Production requires and preloads the hash-verified ONNX transformers, but independent representative and adversarial efficacy approval for all three concerns is incomplete.",
+        "Approved prevalence-adjusted operating points, OOD calibration, model cards, drift monitoring, and production latency evidence remain open."
       ]
     }
   ],

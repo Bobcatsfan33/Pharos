@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -147,7 +147,11 @@ async function ensureAsset(
   // manifest digest ABOVE before this write and RE-verified on read; the path is a validated hex
   // digest + constant extension (no manifest string reaches the FS sink; traversal test proves it).
   // Atomic temp+rename so a crash mid-write never leaves a truncated cache file (js/file-system-race).
-  const tmp = join(cacheDir, `.${digest}.${ext}.${process.pid}.tmp`);
+  // A shared RWX model cache can be populated by several replicas whose container PID is
+  // identically 1. Include a random nonce so their verified writes cannot steal one another's
+  // temporary path; final rename races are harmless because every contender has identical,
+  // digest-verified bytes.
+  const tmp = join(cacheDir, `.${digest}.${ext}.${process.pid}.${randomUUID()}.tmp`);
   writeFileSync(tmp, bytes);
   renameSync(tmp, cached);
   return cached;
