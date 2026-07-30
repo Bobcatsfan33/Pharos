@@ -27,10 +27,25 @@ export interface HeldRequestStore {
 
 export type HeldRequestKeyProvider = (tenantId: string) => Promise<Uint8Array> | Uint8Array;
 
+export interface HeldRequestKeyring {
+  activeKeyId: string;
+  keyFor: (
+    tenantId: string,
+    keyId: string,
+  ) => Promise<Uint8Array | undefined> | Uint8Array | undefined;
+}
+
 interface HeldRequestRow {
+  escalation_id: string;
+  key_id: string;
   ciphertext: Buffer;
   nonce: Buffer;
   auth_tag: Buffer;
+}
+
+export interface HeldRequestKeyUsage {
+  keyId: string;
+  count: number;
 }
 
 const ALGORITHM = "aes-256-gcm";
@@ -63,6 +78,30 @@ export function heldRequestKeyProviderFromMaster(masterKey: Uint8Array): HeldReq
     );
 }
 
+/** Build a versioned tenant-key ring for online master-key rotation. */
+export function heldRequestKeyringFromMasters(
+  activeKeyId: string,
+  masterKeys: Readonly<Record<string, Uint8Array>>,
+): HeldRequestKeyring {
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(activeKeyId)) {
+    throw new Error("held-request active key id has an invalid format");
+  }
+  const providers = new Map<string, HeldRequestKeyProvider>();
+  for (const [keyId, masterKey] of Object.entries(masterKeys)) {
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(keyId)) {
+      throw new Error(`held-request key id has an invalid format: ${keyId}`);
+    }
+    providers.set(keyId, heldRequestKeyProviderFromMaster(masterKey));
+  }
+  if (!providers.has(activeKeyId)) {
+    throw new Error(`held-request active key is not present in key ring: ${activeKeyId}`);
+  }
+  return {
+    activeKeyId,
+    keyFor: (tenantId, keyId) => providers.get(keyId)?.(tenantId),
+  };
+}
+
 /**
  * Encrypted, tenant-isolated durable storage for gateway continuations.
  *
@@ -74,12 +113,20 @@ export function heldRequestKeyProviderFromMaster(masterKey: Uint8Array): HeldReq
 export class PostgresHeldRequestStore implements HeldRequestStore {
   private readonly maxBytes: number;
   private readonly leaseMs: number;
+  private readonly keyring: HeldRequestKeyring;
 
   constructor(
     private readonly pool: Pool,
-    private readonly keyProvider: HeldRequestKeyProvider,
+    keyProvider: HeldRequestKeyProvider | HeldRequestKeyring,
     options: { maxBytes?: number; leaseMs?: number } = {},
   ) {
+    this.keyring =
+      typeof keyProvider === "function"
+        ? {
+            activeKeyId: "legacy",
+            keyFor: (tenantId, keyId) => (keyId === "legacy" ? keyProvider(tenantId) : undefined),
+          }
+        : keyProvider;
     this.maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
     this.leaseMs = options.leaseMs ?? DEFAULT_LEASE_MS;
     if (!Number.isSafeInteger(this.maxBytes) || this.maxBytes <= 0) {
@@ -97,20 +144,16 @@ export class PostgresHeldRequestStore implements HeldRequestStore {
         `held request is ${plaintext.byteLength} bytes; limit is ${this.maxBytes} bytes`,
       );
     }
-    const key = await this.keyFor(tenantId);
-    const nonce = randomBytes(NONCE_BYTES);
-    const cipher = createCipheriv(ALGORITHM, key, nonce, { authTagLength: TAG_BYTES });
-    cipher.setAAD(this.aad(tenantId, escalationId));
-    const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
-    const authTag = cipher.getAuthTag();
+    const keyId = this.keyring.activeKeyId;
+    const encrypted = await this.encrypt(tenantId, escalationId, keyId, plaintext);
 
     await this.withTenant(tenantId, async (client) => {
       await client.query(
         `INSERT INTO gateway_held_requests
-           (tenant_id, escalation_id, ciphertext, nonce, auth_tag)
-         VALUES ($1,$2,$3,$4,$5)
+           (tenant_id, escalation_id, key_id, ciphertext, nonce, auth_tag)
+         VALUES ($1,$2,$3,$4,$5,$6)
          ON CONFLICT (tenant_id, escalation_id) DO NOTHING`,
-        [tenantId, escalationId, ciphertext, nonce, authTag],
+        [tenantId, escalationId, keyId, encrypted.ciphertext, encrypted.nonce, encrypted.authTag],
       );
     });
   }
@@ -128,7 +171,7 @@ export class PostgresHeldRequestStore implements HeldRequestStore {
           WHERE tenant_id = $1
             AND escalation_id = $2
             AND (state = 'pending' OR lease_expires_at <= now())
-          RETURNING ciphertext, nonce, auth_tag`,
+          RETURNING escalation_id, key_id, ciphertext, nonce, auth_tag`,
         [tenantId, escalationId, leaseToken, this.leaseMs],
       );
       const row = acquired.rows[0];
@@ -136,7 +179,7 @@ export class PostgresHeldRequestStore implements HeldRequestStore {
         return {
           status: "acquired",
           leaseToken,
-          request: await this.decrypt(tenantId, escalationId, row),
+          request: await this.decrypt(tenantId, row),
         };
       }
       const exists = await client.query(
@@ -179,16 +222,79 @@ export class PostgresHeldRequestStore implements HeldRequestStore {
     });
   }
 
-  private async decrypt(
-    tenantId: string,
-    escalationId: string,
-    row: HeldRequestRow,
-  ): Promise<HeldGatewayRequest> {
-    const key = await this.keyFor(tenantId);
+  /**
+   * Re-encrypt a bounded batch of pending rows under the active key. Delivering rows are
+   * deliberately skipped; rerun after their leases complete or expire.
+   */
+  async reencryptPending(tenantId: string, limit = 100): Promise<number> {
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1_000) {
+      throw new Error("held-request re-encryption limit must be between 1 and 1000");
+    }
+    return this.withTenant(tenantId, async (client) => {
+      const rows = await client.query<HeldRequestRow>(
+        `SELECT escalation_id, key_id, ciphertext, nonce, auth_tag
+           FROM gateway_held_requests
+          WHERE tenant_id = $1 AND state = 'pending' AND key_id <> $2
+          ORDER BY created_at
+          LIMIT $3
+          FOR UPDATE SKIP LOCKED`,
+        [tenantId, this.keyring.activeKeyId, limit],
+      );
+      let updated = 0;
+      for (const row of rows.rows) {
+        const request = await this.decrypt(tenantId, row);
+        const plaintext = Buffer.from(JSON.stringify(request), "utf8");
+        const encrypted = await this.encrypt(
+          tenantId,
+          row.escalation_id,
+          this.keyring.activeKeyId,
+          plaintext,
+        );
+        const result = await client.query(
+          `UPDATE gateway_held_requests
+              SET key_id = $3,
+                  ciphertext = $4,
+                  nonce = $5,
+                  auth_tag = $6,
+                  updated_at = now()
+            WHERE tenant_id = $1 AND escalation_id = $2
+              AND state = 'pending' AND key_id = $7`,
+          [
+            tenantId,
+            row.escalation_id,
+            this.keyring.activeKeyId,
+            encrypted.ciphertext,
+            encrypted.nonce,
+            encrypted.authTag,
+            row.key_id,
+          ],
+        );
+        updated += result.rowCount ?? 0;
+      }
+      return updated;
+    });
+  }
+
+  async keyUsage(tenantId: string): Promise<HeldRequestKeyUsage[]> {
+    return this.withTenant(tenantId, async (client) => {
+      const result = await client.query<{ key_id: string; count: string }>(
+        `SELECT key_id, count(*)::text AS count
+           FROM gateway_held_requests
+          WHERE tenant_id = $1
+          GROUP BY key_id
+          ORDER BY key_id`,
+        [tenantId],
+      );
+      return result.rows.map((row) => ({ keyId: row.key_id, count: Number(row.count) }));
+    });
+  }
+
+  private async decrypt(tenantId: string, row: HeldRequestRow): Promise<HeldGatewayRequest> {
+    const key = await this.keyFor(tenantId, row.key_id);
     const decipher = createDecipheriv(ALGORITHM, key, row.nonce, {
       authTagLength: TAG_BYTES,
     });
-    decipher.setAAD(this.aad(tenantId, escalationId));
+    decipher.setAAD(this.aad(tenantId, row.escalation_id, row.key_id));
     decipher.setAuthTag(row.auth_tag);
     const plaintext = Buffer.concat([decipher.update(row.ciphertext), decipher.final()]);
     const parsed = JSON.parse(plaintext.toString("utf8")) as HeldGatewayRequest;
@@ -204,16 +310,38 @@ export class PostgresHeldRequestStore implements HeldRequestStore {
     return parsed;
   }
 
-  private async keyFor(tenantId: string): Promise<Buffer> {
-    const key = Buffer.from(await this.keyProvider(tenantId));
+  private async encrypt(
+    tenantId: string,
+    escalationId: string,
+    keyId: string,
+    plaintext: Buffer,
+  ): Promise<{ ciphertext: Buffer; nonce: Buffer; authTag: Buffer }> {
+    const key = await this.keyFor(tenantId, keyId);
+    const nonce = randomBytes(NONCE_BYTES);
+    const cipher = createCipheriv(ALGORITHM, key, nonce, { authTagLength: TAG_BYTES });
+    cipher.setAAD(this.aad(tenantId, escalationId, keyId));
+    const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+    return { ciphertext, nonce, authTag: cipher.getAuthTag() };
+  }
+
+  private async keyFor(tenantId: string, keyId: string): Promise<Buffer> {
+    const provided = await this.keyring.keyFor(tenantId, keyId);
+    if (!provided) {
+      throw new Error(`held-request encryption key is not configured: ${keyId}`);
+    }
+    const key = Buffer.from(provided);
     if (key.byteLength !== 32) {
       throw new Error("held-request key provider must return exactly 32 bytes");
     }
     return key;
   }
 
-  private aad(tenantId: string, escalationId: string): Buffer {
-    return Buffer.from(`pharos-held-request-v1\0${tenantId}\0${escalationId}`, "utf8");
+  private aad(tenantId: string, escalationId: string, keyId: string): Buffer {
+    // Rows created before key-ring support were written under the implicit "legacy" id.
+    if (keyId === "legacy") {
+      return Buffer.from(`pharos-held-request-v1\0${tenantId}\0${escalationId}`, "utf8");
+    }
+    return Buffer.from(`pharos-held-request-v2\0${keyId}\0${tenantId}\0${escalationId}`, "utf8");
   }
 
   private async withTenant<T>(

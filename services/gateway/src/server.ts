@@ -2,7 +2,7 @@ import { PharosClient } from "@getpharos/sdk";
 import {
   PostgresHeldRequestStore,
   createPool,
-  heldRequestKeyProviderFromMaster,
+  heldRequestKeyringFromMasters,
   runMigrations,
   type HeldRequestStore,
   type Pool,
@@ -14,7 +14,7 @@ import { createGatewayApp } from "./gateway.js";
  * Standalone gateway server. Routes an agent's HTTP egress through Pharos with zero code
  * changes in the agent. Configure via env:
  *   PHAROS_API_BASE, PHAROS_API_KEY, PHAROS_TENANT, GATEWAY_AGENT_ID, GATEWAY_TARGET, GATEWAY_PORT,
- *   PHAROS_PG_URL, PHAROS_GATEWAY_HOLD_MASTER_KEY_B64
+ *   PHAROS_PG_URL, PHAROS_GATEWAY_HOLD_ACTIVE_KEY_ID, PHAROS_GATEWAY_HOLD_KEYS_B64
  */
 async function main(): Promise<void> {
   const config = loadGatewayServerConfig(process.env);
@@ -26,7 +26,7 @@ async function main(): Promise<void> {
     await runMigrations(pool);
     heldRequestStore = new PostgresHeldRequestStore(
       pool,
-      heldRequestKeyProviderFromMaster(durability.masterKey),
+      heldRequestKeyringFromMasters(durability.activeKeyId, durability.masterKeys),
     );
   }
 

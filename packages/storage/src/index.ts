@@ -52,8 +52,11 @@ export { AssuranceStore, type AssuranceAudit, type AssuranceStats } from "./assu
 export {
   PostgresHeldRequestStore,
   heldRequestKeyProviderFromMaster,
+  heldRequestKeyringFromMasters,
   type HeldGatewayRequest,
   type HeldRequestAcquireResult,
   type HeldRequestKeyProvider,
+  type HeldRequestKeyring,
+  type HeldRequestKeyUsage,
   type HeldRequestStore,
 } from "./heldRequestStore.js";

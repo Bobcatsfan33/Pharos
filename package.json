@@ -26,6 +26,7 @@
     "verify:external": "tsx --env-file=.env scripts/external-verify.ts",
     "verify:bundle": "tsx scripts/external-verify.ts --bundle",
     "api:dev": "tsx --env-file=.env services/api/src/server.ts",
+    "gateway:rotate-held-keys": "tsx scripts/rotate-gateway-held-keys.ts",
     "judges:train": "tsx scripts/train-judges.ts",
     "judges:eval": "tsx scripts/eval-judges.ts",
     "judges:gate": "tsx scripts/eval-gate.ts",

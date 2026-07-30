@@ -1,6 +1,7 @@
 export interface GatewayDurabilityConfig {
   pgUrl: string;
-  masterKey: Buffer;
+  activeKeyId: string;
+  masterKeys: Record<string, Buffer>;
 }
 
 export interface GatewayServerConfig {
@@ -76,20 +77,70 @@ export function loadGatewayServerConfig(env: NodeJS.ProcessEnv): GatewayServerCo
   };
 }
 
-function decodeBase64Secret(value: string): Buffer {
+function decodeBase64Secret(name: string, value: string): Buffer {
   const normalized = value.trim();
   if (
     normalized.length === 0 ||
     normalized.length % 4 !== 0 ||
     !/^[A-Za-z0-9+/]+={0,2}$/.test(normalized)
   ) {
-    throw new Error("PHAROS_GATEWAY_HOLD_MASTER_KEY_B64 must be valid canonical base64");
+    throw new Error(`${name} must be valid canonical base64`);
   }
   const decoded = Buffer.from(normalized, "base64");
   if (decoded.toString("base64") !== normalized) {
-    throw new Error("PHAROS_GATEWAY_HOLD_MASTER_KEY_B64 must be valid canonical base64");
+    throw new Error(`${name} must be valid canonical base64`);
   }
   return decoded;
+}
+
+function parseMasterKey(name: string, value: string): Buffer {
+  const masterKey = decodeBase64Secret(name, value);
+  if (masterKey.byteLength < 32) {
+    throw new Error(`${name} must decode to at least 32 bytes`);
+  }
+  return masterKey;
+}
+
+function parseKeyring(
+  encoded: string,
+  activeKeyId: string | undefined,
+): {
+  activeKeyId: string;
+  masterKeys: Record<string, Buffer>;
+} {
+  if (!activeKeyId) {
+    throw new Error("PHAROS_GATEWAY_HOLD_KEYS_B64 requires PHAROS_GATEWAY_HOLD_ACTIVE_KEY_ID");
+  }
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(activeKeyId)) {
+    throw new Error("PHAROS_GATEWAY_HOLD_ACTIVE_KEY_ID has an invalid format");
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(encoded);
+  } catch {
+    throw new Error("PHAROS_GATEWAY_HOLD_KEYS_B64 must be a JSON object");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("PHAROS_GATEWAY_HOLD_KEYS_B64 must be a JSON object");
+  }
+  const entries = Object.entries(parsed as Record<string, unknown>);
+  if (entries.length === 0 || entries.length > 16) {
+    throw new Error("PHAROS_GATEWAY_HOLD_KEYS_B64 must contain between 1 and 16 keys");
+  }
+  const masterKeys: Record<string, Buffer> = {};
+  for (const [keyId, value] of entries) {
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(keyId)) {
+      throw new Error(`gateway held-request key id has an invalid format: ${keyId}`);
+    }
+    if (typeof value !== "string") {
+      throw new Error(`gateway held-request key must be base64 text: ${keyId}`);
+    }
+    masterKeys[keyId] = parseMasterKey(`gateway held-request key ${keyId}`, value);
+  }
+  if (!masterKeys[activeKeyId]) {
+    throw new Error("PHAROS_GATEWAY_HOLD_ACTIVE_KEY_ID is not present in the key ring");
+  }
+  return { activeKeyId, masterKeys };
 }
 
 /**
@@ -103,16 +154,33 @@ export function loadGatewayDurabilityConfig(
 ): GatewayDurabilityConfig | null {
   const pgUrl = env.PHAROS_PG_URL;
   const encodedMasterKey = env.PHAROS_GATEWAY_HOLD_MASTER_KEY_B64;
+  const encodedKeyring = env.PHAROS_GATEWAY_HOLD_KEYS_B64;
+  const activeKeyId = env.PHAROS_GATEWAY_HOLD_ACTIVE_KEY_ID;
+  if (encodedMasterKey && (encodedKeyring || activeKeyId)) {
+    throw new Error(
+      "configure either PHAROS_GATEWAY_HOLD_MASTER_KEY_B64 or the versioned key ring, not both",
+    );
+  }
+  if (pgUrl && encodedKeyring) {
+    return { pgUrl, ...parseKeyring(encodedKeyring, activeKeyId) };
+  }
   if (pgUrl && encodedMasterKey) {
-    const masterKey = decodeBase64Secret(encodedMasterKey);
-    if (masterKey.byteLength < 32) {
-      throw new Error("PHAROS_GATEWAY_HOLD_MASTER_KEY_B64 must decode to at least 32 bytes");
+    return {
+      pgUrl,
+      activeKeyId: "legacy",
+      masterKeys: {
+        legacy: parseMasterKey("PHAROS_GATEWAY_HOLD_MASTER_KEY_B64", encodedMasterKey),
+      },
+    };
+  }
+  if (encodedKeyring || activeKeyId || encodedMasterKey) {
+    if (!pgUrl) {
+      throw new Error("gateway held-request encryption requires PHAROS_PG_URL");
     }
-    return { pgUrl, masterKey };
   }
   if (["prod", "production"].includes(env.PHAROS_ENV ?? "")) {
     throw new Error(
-      "production gateway requires PHAROS_PG_URL and PHAROS_GATEWAY_HOLD_MASTER_KEY_B64",
+      "production gateway requires PHAROS_PG_URL and a held-request encryption key ring",
     );
   }
   return null;

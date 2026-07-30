@@ -6,7 +6,7 @@ describe("gateway durable-store production gate", () => {
   for (const environment of ["prod", "production"]) {
     it(`fails closed for PHAROS_ENV=${environment} when durable state is incomplete`, () => {
       expect(() => loadGatewayDurabilityConfig({ PHAROS_ENV: environment })).toThrow(
-        /requires PHAROS_PG_URL and PHAROS_GATEWAY_HOLD_MASTER_KEY_B64/,
+        /requires PHAROS_PG_URL and a held-request encryption key ring/,
       );
     });
   }
@@ -19,7 +19,52 @@ describe("gateway durable-store production gate", () => {
         PHAROS_PG_URL: "postgres://example",
         PHAROS_GATEWAY_HOLD_MASTER_KEY_B64: masterKey.toString("base64"),
       }),
-    ).toEqual({ pgUrl: "postgres://example", masterKey });
+    ).toEqual({
+      pgUrl: "postgres://example",
+      activeKeyId: "legacy",
+      masterKeys: { legacy: masterKey },
+    });
+  });
+
+  it("loads a versioned key ring and selects its explicit active key", () => {
+    const oldKey = randomBytes(32);
+    const currentKey = randomBytes(32);
+    expect(
+      loadGatewayDurabilityConfig({
+        PHAROS_ENV: "prod",
+        PHAROS_PG_URL: "postgres://example",
+        PHAROS_GATEWAY_HOLD_ACTIVE_KEY_ID: "2026-q4",
+        PHAROS_GATEWAY_HOLD_KEYS_B64: JSON.stringify({
+          "2026-q3": oldKey.toString("base64"),
+          "2026-q4": currentKey.toString("base64"),
+        }),
+      }),
+    ).toEqual({
+      pgUrl: "postgres://example",
+      activeKeyId: "2026-q4",
+      masterKeys: { "2026-q3": oldKey, "2026-q4": currentKey },
+    });
+  });
+
+  it("rejects a missing active key and conflicting legacy configuration", () => {
+    const encoded = randomBytes(32).toString("base64");
+    expect(() =>
+      loadGatewayDurabilityConfig({
+        PHAROS_ENV: "prod",
+        PHAROS_PG_URL: "postgres://example",
+        PHAROS_GATEWAY_HOLD_ACTIVE_KEY_ID: "missing",
+        PHAROS_GATEWAY_HOLD_KEYS_B64: JSON.stringify({ current: encoded }),
+      }),
+    ).toThrow(/not present in the key ring/);
+    expect(() =>
+      loadGatewayDurabilityConfig({
+        PHAROS_ENV: "prod",
+        PHAROS_PG_URL: "postgres://example",
+        PHAROS_GATEWAY_HOLD_MASTER_KEY_B64: encoded,
+        PHAROS_GATEWAY_HOLD_ACTIVE_KEY_ID: "current",
+        PHAROS_GATEWAY_HOLD_KEYS_B64: JSON.stringify({ current: encoded }),
+      }),
+    ).toThrow(/either .*MASTER_KEY_B64.* or the versioned key ring/);
   });
 
   it("rejects a short encryption key before opening the database", () => {

@@ -6,7 +6,11 @@ import { randomBytes, randomUUID } from "node:crypto";
 import Fastify, { type FastifyInstance } from "fastify";
 import { PharosClient } from "@getpharos/sdk";
 import { createGatewayApp } from "@pharos/gateway";
-import { PostgresHeldRequestStore, heldRequestKeyProviderFromMaster } from "@pharos/storage";
+import {
+  PostgresHeldRequestStore,
+  heldRequestKeyProviderFromMaster,
+  heldRequestKeyringFromMasters,
+} from "@pharos/storage";
 
 /**
  * M3 (Causeway) gateway path: an UNMODIFIED agent — one that imports no Pharos SDK and only
@@ -188,6 +192,44 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
         headers: {},
       }),
     ).rejects.toThrow(/limit is 64 bytes/);
+  });
+
+  it("re-encrypts pending requests online under a new active key", async (ctx) => {
+    if (!available) return ctx.skip();
+    const escalationId = randomUUID();
+    const oldKey = randomBytes(32);
+    const newKey = randomBytes(32);
+    const oldStore = new PostgresHeldRequestStore(
+      platform!.pool,
+      heldRequestKeyringFromMasters("2026-q3", { "2026-q3": oldKey }),
+    );
+    await oldStore.save(TENANT, escalationId, {
+      method: "POST",
+      path: "/rotation-test",
+      body: { retained: true },
+      headers: {},
+    });
+    expect(await oldStore.keyUsage(TENANT)).toContainEqual({ keyId: "2026-q3", count: 1 });
+
+    const rotatingStore = new PostgresHeldRequestStore(
+      platform!.pool,
+      heldRequestKeyringFromMasters("2026-q4", {
+        "2026-q3": oldKey,
+        "2026-q4": newKey,
+      }),
+    );
+    expect(await rotatingStore.reencryptPending(TENANT)).toBe(1);
+    expect(await rotatingStore.keyUsage(TENANT)).toContainEqual({ keyId: "2026-q4", count: 1 });
+
+    const newOnlyStore = new PostgresHeldRequestStore(
+      platform!.pool,
+      heldRequestKeyringFromMasters("2026-q4", { "2026-q4": newKey }),
+    );
+    const acquired = await newOnlyStore.acquire(TENANT, escalationId);
+    expect(acquired.status).toBe("acquired");
+    if (acquired.status !== "acquired") throw new Error("rotated request was not acquired");
+    expect(acquired.request.body).toEqual({ retained: true });
+    expect(await newOnlyStore.complete(TENANT, escalationId, acquired.leaseToken)).toBe(true);
   });
 
   it("forwards a benign action to the upstream", async (ctx) => {
