@@ -1,61 +1,260 @@
-name: image
-# Builds the Pharos API image on a version tag, pushes to GHCR, signs it with cosign
-# (keyless / OIDC), and attaches a syft SBOM (SPDX-JSON) as a signed attestation.
-# Verification is documented in deploy/INSTALL.md.
+name: image assurance and release
+
 on:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "packages/**"
+      - "services/**"
+      - "apps/**"
+      - ".github/workflows/image.yml"
+      - "deploy/INSTALL.md"
   push:
+    branches: [main]
     tags:
       - "v*"
   workflow_dispatch:
 
+concurrency:
+  group: pharos-image-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+env:
+  NODE_IMAGE: node:22-bookworm-slim@sha256:7af03b14a13c8cdd38e45058fd957bf00a72bbe17feac43b1c15a689c029c732
+  LOCAL_IMAGE: pharos-api:verification
+  TRIVY_VERSION: v0.72.0
+
 jobs:
-  build-sign:
+  verify-image:
+    name: image policy, SBOM, and vulnerability gate
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write # push to GHCR
-      id-token: write # cosign keyless signing
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
 
-      - name: compute lowercase image name
-        run: echo "IMAGE=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/pharos-api" >> "$GITHUB_ENV"
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
 
-      - uses: docker/setup-buildx-action@v3
+      - name: build the release-equivalent image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        with:
+          context: .
+          load: true
+          push: false
+          tags: ${{ env.LOCAL_IMAGE }}
+          build-args: |
+            NODE_IMAGE=${{ env.NODE_IMAGE }}
 
-      - uses: docker/login-action@v3
+      - name: verify immutable base and unprivileged identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEFAULT_BASE="$(sed -n 's/^ARG NODE_IMAGE=//p' Dockerfile | head -n 1)"
+          test "${DEFAULT_BASE}" = "${NODE_IMAGE}"
+          test "$(docker image inspect "${LOCAL_IMAGE}" --format '{{ index .Config.Labels "org.opencontainers.image.base.name" }}')" = "${NODE_IMAGE}"
+          test "$(docker image inspect "${LOCAL_IMAGE}" --format '{{.Config.User}}')" = "node"
+
+      - name: smoke test the production runtime posture
+        run: >-
+          docker run --rm
+          --read-only
+          --network none
+          --cap-drop ALL
+          --security-opt no-new-privileges
+          --tmpfs /tmp:rw,noexec,nosuid,size=32m
+          --entrypoint /app/node_modules/.bin/tsx
+          "${LOCAL_IMAGE}" --version
+
+      - name: verify build tooling is absent from the runtime
+        run: >-
+          docker run --rm
+          --read-only
+          --network none
+          --cap-drop ALL
+          --security-opt no-new-privileges
+          --entrypoint node
+          "${LOCAL_IMAGE}"
+          -e
+          "const fs=require('node:fs');
+          for(const p of ['/app/node_modules/.bin/vitest','/app/node_modules/.bin/vite','/app/apps',
+          '/usr/local/lib/node_modules/npm','/usr/local/lib/node_modules/corepack',
+          '/usr/local/bin/npm','/usr/local/bin/corepack']){
+          if(fs.existsSync(p)){console.error('unexpected runtime path: '+p);process.exit(1)}}
+          if(!fs.existsSync('/app/node_modules/.bin/tsx')){process.exit(1)}"
+
+      - name: generate SPDX SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
+        with:
+          image: ${{ env.LOCAL_IMAGE }}
+          format: spdx-json
+          output-file: pharos-api.spdx.json
+          syft-version: v1.50.0
+          upload-artifact: false
+
+      - name: write machine-readable vulnerability evidence
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        with:
+          image-ref: ${{ env.LOCAL_IMAGE }}
+          version: ${{ env.TRIVY_VERSION }}
+          format: json
+          output: pharos-api.trivy.json
+          scanners: vuln
+          vuln-type: os,library
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          exit-code: 0
+
+      - name: retain pull-request assurance evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pharos-image-assurance-${{ github.run_id }}
+          path: |
+            pharos-api.spdx.json
+            pharos-api.trivy.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: block fixable high and critical vulnerabilities
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        with:
+          image-ref: ${{ env.LOCAL_IMAGE }}
+          version: ${{ env.TRIVY_VERSION }}
+          format: table
+          scanners: vuln
+          vuln-type: os,library
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
+  publish:
+    name: publish, sign, and attest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: verify-image
+    runs-on: ubuntu-latest
+    environment: production-release
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+
+      - name: validate release tag and compute image name
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::image release tag must be an explicit semantic version"
+            exit 1
+          fi
+          echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/pharos-api" >> "${GITHUB_ENV}"
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - id: meta
-        uses: docker/metadata-action@v5
+      - id: metadata
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
         with:
           images: ${{ env.IMAGE }}
           tags: |
             type=semver,pattern={{version}}
-            type=sha
+            type=sha,format=long,prefix=sha-
 
       - id: build
-        uses: docker/build-push-action@v6
+        name: build and publish the verified source
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          build-args: |
+            NODE_IMAGE=${{ env.NODE_IMAGE }}
+          provenance: mode=max
 
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac
 
-      - name: cosign sign (keyless)
+      - name: keylessly sign the image digest
         run: cosign sign --yes "${IMAGE}@${{ steps.build.outputs.digest }}"
 
-      - name: generate SBOM (syft, SPDX-JSON)
-        uses: anchore/sbom-action@v0
+      - name: generate release SPDX SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
         with:
           image: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
           format: spdx-json
-          output-file: sbom.spdx.json
+          output-file: pharos-api.spdx.json
+          syft-version: v1.50.0
+          upload-artifact: false
 
-      - name: attest SBOM (cosign, keyless)
-        run: cosign attest --yes --predicate sbom.spdx.json --type spdxjson "${IMAGE}@${{ steps.build.outputs.digest }}"
+      - name: keylessly attest the SBOM
+        run: >-
+          cosign attest --yes
+          --predicate pharos-api.spdx.json
+          --type spdxjson
+          "${IMAGE}@${{ steps.build.outputs.digest }}"
+
+      - name: publish GitHub build provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: verify the just-published signature and SBOM attestation
+        shell: bash
+        run: |
+          set -euo pipefail
+          IDENTITY="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/image.yml@${GITHUB_REF}"
+          cosign verify \
+            --certificate-identity "${IDENTITY}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "${IMAGE}@${{ steps.build.outputs.digest }}"
+          cosign verify-attestation \
+            --certificate-identity "${IDENTITY}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            --type spdxjson \
+            "${IMAGE}@${{ steps.build.outputs.digest }}"
+
+      - name: write release receipt
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        shell: bash
+        run: |
+          jq -n \
+            --arg schema_version "1" \
+            --arg image "${IMAGE}" \
+            --arg image_digest "${IMAGE_DIGEST}" \
+            --arg base_image "${NODE_IMAGE}" \
+            --arg source_repository "https://github.com/${GITHUB_REPOSITORY}" \
+            --arg source_revision "${GITHUB_SHA}" \
+            --arg release_tag "${GITHUB_REF_NAME}" \
+            '{
+              schema_version: ($schema_version | tonumber),
+              image: $image,
+              image_digest: $image_digest,
+              base_image: $base_image,
+              source_repository: $source_repository,
+              source_revision: $source_revision,
+              release_tag: $release_tag
+            }' > pharos-api.release.json
+
+      - name: retain release evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pharos-api-${{ github.ref_name }}
+          path: |
+            pharos-api.spdx.json
+            pharos-api.release.json
+          if-no-files-found: error
+          retention-days: 90
