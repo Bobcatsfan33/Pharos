@@ -136,9 +136,17 @@ stable `Idempotency-Key: pharos-escalation-{id}` header, so an upstream that per
 honors idempotency keys executes exactly once. An upstream that ignores the header can still
 duplicate on that narrow failure boundary; claiming otherwise would be false.
 
-**Remaining:** require and conformance-test upstream idempotency before advertising
-exactly-once delivery for a connector. Header/body fidelity and multi-target routing remain
-**S8-T2, S8-T3**. Held-request encryption now uses a versioned key ring and an online,
+**Conformance gate:** the production gateway now refuses to start unless
+`GATEWAY_IDEMPOTENCY_PROBE_PATH` is configured and passes
+`pharos-idempotency-conformance-v1`. Pharos sends the same unique key and body twice; the
+endpoint must report one execution and one stable result, and mark only the second response
+with `X-Idempotency-Replayed: true`. The endpoint must use the same durable idempotency
+implementation as the governed side-effect routes. This proves the configured endpoint's
+observable contract; it cannot prove that a connector owner has wired a different route to
+the same store.
+
+**Remaining:** header/body fidelity and multi-target routing remain **S8-T2, S8-T3**.
+Held-request encryption now uses a versioned key ring and an online,
 tenant-scoped re-encryption job. Rotation is not automatic: operators must run and verify
 the expand → activate → re-encrypt → contract runbook for every tenant before removing an
 old key. A delivering row is intentionally skipped until its lease completes or expires.

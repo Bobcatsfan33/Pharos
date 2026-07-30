@@ -5,7 +5,11 @@ import { join } from "node:path";
 import { randomBytes, randomUUID } from "node:crypto";
 import Fastify, { type FastifyInstance } from "fastify";
 import { PharosClient } from "@getpharos/sdk";
-import { createGatewayApp } from "@pharos/gateway";
+import {
+  assertUpstreamIdempotencyConformance,
+  createGatewayApp,
+  IDEMPOTENCY_CONFORMANCE_PROTOCOL,
+} from "@pharos/gateway";
 import {
   PostgresHeldRequestStore,
   heldRequestKeyProviderFromMaster,
@@ -45,6 +49,7 @@ let pharosUrl = "";
 let apiKey = "";
 let upstreamHits = 0;
 let upstreamIdempotencyKey: string | undefined;
+let conformanceExecutions = 0;
 let targetUrl = "";
 let gatewayClient: PharosClient;
 const gatewayHoldMasterKey = randomBytes(32);
@@ -103,6 +108,25 @@ beforeAll(async () => {
       upstreamIdempotencyKey = request.headers["idempotency-key"];
       return { sent: true };
     });
+    const conformanceResults = new Map<string, string>();
+    targetApp.post("/.well-known/pharos-idempotency", async (request, reply) => {
+      const idempotencyKey = request.headers["idempotency-key"];
+      if (typeof idempotencyKey !== "string") {
+        return reply.code(400).send({ error: "missing idempotency key" });
+      }
+      const replayed = conformanceResults.has(idempotencyKey);
+      if (!replayed) {
+        conformanceExecutions++;
+        conformanceResults.set(idempotencyKey, `durable-result-${conformanceExecutions}`);
+      }
+      reply.header("x-idempotency-replayed", replayed ? "true" : "false");
+      return {
+        protocol: IDEMPOTENCY_CONFORMANCE_PROTOCOL,
+        idempotencyKey,
+        executions: 1,
+        resultId: conformanceResults.get(idempotencyKey),
+      };
+    });
     await targetApp.listen({ port: 0, host: "127.0.0.1" });
     const ta = targetApp.server.address();
     targetUrl = typeof ta === "object" && ta ? `http://127.0.0.1:${ta.port}` : "";
@@ -133,6 +157,17 @@ async function agentSend(body: unknown) {
 }
 
 describe("Gateway — zero-code governance of an unmodified agent", () => {
+  it("proves the real upstream executes a retried idempotency probe once", async (ctx) => {
+    if (!available) return ctx.skip();
+    const before = conformanceExecutions;
+    const proof = await assertUpstreamIdempotencyConformance({
+      target: targetUrl,
+      probePath: "/.well-known/pharos-idempotency",
+    });
+    expect(proof.resultId).toBe(`durable-result-${before + 1}`);
+    expect(conformanceExecutions).toBe(before + 1);
+  });
+
   it("exposes reserved liveness and dependency-readiness endpoints", async (ctx) => {
     if (!available) return ctx.skip();
     const health = await fetch(`${gatewayUrl}/__pharos/healthz`);

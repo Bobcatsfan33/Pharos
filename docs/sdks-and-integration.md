@@ -74,6 +74,14 @@ under a newly active key without stopping delivery. The integration test replace
 gateway between hold and resume, rotates a retained request online, and proves a fresh
 process can deliver it without exposing plaintext or crossing tenant boundaries.
 
+Production also requires `GATEWAY_IDEMPOTENCY_PROBE_PATH`. Before listening, the gateway
+posts the same unique body and `Idempotency-Key` twice to
+`{GATEWAY_TARGET}{GATEWAY_IDEMPOTENCY_PROBE_PATH}`. A conforming endpoint returns HTTP 200
+with `{ protocol: "pharos-idempotency-conformance-v1", idempotencyKey, executions: 1,
+resultId }` on both attempts, the same non-empty `resultId`, and
+`X-Idempotency-Replayed: true` only on the second. The probe endpoint must share the
+governed routes' durable deduplication store; otherwise it proves only itself.
+
 The production Helm workload adds two replicas minimum, zone spreading, a disruption
 budget, stabilized autoscaling, graceful shutdown, and dependency-aware readiness. It uses
 a dedicated Secret and ServiceAccount, and a production render is rejected unless ingress,

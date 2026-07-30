@@ -11,6 +11,9 @@
 {{- if not .Values.gateway.target }}
 {{- fail "gateway.enabled requires gateway.target" }}
 {{- end }}
+{{- if and (eq .Values.config.env "prod") (not .Values.gateway.idempotencyProbePath) }}
+{{- fail "production gateway requires gateway.idempotencyProbePath" }}
+{{- end }}
 {{- if gt (int .Values.gateway.autoscaling.minReplicas) (int .Values.gateway.autoscaling.maxReplicas) }}
 {{- fail "gateway.autoscaling.minReplicas must not exceed maxReplicas" }}
 {{- end }}
@@ -94,6 +97,10 @@ spec:
               value: {{ .Values.gateway.agentId | quote }}
             - name: GATEWAY_TARGET
               value: {{ .Values.gateway.target | quote }}
+            {{- if .Values.gateway.idempotencyProbePath }}
+            - name: GATEWAY_IDEMPOTENCY_PROBE_PATH
+              value: {{ .Values.gateway.idempotencyProbePath | quote }}
+            {{- end }}
             - name: GATEWAY_PORT
               value: {{ .Values.gateway.port | quote }}
             - name: PHAROS_VERDICT_DEADLINE_MS

@@ -125,7 +125,11 @@ Production rendering fails closed unless the caller and both outbound dependenci
 explicit policy selectors/CIDRs. Standard Kubernetes NetworkPolicy cannot allow an FQDN:
 for managed endpoints with changing addresses, use the cluster CNI's audited FQDN policy
 and keep the portable chart policy aligned. The target must persist and honor
-`Idempotency-Key` before you claim exactly-once side effects.
+`Idempotency-Key` before you claim exactly-once side effects. Configure
+`gateway.idempotencyProbePath` to a safe, no-op endpoint backed by that same durable
+idempotency store. Every production gateway runs the two-delivery conformance protocol
+before it starts serving traffic and fails closed if the upstream cannot prove one
+execution and one stable result.
 
 Keep the key ring in a versioned secret manager and back it up under dual control. Rotation
 is an expand → activate → re-encrypt → contract procedure; never remove an old key merely
