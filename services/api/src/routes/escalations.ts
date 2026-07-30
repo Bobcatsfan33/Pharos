@@ -10,7 +10,7 @@ import { requireAuth } from "../auth.js";
  *   GET    /v1/tenants/:t/escalations            list pending (reviews:read)
  *   GET    /v1/tenants/:t/escalations/:id        fetch one    (reviews:read)
  *   POST   /v1/tenants/:t/escalations/:id/resolve   human verdict, sealed as evidence (reviews:act)
- *   POST   /v1/tenants/:t/escalations/:id/claim      agent claims resume, exactly-once (actions:write)
+ *   POST   /v1/tenants/:t/escalations/:id/claim      atomic resume authorization (actions:write)
  */
 const ResolveSchema = z.object({
   decision: z.enum(["approve", "modify", "reject"]),
@@ -153,7 +153,7 @@ export function registerEscalationRoutes(app: FastifyInstance, platform: Platfor
           error: null,
         });
       }
-      // Atomic claim: exactly one caller wins the right to resume the side effect.
+      // Atomic claim: at most one caller wins the right to resume the side effect.
       const claimed = await platform.escalations.claimResume(tenantId, id);
       return reply.send({
         success: true,

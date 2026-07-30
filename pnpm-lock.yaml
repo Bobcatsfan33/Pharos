@@ -241,6 +241,9 @@ importers:
       '@getpharos/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk-ts
+      '@pharos/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       fastify:
         specifier: ^5.10.0
         version: 5.10.0

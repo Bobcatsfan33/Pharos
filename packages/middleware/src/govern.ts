@@ -13,7 +13,7 @@ import type {
  * A governed tool call submits an action to Pharos and enforces the verdict:
  *   allow / modify  -> run the underlying tool (modify runs with the human-modified args)
  *   block / reject  -> throw PharosBlockedError (the agent sees a tool error)
- *   escalate        -> await a human verdict, then resume exactly once
+ *   escalate        -> await a human verdict, then one caller wins the resume claim
  *
  * Implemented once here so all middlewares (LangChain/LangGraph, OpenAI Agents, Anthropic
  * SDK, plus the Python CrewAI / MS Agent Framework adapters) share identical semantics and
@@ -80,7 +80,7 @@ function buildInput<Args>(opts: GovernOptions<Args>, args: Args): SubmitInput {
 /**
  * Wrap a tool function so every invocation is governed by Pharos. Returns the tool's
  * result when permitted; throws PharosBlockedError when not. Resume after escalation is
- * exactly-once (the server claim gates the side effect).
+ * at-most-once across concurrent callers (the server claim gates the side effect).
  */
 export function governTool<Args, R>(
   governor: Governor,
@@ -99,7 +99,7 @@ export function governTool<Args, R>(
       throw new PharosBlockedError("tier-policy block", submitted.verdict.ruleCitations);
     }
 
-    // escalate: park → human verdict → exactly-once resume.
+    // Escalate: park → human verdict → one atomic resume winner.
     if (!submitted.escalation)
       throw new PharosBlockedError("escalated without a continuation handle");
     const resolved = await governor.awaitResolution(
@@ -111,7 +111,7 @@ export function governTool<Args, R>(
       throw new PharosBlockedError("rejected by reviewer", []);
     }
     const claim = await governor.claim(input.tenantId, submitted.escalation.id);
-    if (!claim.claimed) throw new PharosBlockedError("already resumed elsewhere (exactly-once)");
+    if (!claim.claimed) throw new PharosBlockedError("resume authorization already claimed");
 
     const modified = claim.resolution?.modifiedAction as Args | undefined;
     return await tool(modified ?? args);

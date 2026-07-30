@@ -49,3 +49,11 @@ export {
 } from "./evidenceOpsStore.js";
 export { PolicyStore, type PolicyVersion, type PolicyStatus } from "./policyStore.js";
 export { AssuranceStore, type AssuranceAudit, type AssuranceStats } from "./assuranceStore.js";
+export {
+  PostgresHeldRequestStore,
+  heldRequestKeyProviderFromMaster,
+  type HeldGatewayRequest,
+  type HeldRequestAcquireResult,
+  type HeldRequestKeyProvider,
+  type HeldRequestStore,
+} from "./heldRequestStore.js";

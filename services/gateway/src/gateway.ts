@@ -1,5 +1,11 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import { randomUUID } from "node:crypto";
 import type { LiabilityInput, PharosClient, ActionInput } from "@getpharos/sdk";
+import type {
+  HeldGatewayRequest,
+  HeldRequestAcquireResult,
+  HeldRequestStore,
+} from "@pharos/storage";
 
 /**
  * Zero-code governance gateway.
@@ -10,11 +16,8 @@ import type { LiabilityInput, PharosClient, ActionInput } from "@getpharos/sdk";
  *
  *   allow / modify -> forwarded to the target, response returned
  *   block          -> 403 with the rule citations
- *   escalate       -> 202 + escalationId; the request is held until a human verdict, then
- *                     POST /__resume/:id claims (exactly-once) and forwards it
- *
- * The held-request map is in-memory request state (not evidence); the exactly-once
- * guarantee comes from the Pharos server-side claim, not the gateway.
+ *   escalate       -> 202 + escalationId; the request is durably held until a human verdict,
+ *                     then POST /__resume/:id leases, claims, and forwards it
  */
 export interface GatewayOptions {
   client: PharosClient;
@@ -29,13 +32,11 @@ export interface GatewayOptions {
     mandateId?: string;
   };
   fetchImpl?: typeof fetch;
-}
-
-interface HeldRequest {
-  method: string;
-  path: string;
-  body: unknown;
-  headers: Record<string, string>;
+  /**
+   * Durable deployments inject PostgresHeldRequestStore. The in-memory default is
+   * intentionally limited to local/test composition; server.ts refuses it in production.
+   */
+  heldRequestStore?: HeldRequestStore;
 }
 
 const DEFAULT_LIABILITY: LiabilityInput = {
@@ -45,15 +46,65 @@ const DEFAULT_LIABILITY: LiabilityInput = {
   modelMetadata: null,
 };
 
+class InMemoryHeldRequestStore implements HeldRequestStore {
+  private readonly held = new Map<
+    string,
+    { request: HeldGatewayRequest; leaseToken: string | null }
+  >();
+
+  async save(tenantId: string, escalationId: string, request: HeldGatewayRequest): Promise<void> {
+    const key = `${tenantId}\0${escalationId}`;
+    if (!this.held.has(key)) this.held.set(key, { request, leaseToken: null });
+  }
+
+  async acquire(tenantId: string, escalationId: string): Promise<HeldRequestAcquireResult> {
+    const value = this.held.get(`${tenantId}\0${escalationId}`);
+    if (!value) return { status: "missing" };
+    if (value.leaseToken) return { status: "busy" };
+    value.leaseToken = randomUUID();
+    return { status: "acquired", leaseToken: value.leaseToken, request: value.request };
+  }
+
+  async complete(tenantId: string, escalationId: string, leaseToken: string): Promise<boolean> {
+    const key = `${tenantId}\0${escalationId}`;
+    const value = this.held.get(key);
+    if (!value || value.leaseToken !== leaseToken) return false;
+    return this.held.delete(key);
+  }
+
+  async release(
+    tenantId: string,
+    escalationId: string,
+    leaseToken: string,
+    _error: string,
+  ): Promise<boolean> {
+    const value = this.held.get(`${tenantId}\0${escalationId}`);
+    if (!value || value.leaseToken !== leaseToken) return false;
+    value.leaseToken = null;
+    return true;
+  }
+}
+
 export function createGatewayApp(opts: GatewayOptions): FastifyInstance {
   const app = Fastify({ logger: false });
   const fetchImpl = opts.fetchImpl ?? fetch;
-  const held = new Map<string, HeldRequest>();
+  const held = opts.heldRequestStore ?? new InMemoryHeldRequestStore();
 
-  async function forward(req: HeldRequest): Promise<{ status: number; body: unknown }> {
+  async function forward(
+    req: HeldGatewayRequest,
+    escalationId?: string,
+  ): Promise<{ status: number; body: unknown }> {
+    const headers: Record<string, string> = { "content-type": "application/json" };
+    if (escalationId) {
+      // Generic HTTP cannot guarantee exactly-once execution after an ambiguous network
+      // failure. This stable key gives a compliant upstream the information required to
+      // deduplicate a recovery retry.
+      headers["idempotency-key"] = `pharos-escalation-${escalationId}`;
+      headers["x-pharos-escalation-id"] = escalationId;
+    }
     const res = await fetchImpl(`${opts.target}${req.path}`, {
       method: req.method,
-      headers: { "content-type": "application/json" },
+      headers,
       body:
         req.method === "GET" || req.method === "HEAD" ? undefined : JSON.stringify(req.body ?? {}),
     });
@@ -61,7 +112,7 @@ export function createGatewayApp(opts: GatewayOptions): FastifyInstance {
     return { status: res.status, body };
   }
 
-  function actionFor(req: HeldRequest): {
+  function actionFor(req: HeldGatewayRequest): {
     action: ActionInput;
     liability: LiabilityInput;
     mandateId?: string;
@@ -81,21 +132,52 @@ export function createGatewayApp(opts: GatewayOptions): FastifyInstance {
     };
   }
 
-  // Resume a held request after a human verdict; exactly-once via the Pharos claim.
+  // Resume after human review. The claim is at-most-once authorization; the stable
+  // upstream idempotency key closes the ambiguous retry window for compliant targets.
   app.post<{ Params: { id: string } }>("/__resume/:id", async (request, reply) => {
     const id = request.params.id;
-    const req = held.get(id);
-    if (!req) return reply.code(404).send({ error: "no held request for escalation" });
-    const claim = await opts.client.claim(opts.tenantId, id);
-    if (!claim.claimed)
-      return reply.code(409).send({ error: "not claimable (rejected or already resumed)" });
-    held.delete(id);
-    const forwarded = await forward(req);
-    return reply.code(forwarded.status).send({ resumed: true, response: forwarded.body });
+    const acquired = await held.acquire(opts.tenantId, id);
+    if (acquired.status === "missing") {
+      return reply.code(404).send({ error: "no held request for escalation" });
+    }
+    if (acquired.status === "busy") {
+      return reply.code(409).send({ error: "held request delivery is already in progress" });
+    }
+
+    try {
+      const claim = await opts.client.claim(opts.tenantId, id);
+      const alreadyClaimedForRecovery =
+        !claim.claimed &&
+        (claim.status === "approved" || claim.status === "modified") &&
+        Boolean(claim.escalation["resumedAt"]);
+      if (!claim.claimed && !alreadyClaimedForRecovery) {
+        await held.release(
+          opts.tenantId,
+          id,
+          acquired.leaseToken,
+          `not claimable: ${claim.status}`,
+        );
+        return reply.code(409).send({ error: "not claimable (rejected or already resumed)" });
+      }
+
+      const forwarded = await forward(acquired.request, id);
+      const completed = await held.complete(opts.tenantId, id, acquired.leaseToken);
+      if (!completed) {
+        throw new Error("held-request lease was lost before delivery completion");
+      }
+      return reply.code(forwarded.status).send({
+        resumed: true,
+        recoveredClaim: alreadyClaimedForRecovery,
+        response: forwarded.body,
+      });
+    } catch (error) {
+      await held.release(opts.tenantId, id, acquired.leaseToken, (error as Error).message);
+      throw error;
+    }
   });
 
   app.all("/*", async (request, reply) => {
-    const req: HeldRequest = {
+    const req: HeldGatewayRequest = {
       method: request.method,
       path: request.url,
       body: request.body,
@@ -119,8 +201,11 @@ export function createGatewayApp(opts: GatewayOptions): FastifyInstance {
       return reply.code(403).send({ blocked: true, citations: submitted.verdict.ruleCitations });
     }
     // escalate: hold and return a continuation handle.
-    if (submitted.escalation) held.set(submitted.escalation.id, req);
-    return reply.code(202).send({ held: true, escalationId: submitted.escalation?.id ?? null });
+    if (!submitted.escalation) {
+      return reply.code(502).send({ error: "escalation verdict did not include a continuation" });
+    }
+    await held.save(opts.tenantId, submitted.escalation.id, req);
+    return reply.code(202).send({ held: true, escalationId: submitted.escalation.id });
   });
 
   return app;

@@ -10,7 +10,7 @@ import { PharosClient } from "@getpharos/sdk";
  * M3 (Causeway) integration: the SDK round trip over a live server.
  *   - a $25k mandate blocks a $30k action at Tier 1, sealed with the mandate binding;
  *   - an escalate verdict parks, a human verdict resolves it, and the agent resumes
- *     exactly once (concurrent claims execute the side effect at most once).
+ *     through one atomic winner (concurrent claims authorize the side effect at most once).
  */
 const keystoreDir = mkdtempSync(join(tmpdir(), "pharos-causeway-keystore-"));
 process.env.PHAROS_ENV = "local";
@@ -121,8 +121,8 @@ describe("Causeway — mandate binding", () => {
   });
 });
 
-describe("Causeway — escalation round trip (exactly-once)", () => {
-  it("escalates, awaits a human verdict, and resumes the side effect exactly once", async (ctx) => {
+describe("Causeway — escalation round trip (atomic claim)", () => {
+  it("escalates, awaits a human verdict, and authorizes one resumer", async (ctx) => {
     if (!available) return ctx.skip();
     const c = client();
     let sideEffectRuns = 0;
@@ -169,7 +169,7 @@ describe("Causeway — escalation round trip (exactly-once)", () => {
     expect(outcome.outcome).toBe("executed");
     expect(sideEffectRuns).toBe(1);
 
-    // A second claim must not run again (exactly-once).
+    // A second claim must not authorize another caller.
     const secondClaim = await c.claim(TENANT, escalationId);
     expect(secondClaim.claimed).toBe(false);
   });

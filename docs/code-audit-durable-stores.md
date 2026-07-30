@@ -7,7 +7,7 @@ codebase (verified by code audit)."* This document records that audit.
 
 | Tier | Technology | What it holds | Module |
 |------|-----------|---------------|--------|
-| Operational state | **Postgres** | tenants, chain heads, the chained `action_records` | [`packages/storage/src/migrations.ts`](../packages/storage/src/migrations.ts), [`evidenceStore.ts`](../packages/storage/src/evidenceStore.ts) |
+| Operational state | **Postgres** | tenants, chain heads, the chained `action_records`, encrypted gateway continuations | [`packages/storage/src/migrations.ts`](../packages/storage/src/migrations.ts), [`evidenceStore.ts`](../packages/storage/src/evidenceStore.ts), [`heldRequestStore.ts`](../packages/storage/src/heldRequestStore.ts) |
 | Evidence chain | **S3 WORM** (Object Lock, COMPLIANCE) | sealed records, immutable | [`packages/storage/src/wormStore.ts`](../packages/storage/src/wormStore.ts) |
 | Verdict cache | **Redis** | deadline-bound verdict cache (TTL) | [`packages/storage/src/cache.ts`](../packages/storage/src/cache.ts) |
 
@@ -33,9 +33,12 @@ grep -rEn "new Map\(|new Set\(|: *\[\] *$|writeFileSync|fs\.writeFile|lowdb|node
   packages services --include=*.ts | grep -v test
 ```
 
-Findings: the only `Map`/`Set` usages are pure, request-scoped computation in the chain
-verifier (`verifyChain` builds a `Map` of the keyset for O(1) lookup within a single
-call) — never a persistent store. There are no file-backed or in-memory record stores.
+Findings: production composition has no file-backed or in-memory record store. The gateway
+contains an in-memory development adapter so `createGatewayApp` remains usable in unit tests,
+but `server.ts` refuses that adapter when `PHAROS_ENV=production`; production requires the
+encrypted Postgres store. Other `Map`/`Set` usages are pure, request-scoped computation in
+the chain verifier (`verifyChain` builds a `Map` of the keyset for O(1) lookup within a
+single call).
 The legacy JSON/file stores referenced in the roadmap (from Flightline / AI Lighthouse)
 do not exist in this unified codebase; it was built durable-by-default from the root.
 

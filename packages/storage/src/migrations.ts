@@ -155,7 +155,7 @@ export const MIGRATIONS: Migration[] = [
 
       -- Workflow continuation: escalated actions park here with full context until a human
       -- verdict resumes (approve/modify/reject) the agent's pending step. resumed_at is
-      -- claimed atomically to guarantee exactly-once side effects.
+      -- claimed atomically to grant at-most-once resume authorization.
       CREATE TABLE IF NOT EXISTS escalations (
         id              UUID PRIMARY KEY,
         tenant_id       TEXT NOT NULL,
@@ -327,6 +327,42 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE chain_anchors ADD COLUMN IF NOT EXISTS tsa_token TEXT;
       ALTER TABLE chain_anchors ALTER COLUMN tsa_signature DROP NOT NULL;
       ALTER TABLE chain_anchors ALTER COLUMN tsa_key_id DROP NOT NULL;
+    `,
+  },
+  {
+    version: "0011_durable_gateway_holds",
+    sql: /* sql */ `
+      -- Gateway request bodies awaiting human review. The payload is AES-256-GCM
+      -- ciphertext; its key lives outside Postgres. Leases make an interrupted
+      -- delivery recoverable without allowing two gateway instances to race.
+      CREATE TABLE IF NOT EXISTS gateway_held_requests (
+        tenant_id       TEXT NOT NULL,
+        escalation_id   UUID NOT NULL,
+        ciphertext      BYTEA NOT NULL,
+        nonce           BYTEA NOT NULL,
+        auth_tag        BYTEA NOT NULL,
+        state           TEXT NOT NULL DEFAULT 'pending',
+        lease_token     UUID,
+        lease_expires_at TIMESTAMPTZ,
+        attempts        INTEGER NOT NULL DEFAULT 0,
+        last_error      TEXT,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (tenant_id, escalation_id),
+        CHECK (state IN ('pending', 'delivering')),
+        CHECK (octet_length(ciphertext) <= 1048576 + 1024),
+        CHECK (octet_length(nonce) = 12),
+        CHECK (octet_length(auth_tag) = 16)
+      );
+      CREATE INDEX IF NOT EXISTS gateway_held_requests_lease_idx
+        ON gateway_held_requests (state, lease_expires_at);
+
+      ALTER TABLE gateway_held_requests ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE gateway_held_requests FORCE ROW LEVEL SECURITY;
+      DROP POLICY IF EXISTS gateway_held_requests_tenant_isolation ON gateway_held_requests;
+      CREATE POLICY gateway_held_requests_tenant_isolation ON gateway_held_requests
+        USING (tenant_id = current_setting('pharos.tenant_id', true))
+        WITH CHECK (tenant_id = current_setting('pharos.tenant_id', true));
     `,
   },
 ];

@@ -174,7 +174,7 @@ export class PharosClient {
     }
   }
 
-  /** Atomically claim the right to resume — exactly one claim succeeds across all callers. */
+  /** Atomically claim the right to resume — at most one claim succeeds across all callers. */
   async claim(tenantId: string, id: string): Promise<ClaimResult> {
     const data = await this.request<ClaimResult>(
       "POST",
@@ -185,10 +185,10 @@ export class PharosClient {
   }
 
   /**
-   * Govern a side effect end-to-end with exactly-once semantics:
+   * Govern a side effect with an at-most-once resume claim:
    *   - allow                  -> run the side effect once
    *   - block / reject         -> skip
-   *   - escalate -> await human -> approve/modify -> claim -> run exactly once; reject -> skip
+   *   - escalate -> await human -> approve/modify -> claim -> one caller runs; reject -> skip
    *
    * `sideEffect` receives the (possibly modified) action and runs at most once.
    */
@@ -210,7 +210,7 @@ export class PharosClient {
       return { outcome: "executed", reason: "modified" };
     }
 
-    // escalate: wait for a human verdict, then resume exactly once.
+    // Escalate: wait for a human verdict, then atomically select one resumer.
     if (!submitted.escalation) return { outcome: "skipped", reason: "escalated-no-handle" };
     const resolved = await this.awaitResolution(input.tenantId, submitted.escalation.id, awaitOpts);
     if (resolved.status === "rejected") return { outcome: "skipped", reason: "rejected" };
