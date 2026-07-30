@@ -57,6 +57,7 @@ async function startGateway(): Promise<void> {
       heldRequestKeyProviderFromMaster(gatewayHoldMasterKey),
       { leaseMs: 500 },
     ),
+    readinessCheck: async () => void (await platform!.pool.query("SELECT 1")),
     mapAction: (req) => ({
       action: { type: "message.send", payload: req.body as Record<string, unknown> },
       liability: {
@@ -128,6 +129,16 @@ async function agentSend(body: unknown) {
 }
 
 describe("Gateway — zero-code governance of an unmodified agent", () => {
+  it("exposes reserved liveness and dependency-readiness endpoints", async (ctx) => {
+    if (!available) return ctx.skip();
+    const health = await fetch(`${gatewayUrl}/__pharos/healthz`);
+    expect(health.status).toBe(200);
+    expect(await health.json()).toEqual({ status: "ok" });
+    const ready = await fetch(`${gatewayUrl}/__pharos/readyz`);
+    expect(ready.status).toBe(200);
+    expect(await ready.json()).toEqual({ status: "ready" });
+  });
+
   it("leases held requests exclusively and recovers an abandoned lease", async (ctx) => {
     if (!available) return ctx.skip();
     const escalationId = randomUUID();

@@ -1,0 +1,91 @@
+{{- if and .Values.gateway.enabled .Values.gateway.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pharos-gateway
+  labels:
+    app.kubernetes.io/name: pharos
+    app.kubernetes.io/component: gateway
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pharos
+      app.kubernetes.io/component: gateway
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Release.Namespace | quote }}
+          podSelector:
+            matchLabels:
+              {{- toYaml .Values.gateway.networkPolicy.ingressPodSelector | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.gateway.port }}
+  egress:
+    # Cluster DNS. Override its selectors for distributions that do not use kube-dns labels.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              {{- toYaml .Values.gateway.networkPolicy.dns.namespaceSelector | nindent 14 }}
+          podSelector:
+            matchLabels:
+              {{- toYaml .Values.gateway.networkPolicy.dns.podSelector | nindent 14 }}
+      ports:
+        - protocol: UDP
+          port: {{ .Values.gateway.networkPolicy.dns.port }}
+        - protocol: TCP
+          port: {{ .Values.gateway.networkPolicy.dns.port }}
+    # Pharos API is chart-managed and always selected narrowly.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pharos
+              app.kubernetes.io/component: api
+      ports:
+        - protocol: TCP
+          port: {{ .Values.api.port }}
+    - to:
+        {{- range .Values.gateway.networkPolicy.target.cidrs }}
+        - ipBlock:
+            cidr: {{ . | quote }}
+        {{- end }}
+        {{- if not (empty .Values.gateway.networkPolicy.target.podSelector) }}
+        - namespaceSelector:
+            matchLabels:
+              {{- if empty .Values.gateway.networkPolicy.target.namespaceSelector }}
+              kubernetes.io/metadata.name: {{ $.Release.Namespace | quote }}
+              {{- else }}
+              {{- toYaml .Values.gateway.networkPolicy.target.namespaceSelector | nindent 14 }}
+              {{- end }}
+          podSelector:
+            matchLabels:
+              {{- toYaml .Values.gateway.networkPolicy.target.podSelector | nindent 14 }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.gateway.networkPolicy.target.port }}
+    - to:
+        {{- range .Values.gateway.networkPolicy.database.cidrs }}
+        - ipBlock:
+            cidr: {{ . | quote }}
+        {{- end }}
+        {{- if not (empty .Values.gateway.networkPolicy.database.podSelector) }}
+        - namespaceSelector:
+            matchLabels:
+              {{- if empty .Values.gateway.networkPolicy.database.namespaceSelector }}
+              kubernetes.io/metadata.name: {{ $.Release.Namespace | quote }}
+              {{- else }}
+              {{- toYaml .Values.gateway.networkPolicy.database.namespaceSelector | nindent 14 }}
+              {{- end }}
+          podSelector:
+            matchLabels:
+              {{- toYaml .Values.gateway.networkPolicy.database.podSelector | nindent 14 }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.gateway.networkPolicy.database.port }}
+{{- end }}

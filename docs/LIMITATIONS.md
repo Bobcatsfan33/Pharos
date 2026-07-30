@@ -138,7 +138,12 @@ duplicate on that narrow failure boundary; claiming otherwise would be false.
 
 **Remaining:** require and conformance-test upstream idempotency before advertising
 exactly-once delivery for a connector. Header/body fidelity and multi-target routing remain
-**S8-T2, S8-T3**.
+**S8-T2, S8-T3**. The held-request encryption configuration accepts one active master key
+and ciphertext rows do not carry a key version. Replacing that key while requests are held
+makes them unreadable. Until a versioned key ring and online re-encryption job land,
+operators must retain the key under dual control and drain all held requests before a
+planned rotation; this is a production-readiness blocker for unattended long-lived gateway
+deployments.
 
 ---
 

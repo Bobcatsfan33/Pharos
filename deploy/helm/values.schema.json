@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["image", "replicaCount", "secretName", "config"],
+  "required": ["image", "replicaCount", "secretName", "gateway", "config"],
   "properties": {
     "replicaCount": {
       "type": "integer",
@@ -27,6 +27,68 @@
         }
       }
     },
+    "gateway": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "replicaCount",
+        "port",
+        "tenantId",
+        "agentId",
+        "target",
+        "apiBase",
+        "verdictDeadlineMs",
+        "secretName",
+        "autoscaling",
+        "networkPolicy"
+      ],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "replicaCount": { "type": "integer", "minimum": 2 },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "tenantId": { "type": "string" },
+        "agentId": { "type": "string" },
+        "target": {
+          "type": "string",
+          "pattern": "^$|^https?://\\S+$"
+        },
+        "apiBase": {
+          "type": "string",
+          "pattern": "^https?://\\S+$"
+        },
+        "verdictDeadlineMs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60000
+        },
+        "secretName": { "type": "string" },
+        "autoscaling": {
+          "type": "object",
+          "required": ["enabled", "minReplicas", "maxReplicas", "targetCPUUtilizationPercentage"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "minReplicas": { "type": "integer", "minimum": 2 },
+            "maxReplicas": { "type": "integer", "minimum": 2 },
+            "targetCPUUtilizationPercentage": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "networkPolicy": {
+          "type": "object",
+          "required": ["enabled", "ingressPodSelector", "dns", "target", "database"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "ingressPodSelector": { "type": "object" },
+            "dns": { "$ref": "#/definitions/selectorDestination" },
+            "target": { "$ref": "#/definitions/egressDestination" },
+            "database": { "$ref": "#/definitions/egressDestination" }
+          }
+        }
+      }
+    },
     "config": {
       "type": "object",
       "required": ["env", "kmsProvider", "kmsAwsRegion", "tsaProvider"],
@@ -45,6 +107,33 @@
           "enum": ["local", "rfc3161"]
         },
         "tsaUrl": { "type": "string" }
+      }
+    }
+  },
+  "definitions": {
+    "selectorDestination": {
+      "type": "object",
+      "required": ["port", "namespaceSelector", "podSelector"],
+      "properties": {
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "namespaceSelector": { "type": "object", "minProperties": 1 },
+        "podSelector": { "type": "object", "minProperties": 1 }
+      }
+    },
+    "egressDestination": {
+      "type": "object",
+      "required": ["port", "cidrs", "namespaceSelector", "podSelector"],
+      "properties": {
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "cidrs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F:.]+/[0-9]+$"
+          }
+        },
+        "namespaceSelector": { "type": "object" },
+        "podSelector": { "type": "object" }
       }
     }
   }

@@ -20,6 +20,59 @@ serviceAccount:
   # Use this for workload-identity annotations such as eks.amazonaws.com/role-arn.
   annotations: {}
 
+# Optional zero-code governance gateway. It is disabled until the operator supplies an
+# explicit tenant, upstream target, least-privilege Secret, and egress allowlist.
+gateway:
+  enabled: false
+  replicaCount: 2
+  port: 4100
+  tenantId: ""
+  agentId: ""
+  target: ""
+  apiBase: "http://pharos-api"
+  verdictDeadlineMs: 800
+  # Must contain only PHAROS_API_KEY, PHAROS_PG_URL, and
+  # PHAROS_GATEWAY_HOLD_MASTER_KEY_B64. Do not reuse the broader API Secret.
+  secretName: ""
+  serviceAccount:
+    annotations: {}
+  podDisruptionBudget:
+    minAvailable: 1
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  networkPolicy:
+    enabled: true
+    # Agent callers are limited to this namespace and, optionally, these pod labels.
+    ingressPodSelector: {}
+    dns:
+      port: 53
+      namespaceSelector:
+        kubernetes.io/metadata.name: kube-system
+      podSelector:
+        k8s-app: kube-dns
+    # Portable NetworkPolicy cannot allow DNS names. Supply either pod selectors for
+    # in-cluster dependencies or CIDRs for managed/external dependencies.
+    target:
+      port: 443
+      cidrs: []
+      namespaceSelector: {}
+      podSelector: {}
+    database:
+      port: 5432
+      cidrs: []
+      namespaceSelector: {}
+      podSelector: {}
+
 config:
   env: prod
   s3Bucket: pharos-evidence

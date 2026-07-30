@@ -81,6 +81,44 @@ kubectl port-forward svc/pharos-api 4000:80 & curl -sf localhost:4000/healthz
 Use managed Postgres (multi-AZ RDS), Redis (ElastiCache), and S3 with Object Lock enabled in
 production.
 
+### Deploying the zero-code gateway
+
+The gateway is a separate, horizontally scalable workload and is disabled by default. It
+uses the same signed runtime image but a separate ServiceAccount and a least-privilege
+Secret. Create `pharos-gateway-secrets` through your secret-manager controller (External
+Secrets, Secrets Store CSI, or an equivalent approved by your platform team) with exactly:
+
+- `PHAROS_API_KEY`: tenant-scoped key with only the action/review permissions the gateway
+  needs;
+- `PHAROS_PG_URL`: TLS-verifying Postgres connection for durable held requests; and
+- `PHAROS_GATEWAY_HOLD_MASTER_KEY_B64`: at least 32 random bytes, canonical base64.
+
+Do not reuse `pharos-secrets`: doing so gives the gateway unrelated API credentials. Copy
+[`helm/examples/gateway-production.values.yaml`](helm/examples/gateway-production.values.yaml),
+replace its example target and selectors, and install:
+
+```bash
+helm upgrade --install pharos deploy/helm \
+  --namespace pharos \
+  --values /path/to/gateway-production.values.yaml \
+  --set image.digest=sha256:<verified-digest> \
+  --set config.tsaUrl=https://<your-tsa>/tsr
+
+kubectl rollout status deploy/pharos-gateway
+kubectl get hpa,pdb,networkpolicy -l app.kubernetes.io/component=gateway
+```
+
+Production rendering fails closed unless the caller and both outbound dependencies have
+explicit policy selectors/CIDRs. Standard Kubernetes NetworkPolicy cannot allow an FQDN:
+for managed endpoints with changing addresses, use the cluster CNI's audited FQDN policy
+and keep the portable chart policy aligned. The target must persist and honor
+`Idempotency-Key` before you claim exactly-once side effects.
+
+The held-request master key currently has no online key-ring migration. Keep it in a
+versioned secret manager, back it up under dual control, and do not replace it while held
+requests exist; see `docs/LIMITATIONS.md`. Native online rotation remains a release blocker
+for unattended long-lived gateway deployments.
+
 ## Key management (read this before production)
 
 AWS KMS is the production default and uses asymmetric P-256 keys whose private material never

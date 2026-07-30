@@ -1,0 +1,25 @@
+# Overlay for an in-cluster production gateway. Replace every example identity, URL,
+# selector, and CIDR with values from the target environment.
+gateway:
+  enabled: true
+  tenantId: tenant-a
+  agentId: governed-agent
+  target: https://agent-upstream.example.com
+  secretName: pharos-gateway-secrets
+  networkPolicy:
+    ingressPodSelector:
+      app.kubernetes.io/name: governed-agent
+    target:
+      port: 443
+      # Prefer a stable in-cluster pod selector. For a managed external target, remove
+      # podSelector and provide all approved destination CIDRs.
+      namespaceSelector:
+        kubernetes.io/metadata.name: agent-runtime
+      podSelector:
+        app.kubernetes.io/name: agent-upstream
+    database:
+      port: 5432
+      # Portable NetworkPolicy cannot select an RDS hostname. Keep this list synchronized
+      # with approved private database ranges, or use the platform's FQDN-aware CNI policy.
+      cidrs:
+        - 10.20.0.0/24

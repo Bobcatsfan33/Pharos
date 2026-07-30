@@ -1,0 +1,15 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pharos-gateway
+  labels:
+    app.kubernetes.io/name: pharos
+    app.kubernetes.io/component: gateway
+spec:
+  minAvailable: {{ .Values.gateway.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pharos
+      app.kubernetes.io/component: gateway
+{{- end }}

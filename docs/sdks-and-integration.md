@@ -72,6 +72,13 @@ encrypts the request in a tenant-isolated Postgres store and returns a continuat
 integration test replaces the gateway between hold and resume and proves the fresh process
 can deliver it without exposing plaintext or crossing tenant boundaries.
 
+The production Helm workload adds two replicas minimum, zone spreading, a disruption
+budget, stabilized autoscaling, graceful shutdown, and dependency-aware readiness. It uses
+a dedicated Secret and ServiceAccount, and a production render is rejected unless ingress,
+upstream, and database network allowlists are explicit. Reserved
+`/__pharos/healthz` and `/__pharos/readyz` endpoints are never forwarded to the governed
+target.
+
 ## Mandates
 
 [`MandateStore`](../packages/storage/src/mandateStore.ts) + the Mandate API create, version,
