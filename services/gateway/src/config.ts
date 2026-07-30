@@ -11,6 +11,7 @@ export interface GatewayServerConfig {
   tenantId: string;
   agentId: string;
   target: string;
+  idempotencyProbePath: string | null;
   port: number;
   verdictDeadlineMs: number;
 }
@@ -60,6 +61,22 @@ export function loadGatewayServerConfig(env: NodeJS.ProcessEnv): GatewayServerCo
     return fallback;
   };
 
+  const idempotencyProbePath =
+    env.GATEWAY_IDEMPOTENCY_PROBE_PATH?.trim() ||
+    (production ? required("GATEWAY_IDEMPOTENCY_PROBE_PATH", "") : null);
+  if (
+    idempotencyProbePath &&
+    (!idempotencyProbePath.startsWith("/") ||
+      idempotencyProbePath.startsWith("//") ||
+      idempotencyProbePath.includes("?") ||
+      idempotencyProbePath.includes("#") ||
+      idempotencyProbePath.length > 512)
+  ) {
+    throw new Error(
+      "GATEWAY_IDEMPOTENCY_PROBE_PATH must be an absolute path without a query or fragment",
+    );
+  }
+
   return {
     env: environment,
     apiBase: parseUrl("PHAROS_API_BASE", required("PHAROS_API_BASE", "http://localhost:4000")),
@@ -67,6 +84,7 @@ export function loadGatewayServerConfig(env: NodeJS.ProcessEnv): GatewayServerCo
     tenantId: required("PHAROS_TENANT", "default"),
     agentId: required("GATEWAY_AGENT_ID", "gateway-agent"),
     target: parseUrl("GATEWAY_TARGET", required("GATEWAY_TARGET", "http://localhost:8080")),
+    idempotencyProbePath,
     port: parseInteger("GATEWAY_PORT", env.GATEWAY_PORT ?? "4100", 1, 65_535),
     verdictDeadlineMs: parseInteger(
       "PHAROS_VERDICT_DEADLINE_MS",

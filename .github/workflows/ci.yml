@@ -32,6 +32,7 @@ jobs:
             --set gateway.tenantId=tenant-a
             --set gateway.agentId=agent-a
             --set gateway.target=https://upstream.example.test
+            --set gateway.idempotencyProbePath=/.well-known/pharos-idempotency
             --set-string gateway.networkPolicy.ingressPodSelector.app=agent
             --set-string gateway.networkPolicy.target.podSelector.app=upstream
             --set-string 'gateway.networkPolicy.database.cidrs[0]=10.20.0.0/24'
@@ -52,8 +53,26 @@ jobs:
             --set gateway.secretName=pharos-gateway-secrets \
             --set gateway.tenantId=tenant-a \
             --set gateway.agentId=agent-a \
-            --set gateway.target=https://upstream.example.test; then
+            --set gateway.target=https://upstream.example.test \
+            --set gateway.idempotencyProbePath=/.well-known/pharos-idempotency; then
             echo "production gateway unexpectedly rendered without network allowlists"
+            exit 1
+          fi
+      - name: production gateway must fail closed without idempotency conformance
+        run: |
+          if helm template pharos deploy/helm \
+            --namespace pharos \
+            --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+            --set config.tsaUrl=https://tsa.example.com/tsr \
+            --set gateway.enabled=true \
+            --set gateway.secretName=pharos-gateway-secrets \
+            --set gateway.tenantId=tenant-a \
+            --set gateway.agentId=agent-a \
+            --set gateway.target=https://upstream.example.test \
+            --set-string gateway.networkPolicy.ingressPodSelector.app=agent \
+            --set-string gateway.networkPolicy.target.podSelector.app=upstream \
+            --set-string 'gateway.networkPolicy.database.cidrs[0]=10.20.0.0/24'; then
+            echo "production gateway unexpectedly rendered without idempotency conformance"
             exit 1
           fi
 

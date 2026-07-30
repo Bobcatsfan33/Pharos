@@ -9,15 +9,23 @@ import {
 } from "@pharos/storage";
 import { loadGatewayDurabilityConfig, loadGatewayServerConfig } from "./config.js";
 import { createGatewayApp } from "./gateway.js";
+import { assertUpstreamIdempotencyConformance } from "./idempotency.js";
 
 /**
  * Standalone gateway server. Routes an agent's HTTP egress through Pharos with zero code
  * changes in the agent. Configure via env:
  *   PHAROS_API_BASE, PHAROS_API_KEY, PHAROS_TENANT, GATEWAY_AGENT_ID, GATEWAY_TARGET, GATEWAY_PORT,
- *   PHAROS_PG_URL, PHAROS_GATEWAY_HOLD_ACTIVE_KEY_ID, PHAROS_GATEWAY_HOLD_KEYS_B64
+ *   GATEWAY_IDEMPOTENCY_PROBE_PATH, PHAROS_PG_URL, PHAROS_GATEWAY_HOLD_ACTIVE_KEY_ID,
+ *   PHAROS_GATEWAY_HOLD_KEYS_B64
  */
 async function main(): Promise<void> {
   const config = loadGatewayServerConfig(process.env);
+  if (config.idempotencyProbePath) {
+    await assertUpstreamIdempotencyConformance({
+      target: config.target,
+      probePath: config.idempotencyProbePath,
+    });
+  }
   let heldRequestStore: HeldRequestStore | undefined;
   let pool: Pool | undefined;
   const durability = loadGatewayDurabilityConfig(process.env);

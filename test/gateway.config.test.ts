@@ -100,6 +100,7 @@ describe("gateway server production gate", () => {
     PHAROS_TENANT: "tenant-a",
     GATEWAY_AGENT_ID: "agent-a",
     GATEWAY_TARGET: "https://upstream.example.test/v1",
+    GATEWAY_IDEMPOTENCY_PROBE_PATH: "/.well-known/pharos-idempotency",
     GATEWAY_PORT: "4100",
     PHAROS_VERDICT_DEADLINE_MS: "800",
   };
@@ -110,6 +111,7 @@ describe("gateway server production gate", () => {
     "PHAROS_TENANT",
     "GATEWAY_AGENT_ID",
     "GATEWAY_TARGET",
+    "GATEWAY_IDEMPOTENCY_PROBE_PATH",
   ])("requires %s in production", (name) => {
     const env = { ...completeProductionEnv };
     delete env[name as keyof typeof env];
@@ -133,8 +135,24 @@ describe("gateway server production gate", () => {
       apiBase: "http://pharos-api",
       tenantId: "tenant-a",
       target: "https://upstream.example.test/v1",
+      idempotencyProbePath: "/.well-known/pharos-idempotency",
       port: 4100,
       verdictDeadlineMs: 800,
     });
+  });
+
+  it("rejects an idempotency probe that can escape the configured target path", () => {
+    expect(() =>
+      loadGatewayServerConfig({
+        ...completeProductionEnv,
+        GATEWAY_IDEMPOTENCY_PROBE_PATH: "//attacker.example/probe",
+      }),
+    ).toThrow(/must be an absolute path/);
+    expect(() =>
+      loadGatewayServerConfig({
+        ...completeProductionEnv,
+        GATEWAY_IDEMPOTENCY_PROBE_PATH: "/probe?disable=true",
+      }),
+    ).toThrow(/without a query or fragment/);
   });
 });

@@ -5,6 +5,7 @@ gateway:
   tenantId: tenant-a
   agentId: governed-agent
   target: https://agent-upstream.example.com
+  idempotencyProbePath: /.well-known/pharos-idempotency
   secretName: pharos-gateway-secrets
   networkPolicy:
     ingressPodSelector:

@@ -29,6 +29,9 @@ gateway:
   tenantId: ""
   agentId: ""
   target: ""
+  # Relative to target and required in production. The endpoint must use the same durable
+  # idempotency implementation as every side-effect route governed by this gateway.
+  idempotencyProbePath: ""
   apiBase: "http://pharos-api"
   verdictDeadlineMs: 800
   # Must contain only PHAROS_API_KEY, PHAROS_PG_URL,
