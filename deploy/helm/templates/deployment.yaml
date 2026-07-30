@@ -14,6 +14,9 @@
 {{- if not .Values.config.tsaCertSha256 }}
 {{- fail "production deployments require config.tsaCertSha256 from an independently approved TSA certificate" }}
 {{- end }}
+{{- if ne .Values.config.judgeProvider "onnx" }}
+{{- fail "production deployments require config.judgeProvider=onnx" }}
+{{- end }}
 {{- end }}
 apiVersion: apps/v1
 kind: Deployment
@@ -84,13 +87,18 @@ spec:
             - name: PHAROS_TSA_CERT_SHA256
               value: {{ . | quote }}
             {{- end }}
+            - name: PHAROS_JUDGE_PROVIDER
+              value: {{ .Values.config.judgeProvider | quote }}
+            - name: PHAROS_JUDGE_MODEL_DIR
+              value: {{ .Values.config.judgeModelDir | quote }}
             - name: PHAROS_ALLOWED_ORIGINS
               value: {{ .Values.config.allowedOrigins | quote }}
           startupProbe:
             httpGet:
               path: /healthz
               port: http
-            failureThreshold: 30
+            # Cold creation of three CPU inference sessions can take several minutes.
+            failureThreshold: 300
             periodSeconds: 2
           readinessProbe:
             httpGet:
@@ -111,6 +119,8 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: judge-models
+              mountPath: {{ .Values.config.judgeModelDir | quote }}
             {{- if eq .Values.config.kmsProvider "local-kms" }}
             - name: keystore
               mountPath: /var/lib/pharos/keys
@@ -118,6 +128,14 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: judge-models
+          {{- if .Values.judgeModelCache.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.judgeModelCache.existingClaim }}
+          {{- else }}
+          emptyDir:
+            sizeLimit: {{ .Values.judgeModelCache.sizeLimit }}
+          {{- end }}
         {{- if eq .Values.config.kmsProvider "local-kms" }}
         - name: keystore
           persistentVolumeClaim:

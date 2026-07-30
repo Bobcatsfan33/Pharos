@@ -1,8 +1,31 @@
 # Customer-hosted install (Pharos)
 
 Pharos installs in your own VPC or datacenter. Judge inference is CPU-only — no GPU required.
-Production requires controlled outbound HTTPS to the contracted RFC 3161 authority; all other
-runtime dependencies can stay on approved private networks.
+Production requires controlled outbound HTTPS to the contracted RFC 3161 authority. A cold,
+empty judge cache also fetches content-addressed assets from the pinned Pharos GitHub Release;
+restricted networks should pre-stage the verified cache so model startup needs no GitHub egress.
+
+## Production judge startup boundary
+
+Production configuration requires `PHAROS_JUDGE_PROVIDER=onnx`. Before the API listener opens,
+each replica reads or downloads all three transformer artifacts and tokenizers, verifies every
+SHA-256 digest against `packages/judge/models/manifest.json`, builds every inference session, and
+fails startup if the fleet is partial or misidentified. It never falls back to the linear
+development baseline.
+
+The default Compose named volume and Helm 2Gi `emptyDir` are writable caches. For restricted or
+restart-sensitive Kubernetes deployments, download the assets from the manifest's pinned Release,
+verify their release digests independently, store them under the manifest digest filenames
+(`<sha256>.onnx` and `<sha256>.json`), and mount that directory with:
+
+add `--set judgeModelCache.existingClaim=pharos-judge-models` to the production Helm command
+below.
+
+Use an RWX claim for multiple replicas, or one pre-staged claim per zone/replica through your
+platform's volume provisioning pattern. The API re-verifies cached bytes on every startup, so
+pre-staging improves availability without weakening artifact identity. The current transformer
+release is still pre-release pending the efficacy, calibration, model-card, drift, and
+production-latency gates in `docs/LIMITATIONS.md`.
 
 ## Option A — Docker Compose (single host / pilot)
 

@@ -43,8 +43,9 @@ RUN apt-get update \
 # Local-kms keystore location; docker-compose.prod.yml mounts a named volume
 # here so signing keys survive container replacement.
 ENV PHAROS_KMS_KEYSTORE_DIR=/var/lib/pharos/keys/keystore
+ENV PHAROS_JUDGE_MODEL_DIR=/var/lib/pharos/judges
 COPY --from=build --chown=node:node /prod /app
-RUN mkdir -p /var/lib/pharos/keys && chown -R node:node /var/lib/pharos
+RUN mkdir -p /var/lib/pharos/keys /var/lib/pharos/judges && chown -R node:node /var/lib/pharos
 USER node
 EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \

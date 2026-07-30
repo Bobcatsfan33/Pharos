@@ -30,7 +30,13 @@ import {
   type Pool,
 } from "@pharos/storage";
 import { OidcVerifier, type OidcIssuerConfig } from "@pharos/identity";
-import { loadDefaultRegistry, type ModelRegistry } from "@pharos/judge";
+import {
+  loadDefaultRegistry,
+  loadOnnxJudge,
+  ModelRegistry,
+  type AsyncJudge,
+  type LoadOnnxOptions,
+} from "@pharos/judge";
 import { VerdictCascade, DEFAULT_PACK_BINDINGS } from "@pharos/cascade";
 import { SHIPPED_PACKS, type PolicyArtifact } from "@pharos/policy";
 import { MetricsRegistry, Tracer } from "@pharos/observability";
@@ -84,6 +90,48 @@ export interface Platform {
 export interface BuildPlatformOptions {
   /** Override OIDC issuer configs (tests inject local JWKS issuers). */
   oidcIssuers?: OidcIssuerConfig[];
+  /** Injected only by startup tests; production uses the hash-verifying ONNX loader. */
+  loadJudge?: JudgeLoader;
+}
+
+export type JudgeLoader = (options: LoadOnnxOptions) => Promise<AsyncJudge>;
+
+export const PRODUCTION_JUDGE_CONCERNS = [
+  "finra-promissory",
+  "phi-in-context",
+  "funds-movement-intent",
+] as const;
+
+/**
+ * Build the active judge registry before the API opens a listener.
+ *
+ * Production configuration is already fail-closed to `onnx`; this composition
+ * step additionally downloads or reads every content-addressed artifact,
+ * verifies its manifest digest, creates every inference session, and refuses
+ * startup if any concern is unavailable. Local development retains the honest,
+ * measured linear baseline.
+ */
+export async function buildJudgeRegistry(
+  config: PharosConfig,
+  loadJudge: JudgeLoader = loadOnnxJudge,
+): Promise<ModelRegistry> {
+  if (config.judge.provider === "linear") return loadDefaultRegistry();
+
+  const registry = new ModelRegistry();
+  for (const concern of PRODUCTION_JUDGE_CONCERNS) {
+    const judge = await loadJudge({
+      concern,
+      packId: concern,
+      cacheDir: config.judge.modelDir,
+    });
+    if (judge.packId !== concern || judge.concern !== concern) {
+      throw new Error(
+        `judge loader returned ${judge.packId}/${judge.concern} for required concern ${concern}`,
+      );
+    }
+    registry.registerServed(judge);
+  }
+  return registry;
 }
 
 export function buildSigner(config: PharosConfig): SigningProvider {
@@ -169,7 +217,9 @@ export async function buildPlatform(
 
   const store = new EvidenceStore({ pool, worm, signer, resolveKeyName });
   const engine = new VerdictEngine({ deadlineMs: config.api.verdictDeadlineMs });
-  const registry = loadDefaultRegistry();
+  // Preload and verify the complete configured model set before the service can become healthy.
+  // A partial production judge fleet is a startup failure, never a silent fallback to linear.
+  const registry = await buildJudgeRegistry(config, options.loadJudge);
   const shippedArtifacts = Object.values(SHIPPED_PACKS);
   const cascade = new VerdictCascade({
     engine,

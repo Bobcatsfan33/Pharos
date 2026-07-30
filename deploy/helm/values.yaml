@@ -95,10 +95,19 @@ config:
   tsaProvider: rfc3161
   tsaUrl: ""
   tsaCertSha256: ""
+  # Production API startup preloads all three hash-verified ONNX judges.
+  judgeProvider: onnx
+  judgeModelDir: /var/lib/pharos/judges
   localKms:
     # Required when kmsProvider=local-kms; the chart never stores signing keys in emptyDir.
     existingClaim: ""
   allowedOrigins: ""
+
+judgeModelCache:
+  # Supply an RWX claim pre-staged with the approved content-addressed assets
+  # for restricted networks. Empty uses a 2Gi emptyDir and fetches on cold boot.
+  existingClaim: ""
+  sizeLimit: 2Gi
 
 podSecurityContext:
   runAsNonRoot: true
@@ -123,11 +132,11 @@ networkPolicy:
 
 resources:
   requests:
-    cpu: "500m"
-    memory: "512Mi"
-  limits:
-    cpu: "2"
+    cpu: "1"
     memory: "2Gi"
+  limits:
+    cpu: "4"
+    memory: "4Gi"
 
 # Postgres / Redis / object storage are provided by the customer (managed RDS / ElastiCache /
 # S3) and referenced via pharos-secrets. The chart does not bundle stateful stores in prod.

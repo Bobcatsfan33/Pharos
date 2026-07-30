@@ -75,6 +75,26 @@ describe("model artifact store", () => {
     expect(fetches).toBe(2);
   });
 
+  it("allows concurrent replicas to populate one shared content-addressed cache", async () => {
+    const model = new Uint8Array([1, 2, 3, 4]);
+    const tok = new Uint8Array([9, 9, 9]);
+    const manifest = fakeManifest(model, tok);
+    const cacheDir = mkdtempSync(join(tmpdir(), "pharos-models-shared-"));
+    const fetchImpl = async (url: string) => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      return url.endsWith("tokenizer.json") ? tok : model;
+    };
+
+    const replicas = await Promise.all(
+      Array.from({ length: 8 }, () => ensureArtifact("demo", { manifest, cacheDir, fetchImpl })),
+    );
+
+    expect(new Set(replicas.map((item) => item.modelPath)).size).toBe(1);
+    expect(new Set(replicas.map((item) => item.tokenizerPath)).size).toBe(1);
+    expect(readFileSync(replicas[0]!.modelPath)).toEqual(Buffer.from(model));
+    expect(readFileSync(replicas[0]!.tokenizerPath)).toEqual(Buffer.from(tok));
+  });
+
   it("throws LOUDLY on a sha256 mismatch (refuses to serve a wrong/tampered blob)", async () => {
     const cacheDir = mkdtempSync(join(tmpdir(), "pharos-models-"));
     const manifest = fakeManifest(new Uint8Array([1, 2, 3, 4]), new Uint8Array([9]));

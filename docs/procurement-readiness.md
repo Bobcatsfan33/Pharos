@@ -6,9 +6,11 @@ approval claim while partial controls or blocking gates remain.
 
 The current decision is **not approved**, and Pharos is **not yet a software release candidate**.
 The repository has strong durability, tenancy, trusted-time, KMS, observability, deployment, and
-release-assurance engineering. The Tier-3 judge remains a measured but unsuitable production
-stand-in, and independent penetration testing, TSA/KMS/legal onboarding, customer-topology
-recovery, organizational assurance, and production validation remain required.
+release-assurance engineering. Production now requires and preloads hash-verified ONNX
+transformer judges, but their independent efficacy, calibration, drift, model-card, and
+production-latency approval is incomplete. Independent penetration testing, TSA/KMS/legal
+onboarding, customer-topology recovery, organizational assurance, and production validation
+also remain required.
 
 The evidence index maps to [NIST SSDF 1.1](https://csrc.nist.gov/pubs/sp/800/218/final),
 [SLSA 1.2](https://slsa.dev/spec/v1.2/),
