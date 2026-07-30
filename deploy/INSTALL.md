@@ -60,15 +60,18 @@ digest (`ghcr.io/bobcatsfan33/pharos-api@sha256:...`) in production. The Helm ch
 ```bash
 # 1. Create the secret (connection strings + KMS config) — no values are baked into the chart.
 kubectl create secret generic pharos-secrets \
-  --from-literal=PHAROS_PG_URL=postgres://... \
-  --from-literal=PHAROS_REDIS_URL=redis://... \
+  --from-literal=PHAROS_PG_URL='postgres://...?sslmode=verify-full' \
+  --from-literal=PHAROS_REDIS_URL=rediss://... \
   --from-literal=PHAROS_S3_ENDPOINT=https://s3.amazonaws.com \
-  --from-literal=PHAROS_S3_ACCESS_KEY=... \
-  --from-literal=PHAROS_S3_SECRET_KEY=... \
   --from-literal=PHAROS_ADMIN_TOKEN=...
 
-# 2. Install the chart (3 replicas across zones by default).
-helm install pharos deploy/helm
+# 2. Install the chart (3 replicas across zones by default). Production defaults
+# use AWS KMS and RFC 3161; pin the verified image digest and provide your TSA.
+helm install pharos deploy/helm \
+  --set image.digest=sha256:<verified-digest> \
+  --set-string serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn=arn:aws:iam::<account>:role/pharos \
+  --set config.kmsAwsRegion=us-east-1 \
+  --set config.tsaUrl=https://<your-tsa>/tsr
 
 # 3. Verify
 kubectl rollout status deploy/pharos-api
@@ -80,17 +83,24 @@ production.
 
 ## Key management (read this before production)
 
-Only `PHAROS_KMS_PROVIDER=local-kms` is implemented today — `aws-kms` is a configuration
-placeholder and the API refuses to start with it. local-kms stores Ed25519 signing keys as
-files under `PHAROS_KMS_KEYSTORE_DIR` (the TSA keystore is the sibling `<dir>-tsa`). Those
-keys sign every evidence record, so:
+AWS KMS is the production default and uses asymmetric P-256 keys whose private material never
+leaves KMS. Configure the region through `config.kmsAwsRegion` and use workload identity
+(for example, IRSA) rather than static AWS credentials. The same identity supplies S3 credentials
+through the AWS SDK default chain; do not add `PHAROS_S3_ACCESS_KEY` or
+`PHAROS_S3_SECRET_KEY` when the production endpoint is AWS S3. Paired static credentials remain
+supported for the self-hosted MinIO installation.
 
-* Persist the keystore on a durable volume (the prod compose file mounts `pharos_keys`;
-  the provided Dockerfile defaults the dir to `/var/lib/pharos/keys/keystore`).
+`local-kms` is intended for development and stores Ed25519 signing keys as files under
+`PHAROS_KMS_KEYSTORE_DIR` (the TSA keystore is the sibling `<dir>-tsa`). If it is selected,
+the chart requires `config.localKms.existingClaim`; it will not place signing keys in an
+ephemeral volume. Those keys sign every evidence record, so:
+
+* Persist the keystore on a durable volume (the prod compose file mounts `pharos_keys`; the
+  provided Dockerfile defaults the dir to `/var/lib/pharos/keys/keystore`).
 * Back the volume up; losing the keys breaks external verification of prior records.
 * Restrict access to the volume — the key files are plaintext JSON (0600).
 
-A managed-KMS provider is planned; until then treat the keystore volume as an HSM boundary.
+Do not describe a local filesystem keystore as an HSM boundary.
 
 ## Upgrades & migrations
 

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["image", "replicaCount", "secretName", "config"],
+  "properties": {
+    "replicaCount": {
+      "type": "integer",
+      "minimum": 2
+    },
+    "secretName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "image": {
+      "type": "object",
+      "required": ["repository", "tag", "digest", "pullPolicy"],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "tag": { "type": "string", "minLength": 1 },
+        "digest": {
+          "type": "string",
+          "pattern": "^$|^sha256:[a-f0-9]{64}$"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"]
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "required": ["env", "kmsProvider", "kmsAwsRegion", "tsaProvider"],
+      "properties": {
+        "env": {
+          "type": "string",
+          "enum": ["local", "dev", "staging", "prod"]
+        },
+        "kmsProvider": {
+          "type": "string",
+          "enum": ["local-kms", "aws-kms"]
+        },
+        "kmsAwsRegion": { "type": "string", "minLength": 1 },
+        "tsaProvider": {
+          "type": "string",
+          "enum": ["local", "rfc3161"]
+        },
+        "tsaUrl": { "type": "string" }
+      }
+    }
+  }
+}

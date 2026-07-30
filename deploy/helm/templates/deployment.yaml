@@ -1,55 +1,135 @@
+{{- if eq .Values.config.env "prod" }}
+{{- if not .Values.image.digest }}
+{{- fail "production deployments require image.digest with a verified sha256 digest" }}
+{{- end }}
+{{- if ne .Values.config.kmsProvider "aws-kms" }}
+{{- fail "production deployments require config.kmsProvider=aws-kms" }}
+{{- end }}
+{{- if ne .Values.config.tsaProvider "rfc3161" }}
+{{- fail "production deployments require config.tsaProvider=rfc3161" }}
+{{- end }}
+{{- if not .Values.config.tsaUrl }}
+{{- fail "production deployments require config.tsaUrl for a contracted RFC 3161 authority" }}
+{{- end }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pharos-api
-  labels: { app: pharos-api }
+  labels:
+    app.kubernetes.io/name: pharos
+    app.kubernetes.io/component: api
 spec:
-  replicas: { { .Values.replicaCount } }
+  replicas: {{ .Values.replicaCount }}
   selector:
-    matchLabels: { app: pharos-api }
+    matchLabels:
+      app.kubernetes.io/name: pharos
+      app.kubernetes.io/component: api
   template:
     metadata:
-      labels: { app: pharos-api }
+      labels:
+        app.kubernetes.io/name: pharos
+        app.kubernetes.io/component: api
     spec:
-      # Multi-AZ: spread replicas across zones.
+      serviceAccountName: pharos-api
+      automountServiceAccountToken: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: ScheduleAnyway
+          whenUnsatisfiable: DoNotSchedule
           labelSelector:
-            matchLabels: { app: pharos-api }
+            matchLabels:
+              app.kubernetes.io/name: pharos
+              app.kubernetes.io/component: api
       containers:
         - name: api
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: { { .Values.image.pullPolicy } }
+          image: "{{ .Values.image.repository }}{{ if .Values.image.digest }}@{{ .Values.image.digest }}{{ else }}:{{ .Values.image.tag }}{{ end }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           ports:
-            - containerPort: { { .Values.api.port } }
+            - name: http
+              containerPort: {{ .Values.api.port }}
+              protocol: TCP
           envFrom:
-            - secretRef: { name: { { .Values.secretName } } }
+            - secretRef:
+                name: {{ required "secretName must name an existing Kubernetes Secret" .Values.secretName }}
           env:
-            - { name: PHAROS_ENV, value: "{{ .Values.config.env }}" }
-            - { name: PHAROS_S3_BUCKET, value: "{{ .Values.config.s3Bucket }}" }
-            - { name: PHAROS_S3_REGION, value: "{{ .Values.config.s3Region }}" }
-            - { name: PHAROS_S3_FORCE_PATH_STYLE, value: "{{ .Values.config.s3ForcePathStyle }}" }
-            - { name: PHAROS_KMS_PROVIDER, value: "{{ .Values.config.kmsProvider }}" }
-            - { name: PHAROS_ALLOWED_ORIGINS, value: "{{ .Values.config.allowedOrigins }}" }
+            - name: PHAROS_ENV
+              value: {{ .Values.config.env | quote }}
+            - name: PHAROS_API_PORT
+              value: {{ .Values.api.port | quote }}
+            - name: PHAROS_S3_BUCKET
+              value: {{ .Values.config.s3Bucket | quote }}
+            - name: PHAROS_S3_REGION
+              value: {{ .Values.config.s3Region | quote }}
+            - name: PHAROS_S3_FORCE_PATH_STYLE
+              value: {{ .Values.config.s3ForcePathStyle | quote }}
+            - name: PHAROS_KMS_PROVIDER
+              value: {{ .Values.config.kmsProvider | quote }}
+            - name: PHAROS_KMS_AWS_REGION
+              value: {{ .Values.config.kmsAwsRegion | quote }}
+            - name: PHAROS_TSA_PROVIDER
+              value: {{ .Values.config.tsaProvider | quote }}
+            {{- with .Values.config.tsaUrl }}
+            - name: PHAROS_TSA_URL
+              value: {{ . | quote }}
+            {{- end }}
+            - name: PHAROS_ALLOWED_ORIGINS
+              value: {{ .Values.config.allowedOrigins | quote }}
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            failureThreshold: 30
+            periodSeconds: 2
           readinessProbe:
-            httpGet: { path: /healthz, port: { { .Values.api.port } } }
-            initialDelaySeconds: 5
+            httpGet:
+              path: /healthz
+              port: http
             periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
           livenessProbe:
-            httpGet: { path: /healthz, port: { { .Values.api.port } } }
-            initialDelaySeconds: 10
+            httpGet:
+              path: /healthz
+              port: http
             periodSeconds: 20
-          resources: { { toYaml .Values.resources | nindent 12 } }
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- if eq .Values.config.kmsProvider "local-kms" }}
+            - name: keystore
+              mountPath: /var/lib/pharos/keys
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- if eq .Values.config.kmsProvider "local-kms" }}
+        - name: keystore
+          persistentVolumeClaim:
+            claimName: {{ required "local-kms requires config.localKms.existingClaim" .Values.config.localKms.existingClaim }}
+        {{- end }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: pharos-api
-  labels: { app: pharos-api }
+  labels:
+    app.kubernetes.io/name: pharos
+    app.kubernetes.io/component: api
 spec:
-  selector: { app: pharos-api }
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: pharos
+    app.kubernetes.io/component: api
   ports:
-    - port: 80
-      targetPort: { { .Values.api.port } }
+    - name: http
+      port: 80
+      targetPort: http

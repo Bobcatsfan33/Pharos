@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { generateKeyPair, exportJWK, SignJWT, type JWK } from "jose";
 import { OidcVerifier, type OidcIssuerConfig } from "@pharos/identity";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 
 /**
  * Simulates two reference IdPs (Okta + Entra) as local JWKS issuers. Both are OIDC, so
@@ -143,5 +145,63 @@ describe("OIDC verification (Okta + Entra)", () => {
       .setExpirationTime("5m")
       .sign(okta.privateKey);
     await expect(verifier.verifyBearer(token)).rejects.toThrow();
+  });
+});
+
+describe("remote JWKS rotation", () => {
+  it("caches a known key and refreshes once when an IdP rotates to a new kid", async () => {
+    const issuer = "https://rotating-idp.example.com";
+    const audience = "pharos";
+    const claims = { tenant: "tenant", roles: "roles" };
+    const first = await makeIdp(issuer, audience, claims);
+    first.jwk.kid = "key-v1";
+    const second = await makeIdp(issuer, audience, claims);
+    second.jwk.kid = "key-v2";
+
+    let currentJwk = first.jwk;
+    let requestCount = 0;
+    const server = createServer((_request, response) => {
+      requestCount += 1;
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ keys: [currentJwk] }));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+
+    try {
+      const address = server.address() as AddressInfo;
+      const verifier = new OidcVerifier([
+        {
+          issuer,
+          audience,
+          jwksUri: `http://127.0.0.1:${address.port}/jwks`,
+          jwksTimeoutMs: 1_000,
+          jwksCooldownMs: 0,
+          jwksCacheMaxAgeMs: 60_000,
+          claims,
+        },
+      ]);
+
+      const firstToken = await mintToken(first, {
+        sub: "user-1",
+        tenant: "acme",
+        roles: ["reviewer"],
+      });
+      await verifier.verifyBearer(firstToken);
+      await verifier.verifyBearer(firstToken);
+      expect(requestCount).toBe(1);
+
+      currentJwk = second.jwk;
+      const rotatedToken = await mintToken(second, {
+        sub: "user-2",
+        tenant: "acme",
+        roles: ["reviewer"],
+      });
+      await verifier.verifyBearer(rotatedToken);
+      expect(requestCount).toBe(2);
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
   });
 });

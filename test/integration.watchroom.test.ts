@@ -161,12 +161,12 @@ describe("Watchroom — 500-escalation drain", () => {
     console.log(`[watchroom] drained ${drained} escalations in ${drainMs}ms; SLA attainment 100%`);
 
     // --- Breach alerts fire exactly once for the undrained, past-due items ---
-    const fired = await platform.reviewSla.sweep();
+    const fired = await platform.reviewSla.sweepTenant(TENANT);
     expect(fired).toBe(BREACHED); // exactly one breach event per past-due escalation
     // Each breach fans out across its queue's channels, so notification rows >= breaches.
     expect(await platform.notifier.count(TENANT, "breached")).toBeGreaterThanOrEqual(BREACHED);
     // Idempotent: a second sweep fires nothing new (rows already marked notified).
-    expect(await platform.reviewSla.sweep()).toBe(0);
+    expect(await platform.reviewSla.sweepTenant(TENANT)).toBe(0);
 
     // Three reviewer roles participated.
     const reviewers = new Set(resolved.map((e) => e.resolvedBy));

@@ -21,22 +21,27 @@ export class ReviewSlaService {
     return this.deps.now ? this.deps.now() : new Date();
   }
 
+  /** Sweep one tenant for new SLA breaches; useful for scoped operations and deterministic drills. */
+  async sweepTenant(tenantId: string, now: Date = this.now()): Promise<number> {
+    const breaches = await this.deps.escalations.findNewBreaches(tenantId, now.toISOString());
+    for (const breach of breaches) {
+      await this.deps.notifier.fire({
+        tenantId,
+        event: "breached",
+        escalationId: breach.id,
+        queue: breach.queue,
+      });
+    }
+    return breaches.length;
+  }
+
   /** Sweep all tenants for new SLA breaches; returns the number of breach alerts fired. */
   async sweep(): Promise<number> {
-    const nowIso = this.now().toISOString();
+    const now = this.now();
     const tenants = await this.deps.tenants.listTenants();
     let fired = 0;
     for (const tenant of tenants) {
-      const breaches = await this.deps.escalations.findNewBreaches(tenant.tenantId, nowIso);
-      for (const b of breaches) {
-        await this.deps.notifier.fire({
-          tenantId: tenant.tenantId,
-          event: "breached",
-          escalationId: b.id,
-          queue: b.queue,
-        });
-        fired += 1;
-      }
+      fired += await this.sweepTenant(tenant.tenantId, now);
     }
     return fired;
   }
