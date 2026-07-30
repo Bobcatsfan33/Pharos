@@ -11,6 +11,9 @@
 {{- if not .Values.config.tsaUrl }}
 {{- fail "production deployments require config.tsaUrl for a contracted RFC 3161 authority" }}
 {{- end }}
+{{- if not .Values.config.tsaCertSha256 }}
+{{- fail "production deployments require config.tsaCertSha256 from an independently approved TSA certificate" }}
+{{- end }}
 {{- end }}
 apiVersion: apps/v1
 kind: Deployment
@@ -75,6 +78,10 @@ spec:
               value: {{ .Values.config.tsaProvider | quote }}
             {{- with .Values.config.tsaUrl }}
             - name: PHAROS_TSA_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.tsaCertSha256 }}
+            - name: PHAROS_TSA_CERT_SHA256
               value: {{ . | quote }}
             {{- end }}
             - name: PHAROS_ALLOWED_ORIGINS

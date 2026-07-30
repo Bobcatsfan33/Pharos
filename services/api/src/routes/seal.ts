@@ -185,7 +185,20 @@ export function registerSealRoutes(app: FastifyInstance, platform: Platform): vo
       });
 
       // Self-check before sealing.
-      const verification = verifyClaimsPack(bundle);
+      const verification = verifyClaimsPack(bundle, {
+        rfc3161: { trustedCertSha256: platform.config.tsa.trustedCertSha256 },
+      });
+      if (!verification.ok) {
+        request.log.error(
+          { errors: verification.errors, claimsPackId: id },
+          "claims pack self-verification failed",
+        );
+        return reply.status(500).send({
+          success: false,
+          data: null,
+          error: { code: "claims_pack_verification_failed" },
+        });
+      }
       const sealed = await platform.evidenceOps.sealPack(tenantId, id, bundle);
       return reply.send({ success: true, data: { pack: sealed, verification }, error: null });
     },

@@ -1,6 +1,12 @@
 import * as asn1js from "asn1js";
 import * as pkijs from "pkijs";
-import { createHash, createVerify, X509Certificate, randomBytes } from "node:crypto";
+import {
+  createHash,
+  createVerify,
+  X509Certificate,
+  randomBytes,
+  timingSafeEqual,
+} from "node:crypto";
 
 /**
  * RFC 3161 trusted-timestamp client and offline verifier.
@@ -8,18 +14,19 @@ import { createHash, createVerify, X509Certificate, randomBytes } from "node:cry
  * We build the TimeStampReq and parse the TimeStampResp/TimeStampToken with pkijs/asn1js
  * (no hand-rolled ASN.1), but verify the token's CMS signature with node:crypto: the token
  * carries the TSA's signing certificate, so verification is fully offline and needs no Pharos
- * infrastructure. Two checks establish trusted time for a hash:
+ * infrastructure. Three checks establish trusted time for a hash:
  *   1. the token's messageImprint equals SHA-256 of the anchored value (the token is FOR us), and
  *   2. the token's CMS signature verifies against its embedded TSA certificate (the time is the
- *      TSA's, not ours) — over the signed attributes, whose messageDigest binds the TSTInfo.
- * Verifying the TSA certificate chains to a trusted root is an optional stronger check
- * (`trustedRootsPem`); the core proof is (1) + (2).
+ *      TSA's, not ours) — over the signed attributes, whose messageDigest binds the TSTInfo, and
+ *   3. in production, that signing certificate's SHA-256 fingerprint matches an independently
+ *      configured enterprise-approved pin (the signer is the CONTRACTED TSA, not merely any TSA).
  */
 const OID = {
   SHA256: "2.16.840.1.101.3.4.2.1",
   contentType: "1.2.840.113549.1.9.3",
   messageDigest: "1.2.840.113549.1.9.4",
   idCtTSTInfo: "1.2.840.113549.1.9.16.1.4",
+  timeStampingEku: "1.3.6.1.5.5.7.3.8",
 } as const;
 
 // signerInfo digest algorithm OID → node:crypto hash name.
@@ -27,7 +34,6 @@ const DIGEST_ALGO: Record<string, string> = {
   "2.16.840.1.101.3.4.2.1": "sha256",
   "2.16.840.1.101.3.4.2.2": "sha384",
   "2.16.840.1.101.3.4.2.3": "sha512",
-  "1.3.14.3.2.26": "sha1",
 };
 
 function sha256(data: Buffer): Buffer {
@@ -62,6 +68,21 @@ export interface Rfc3161Options {
   timeoutMs?: number;
   /** Injectable fetch (tests). */
   fetchImpl?: typeof fetch;
+  /** Trust policy applied to every received token before it is persisted. */
+  trustPolicy?: Rfc3161TrustPolicy;
+}
+
+export interface Rfc3161TrustPolicy {
+  /**
+   * Approved TSA leaf-certificate SHA-256 fingerprints, without separators.
+   * Configure at least two during planned certificate rotation.
+   */
+  trustedCertSha256?: readonly string[];
+  /**
+   * Backward-compatible direct root check. Certificate pins are preferred because they remain
+   * deterministic offline and do not imply support for arbitrary intermediate chains.
+   */
+  trustedRootsPem?: readonly string[];
 }
 
 /** POST a TimeStampReq to a TSA and return the (verified) token + its asserted time. */
@@ -99,7 +120,7 @@ export async function requestTimestamp(
   const tokenDer = Buffer.from(resp.timeStampToken.toSchema().toBER(false));
 
   // Verify the token we just received before trusting it.
-  const verdict = verifyRfc3161Token(tokenDer, anchoredValue);
+  const verdict = verifyRfc3161Token(tokenDer, anchoredValue, opts.trustPolicy);
   if (!verdict.valid || !verdict.genTime) {
     throw new Error(`TSA token failed verification: ${verdict.error ?? "unknown"}`);
   }
@@ -115,13 +136,13 @@ export interface TokenVerdict {
 /**
  * Verify an RFC 3161 TimeStampToken offline: (1) its CMS signature verifies against the embedded
  * TSA certificate, and (2) its messageImprint equals SHA-256(anchoredValue). Returns the token's
- * genTime on success. Optionally, if `trustedRootsPem` is given, also require the TSA certificate
- * to chain to one of them.
+ * genTime on success. A production caller supplies an independently configured certificate pin;
+ * trusting only the certificate embedded in the token proves integrity but not TSA identity.
  */
 export function verifyRfc3161Token(
   tokenDer: Buffer,
   anchoredValue: string,
-  trustedRootsPem?: string[],
+  trust?: Rfc3161TrustPolicy | readonly string[],
 ): TokenVerdict {
   try {
     const parsed = asn1js.fromBER(tokenDer);
@@ -137,6 +158,9 @@ export function verifyRfc3161Token(
     const tstInfo = new pkijs.TSTInfo({ schema: asn1js.fromBER(eBytes).result });
 
     // (2) messageImprint must equal SHA-256(anchoredValue).
+    if (tstInfo.messageImprint.hashAlgorithm.algorithmId !== OID.SHA256) {
+      return { valid: false, error: "messageImprint must use SHA-256" };
+    }
     const imprint = Buffer.from(
       (tstInfo.messageImprint.hashedMessage.valueBlock as { valueHexView: Uint8Array })
         .valueHexView,
@@ -146,7 +170,8 @@ export function verifyRfc3161Token(
     }
 
     // (1) verify the CMS signature over the signed attributes with the embedded TSA cert.
-    if (!sd.signerInfos?.length) return { valid: false, error: "no signerInfo" };
+    if (sd.signerInfos?.length !== 1)
+      return { valid: false, error: "token must carry exactly one signerInfo" };
     const si = sd.signerInfos[0]!;
     const attrs = si.signedAttrs?.attributes;
     if (!attrs) return { valid: false, error: "no signed attributes" };
@@ -164,6 +189,10 @@ export function verifyRfc3161Token(
     const ctAttr = attrs.find((a) => a.type === OID.contentType);
     if (!mdAttr || !ctAttr)
       return { valid: false, error: "missing contentType/messageDigest attr" };
+    const signedContentType = ctAttr.values[0]?.valueBlock.toString();
+    if (signedContentType !== OID.idCtTSTInfo) {
+      return { valid: false, error: "contentType attr is not id-ct-TSTInfo" };
+    }
     const messageDigest = Buffer.from(
       (mdAttr.values[0].valueBlock as { valueHexView: Uint8Array }).valueHexView,
     );
@@ -173,9 +202,6 @@ export function verifyRfc3161Token(
 
     if (!sd.certificates?.length)
       return { valid: false, error: "token carries no TSA certificate" };
-    const cert = sd.certificates[0] as pkijs.Certificate;
-    const certDer = Buffer.from(cert.toSchema().toBER(false));
-    const x509 = new X509Certificate(certDer);
 
     // The signature is over the DER of the signed attributes with the implicit [0] tag replaced
     // by the universal SET OF tag (0x31), per CMS.
@@ -184,14 +210,51 @@ export function verifyRfc3161Token(
     const signature = Buffer.from(
       (si.signature.valueBlock as { valueHexView: Uint8Array }).valueHexView,
     );
-    const signatureValid = createVerify(hashName)
-      .update(signedAttrsDer)
-      .verify(x509.publicKey, signature);
-    if (!signatureValid) return { valid: false, error: "TSA signature is invalid" };
+    let x509: X509Certificate | undefined;
+    for (const candidate of sd.certificates) {
+      if (!(candidate instanceof pkijs.Certificate)) continue;
+      const candidateX509 = new X509Certificate(Buffer.from(candidate.toSchema().toBER(false)));
+      const valid = createVerify(hashName)
+        .update(signedAttrsDer)
+        .verify(candidateX509.publicKey, signature);
+      if (valid) {
+        x509 = candidateX509;
+        break;
+      }
+    }
+    if (!x509) return { valid: false, error: "TSA signature is invalid" };
 
-    // Optional: require the TSA cert to chain to a trusted root.
-    if (trustedRootsPem?.length) {
-      const chained = trustedRootsPem.some((pem) => {
+    const genTime = tstInfo.genTime;
+    if (!genTime) return { valid: false, error: "token has no genTime" };
+    const assertedTime = genTime.getTime();
+    if (
+      !Number.isFinite(assertedTime) ||
+      assertedTime < Date.parse(x509.validFrom) ||
+      assertedTime > Date.parse(x509.validTo)
+    ) {
+      return { valid: false, error: "TSA certificate was not valid at genTime" };
+    }
+    if (!x509.keyUsage?.includes(OID.timeStampingEku)) {
+      return { valid: false, error: "TSA certificate lacks the timeStamping EKU" };
+    }
+
+    const policy: Rfc3161TrustPolicy = isRootList(trust)
+      ? { trustedRootsPem: trust }
+      : (trust ?? {});
+    if (policy.trustedCertSha256?.length) {
+      const actual = normalizeFingerprint(x509.fingerprint256);
+      const pinned = policy.trustedCertSha256.some((value) =>
+        fingerprintEquals(actual, normalizeFingerprint(value)),
+      );
+      if (!pinned) {
+        return { valid: false, error: "TSA signing certificate is not enterprise-approved" };
+      }
+    }
+
+    // Backward-compatible direct root check. This deliberately does not claim general PKIX path
+    // building; approved signer pins are the production trust boundary.
+    if (policy.trustedRootsPem?.length) {
+      const chained = policy.trustedRootsPem.some((pem) => {
         try {
           return x509.verify(new X509Certificate(pem).publicKey);
         } catch {
@@ -202,10 +265,23 @@ export function verifyRfc3161Token(
         return { valid: false, error: "TSA certificate does not chain to a trusted root" };
     }
 
-    const genTime = tstInfo.genTime;
-    if (!genTime) return { valid: false, error: "token has no genTime" };
     return { valid: true, genTime: genTime.toISOString() };
   } catch (err) {
     return { valid: false, error: `token parse/verify error: ${(err as Error).message}` };
   }
+}
+
+function normalizeFingerprint(value: string): string {
+  return value.replaceAll(":", "").trim().toLowerCase();
+}
+
+function isRootList(
+  trust: Rfc3161TrustPolicy | readonly string[] | undefined,
+): trust is readonly string[] {
+  return Array.isArray(trust);
+}
+
+function fingerprintEquals(actual: string, configured: string): boolean {
+  if (!/^[a-f0-9]{64}$/.test(configured)) return false;
+  return timingSafeEqual(Buffer.from(actual, "hex"), Buffer.from(configured, "hex"));
 }

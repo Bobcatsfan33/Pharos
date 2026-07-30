@@ -125,7 +125,9 @@ export function buildTsaProvider(config: PharosConfig): {
 } {
   if (config.tsa.provider === "rfc3161") {
     return {
-      tsa: new Rfc3161Tsa(config.tsa.url ?? DEFAULT_FREETSA_URL),
+      tsa: new Rfc3161Tsa(config.tsa.url ?? DEFAULT_FREETSA_URL, {
+        trustPolicy: { trustedCertSha256: config.tsa.trustedCertSha256 },
+      }),
       keyset: async () => [],
     };
   }

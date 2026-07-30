@@ -11,7 +11,8 @@
  * then verifies entirely with @pharos/core's pure functions.
  *
  *   Usage:
- *     tsx scripts/external-verify.ts --bundle ./evidence-bundle.json
+ *     tsx scripts/external-verify.ts --bundle ./evidence-bundle.json \
+ *       --tsa-cert-sha256 <approved-leaf-certificate-fingerprint>
  *     tsx scripts/external-verify.ts <tenantId> [apiBaseUrl]
  */
 import { readFileSync } from "node:fs";
@@ -37,7 +38,19 @@ type EvidenceBundle = {
 const args = process.argv.slice(2);
 const bundleIndex = args.indexOf("--bundle");
 const bundlePath = bundleIndex >= 0 ? args[bundleIndex + 1] : undefined;
-const positional = args.filter((_, index) => index !== bundleIndex && index !== bundleIndex + 1);
+const pinIndex = args.indexOf("--tsa-cert-sha256");
+const pinValue = pinIndex >= 0 ? args[pinIndex + 1] : process.env.PHAROS_TSA_CERT_SHA256;
+const tsaCertPins = (pinValue ?? "")
+  .split(",")
+  .map((value) => value.replaceAll(":", "").trim().toLowerCase())
+  .filter(Boolean);
+if (tsaCertPins.some((value) => !/^[a-f0-9]{64}$/.test(value))) {
+  throw new Error(
+    "--tsa-cert-sha256 must contain comma-separated SHA-256 certificate fingerprints",
+  );
+}
+const optionIndexes = new Set([bundleIndex, bundleIndex + 1, pinIndex, pinIndex + 1]);
+const positional = args.filter((_, index) => !optionIndexes.has(index));
 const tenantId = positional[0] ?? "demo-tenant";
 const base = positional[1] ?? "http://localhost:4000";
 
@@ -94,13 +107,19 @@ function verifyAnchors(
   anchors: TrustedTimestamp[],
   tsaKeys: PublicKeyEntry[],
   headHash: string,
+  trustedCertSha256: string[],
 ): boolean {
   if (anchors.length === 0) return true; // anchors are optional in a bundle
+  if (anchors.some((anchor) => anchor.provider === "rfc3161") && trustedCertSha256.length === 0) {
+    throw new Error(
+      "RFC 3161 verification requires --tsa-cert-sha256 from an independent approved source",
+    );
+  }
   const verifyTsa = keysetVerifier(tsaKeys);
   let headAnchored = false;
   let allOk = true;
   for (const a of anchors) {
-    const ok = verifyTimestamp(a, verifyTsa);
+    const ok = verifyTimestamp(a, verifyTsa, { trustedCertSha256 });
     const kind = a.provider ?? "local";
     console.log(
       `  ${ok ? "OK " : "BAD"} anchor [${kind}] ${a.hash.slice(0, 12)}… @ ${a.time}` +
@@ -121,6 +140,7 @@ function printReport(
   keys: PublicKeyEntry[],
   anchors: TrustedTimestamp[] = [],
   tsaKeys: PublicKeyEntry[] = [],
+  trustedCertSha256: string[] = [],
 ): void {
   console.log(
     `Verifying ${records.length} records with @pharos/core ONLY (no DB, no signer, no platform calls)...\n`,
@@ -144,7 +164,7 @@ function printReport(
   if (anchors.length > 0) {
     const headHash = records[records.length - 1]!.seal.contentHash;
     console.log(`\nTrusted-time anchors (${anchors.length}):`);
-    const anchorsOk = verifyAnchors(anchors, tsaKeys, headHash);
+    const anchorsOk = verifyAnchors(anchors, tsaKeys, headHash, trustedCertSha256);
     console.log(
       `\nAnchor verification: ${anchorsOk ? "PASS - head existed before the stamped time" : "FAIL"}`,
     );
@@ -158,7 +178,7 @@ async function main(): Promise<void> {
     if (!bundlePath) throw new Error("--bundle requires a path");
     const bundle = readBundle(bundlePath);
     console.log(`\n=== Offline evidence bundle verification for tenant "${bundle.tenantId}" ===`);
-    printReport(bundle.records, bundle.keys, bundle.anchors, bundle.tsaKeys);
+    printReport(bundle.records, bundle.keys, bundle.anchors, bundle.tsaKeys, tsaCertPins);
     return;
   }
 

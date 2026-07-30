@@ -11,6 +11,7 @@ import {
   sealSigningMessage,
 } from "@pharos/core";
 import { type TrustedTimestamp, verifyTimestamp } from "./timestamp.js";
+import type { Rfc3161TrustPolicy } from "./rfc3161.js";
 
 /**
  * Claims packs v2 — one-click, audience-scoped, offline-verifiable evidence bundles.
@@ -68,7 +69,7 @@ export interface ClaimsPackBundle {
 const PROCEDURE = [
   "1. For each FULL record: recompute sha256(canonical(content)) == seal.contentHash; verify seal.signature with keyset[keyId] — over 'pharos:record-seal:v2\\n<sequence>\\n<prevHash>\\n<contentHash>' when seal.sigVersion == 2, or over contentHash bytes for legacy v1 seals; check seal.prevHash links to the previous record.",
   "2. For each REDACTED record: for every shown field recompute sha256(salt|canonical(value)) == commitment; recompute the disclosureRoot from all commitments; verify the disclosure signature over sha256({disclosureRoot, contentHash}) with keyset[keyId]; check prevHash links to the previous record.",
-  "3. Verify each anchor: it is signed by the TSA keyset over sha256({hash, time}); the final record's contentHash appears among the anchored hashes.",
+  "3. Verify each anchor: local anchors use the embedded TSA keyset; RFC 3161 anchors require a CMS signature by a TSA certificate whose SHA-256 fingerprint was approved independently of this bundle. Confirm the messageImprint binds the anchor hash and the final record's contentHash appears among the anchored hashes.",
   "4. Recompute the bundle hash over (meta, records, anchors) and confirm custody.bundleHash matches.",
 ].join("\n");
 
@@ -149,8 +150,16 @@ export interface ClaimsPackVerification {
   errors: string[];
 }
 
-/** Verify a claims pack OFFLINE using only the bundle and its embedded public keysets. */
-export function verifyClaimsPack(bundle: ClaimsPackBundle): ClaimsPackVerification {
+export interface ClaimsPackTrustPolicy {
+  /** External trust material for RFC 3161 anchors; never derive this from the bundle itself. */
+  rfc3161?: Rfc3161TrustPolicy;
+}
+
+/** Verify a claims pack OFFLINE using the bundle plus independently approved TSA trust material. */
+export function verifyClaimsPack(
+  bundle: ClaimsPackBundle,
+  trust: ClaimsPackTrustPolicy = {},
+): ClaimsPackVerification {
   const out: ClaimsPackVerification = {
     ok: true,
     recordsChecked: 0,
@@ -207,7 +216,17 @@ export function verifyClaimsPack(bundle: ClaimsPackBundle): ClaimsPackVerificati
   const headHash = expectedPrev;
   let headAnchored = false;
   for (const anchor of bundle.anchors) {
-    if (verifyTimestamp(anchor, verifyTsa)) {
+    if (
+      anchor.provider === "rfc3161" &&
+      !trust.rfc3161?.trustedCertSha256?.length &&
+      !trust.rfc3161?.trustedRootsPem?.length
+    ) {
+      out.errors.push(
+        `anchor for ${anchor.hash.slice(0, 12)} lacks independently approved RFC 3161 trust material`,
+      );
+      continue;
+    }
+    if (verifyTimestamp(anchor, verifyTsa, trust.rfc3161)) {
       out.anchorsVerified += 1;
       if (anchor.hash === headHash) headAnchored = true;
     } else {

@@ -1,18 +1,20 @@
 # Expert-witness verification runbook
 
-A qualified expert can certify a Pharos claims pack offline using only the bundle and the
-procedure below. No Pharos software, network access, or trust in Pharos is required — the
+A qualified expert can certify a Pharos claims pack offline using the bundle and independently
+approved TSA trust material. No Pharos service, network access, or trust in Pharos is required — the
 reference implementation is the pure function `verifyClaimsPack` in
 [`@pharos/evidence`](../../packages/evidence/src/claimsPack.ts), but the steps can be
 re-implemented independently.
 
-## Inputs (all inside the bundle)
+## Inputs
 
 - `records[]` — full records and/or redacted views.
 - `keyset[]` — platform tenant public keys (Ed25519, base64 SPKI).
-- `tsaKeyset[]` — the independent timestamp authority's public keys.
+- `tsaKeyset[]` — public keys for development-only local anchors (inside the bundle).
 - `anchors[]` — trusted-time anchors over chain heads.
 - `custody` — sealedBy, sealedAt, and `bundleHash`.
+- Approved RFC 3161 leaf-certificate SHA-256 fingerprint(s), obtained from the contracted TSA
+  or enterprise trust office through a channel independent of the bundle.
 
 ## Procedure
 
@@ -27,9 +29,11 @@ re-implemented independently.
    the disclosure root from all commitments; verify the disclosure signature over
    `sha256({disclosureRoot, contentHash})` with `keyset[keyId]`; confirm `prevHash` links to
    the previous record.
-4. **Anchors.** For each anchor: verify its signature over `sha256({hash, time})` with
-   `tsaKeyset[keyId]`; confirm at least one anchor's `hash` equals the head record's
-   contentHash.
+4. **Anchors.** For local anchors, verify the signature with `tsaKeyset[keyId]`. For RFC 3161,
+   verify the CMS signature and signed attributes, require the timestamping EKU and certificate
+   validity at `genTime`, match the message imprint to `sha256(anchor.hash)`, and match the signer
+   certificate to an independently approved SHA-256 pin. Confirm at least one valid anchor's
+   `hash` equals the head record's contentHash.
 
 ## Certification
 
@@ -43,4 +47,7 @@ being revealed.
 ```bash
 pnpm exec vitest run test/integration.seal.test.ts   # full incident drill + offline verify
 pnpm exec vitest run test/evidence.test.ts           # redaction, timestamps, tamper detection
+pnpm exec tsx scripts/external-verify.ts \
+  --bundle test/fixtures/bundle-ecdsa-p256-rfc3161-anchored.json \
+  --tsa-cert-sha256 32e841a95cc1164101ffde41298ef2fc75c1c4372ef095e88a6bbd47dfb191fc
 ```

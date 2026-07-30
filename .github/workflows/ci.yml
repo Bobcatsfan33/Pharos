@@ -16,17 +16,29 @@ jobs:
           helm lint deploy/helm
           --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           --set config.tsaUrl=https://tsa.example.com/tsr
+          --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
       - name: render production manifests
         run: >-
           helm template pharos deploy/helm
           --namespace pharos
           --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           --set config.tsaUrl=https://tsa.example.com/tsr
+          --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+      - name: production must fail closed without an approved TSA certificate pin
+        run: |
+          if helm template pharos deploy/helm \
+            --namespace pharos \
+            --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+            --set config.tsaUrl=https://tsa.example.com/tsr; then
+            echo "production unexpectedly rendered without an approved TSA certificate pin"
+            exit 1
+          fi
       - name: lint and render production gateway
         run: |
           args=(
             --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
             --set config.tsaUrl=https://tsa.example.com/tsr
+            --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
             --set gateway.enabled=true
             --set gateway.secretName=pharos-gateway-secrets
             --set gateway.tenantId=tenant-a
@@ -49,6 +61,7 @@ jobs:
             --namespace pharos \
             --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
             --set config.tsaUrl=https://tsa.example.com/tsr \
+            --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
             --set gateway.enabled=true \
             --set gateway.secretName=pharos-gateway-secrets \
             --set gateway.tenantId=tenant-a \
@@ -64,6 +77,7 @@ jobs:
             --namespace pharos \
             --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
             --set config.tsaUrl=https://tsa.example.com/tsr \
+            --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
             --set gateway.enabled=true \
             --set gateway.secretName=pharos-gateway-secrets \
             --set gateway.tenantId=tenant-a \
@@ -92,8 +106,7 @@ jobs:
         run: pnpm lint
       - name: prettier format check (blocking)
         run: pnpm format:check
-      - name: pnpm audit (non-blocking report)
-        continue-on-error: true
+      - name: pnpm audit (blocking high/critical gate)
         run: pnpm audit --audit-level=high
 
   test:

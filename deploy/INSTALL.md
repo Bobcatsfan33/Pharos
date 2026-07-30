@@ -1,18 +1,16 @@
 # Customer-hosted install (Pharos)
 
-Pharos installs in your own VPC or datacenter with no outbound dependency at runtime
-(airgap-tolerant). Judge inference is CPU-only — no GPU required. This guide installs Pharos
-from documentation alone.
+Pharos installs in your own VPC or datacenter. Judge inference is CPU-only — no GPU required.
+Production requires controlled outbound HTTPS to the contracted RFC 3161 authority; all other
+runtime dependencies can stay on approved private networks.
 
 ## Option A — Docker Compose (single host / pilot)
 
 ```bash
 cp deploy/.env.prod.example .env.prod
-# Edit .env.prod and set EVERY value — there are no default credentials:
-#   PHAROS_PG_USER, PHAROS_PG_PASSWORD, PHAROS_PG_DB
-#   PHAROS_REDIS_PASSWORD
-#   PHAROS_S3_ACCESS_KEY, PHAROS_S3_SECRET_KEY
-#   PHAROS_ADMIN_TOKEN  (the platform-operator bootstrap token)
+# Edit .env.prod and set every placeholder. The production Compose file intentionally
+# does not bundle stateful stores; point it at TLS-verifying managed dependencies,
+# AWS KMS workload identity, a contracted TSA, and an immutable verified image digest.
 docker compose -f deploy/docker-compose.prod.yml --env-file .env.prod up -d
 
 # Verify
@@ -77,12 +75,13 @@ kubectl create secret generic pharos-secrets \
   --from-literal=PHAROS_ADMIN_TOKEN=...
 
 # 2. Install the chart (3 replicas across zones by default). Production defaults
-# use AWS KMS and RFC 3161; pin the verified image digest and provide your TSA.
+# use AWS KMS and RFC 3161; pin the image and independently approved TSA certificate.
 helm install pharos deploy/helm \
   --set image.digest=sha256:<verified-digest> \
   --set-string serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn=arn:aws:iam::<account>:role/pharos \
   --set config.kmsAwsRegion=us-east-1 \
-  --set config.tsaUrl=https://<your-tsa>/tsr
+  --set config.tsaUrl=https://<your-tsa>/tsr \
+  --set config.tsaCertSha256=<approved-64-character-leaf-certificate-sha256>
 
 # 3. Verify
 kubectl rollout status deploy/pharos-api
@@ -115,7 +114,8 @@ helm upgrade --install pharos deploy/helm \
   --namespace pharos \
   --values /path/to/gateway-production.values.yaml \
   --set image.digest=sha256:<verified-digest> \
-  --set config.tsaUrl=https://<your-tsa>/tsr
+  --set config.tsaUrl=https://<your-tsa>/tsr \
+  --set config.tsaCertSha256=<approved-64-character-leaf-certificate-sha256>
 
 kubectl rollout status deploy/pharos-gateway
 kubectl get hpa,pdb,networkpolicy -l app.kubernetes.io/component=gateway
@@ -143,19 +143,27 @@ leaves KMS. Configure the region through `config.kmsAwsRegion` and use workload 
 (for example, IRSA) rather than static AWS credentials. The same identity supplies S3 credentials
 through the AWS SDK default chain; do not add `PHAROS_S3_ACCESS_KEY` or
 `PHAROS_S3_SECRET_KEY` when the production endpoint is AWS S3. Paired static credentials remain
-supported for the self-hosted MinIO installation.
+supported only outside the production posture.
 
 `local-kms` is intended for development and stores Ed25519 signing keys as files under
 `PHAROS_KMS_KEYSTORE_DIR` (the TSA keystore is the sibling `<dir>-tsa`). If it is selected,
 the chart requires `config.localKms.existingClaim`; it will not place signing keys in an
-ephemeral volume. Those keys sign every evidence record, so:
-
-* Persist the keystore on a durable volume (the prod compose file mounts `pharos_keys`; the
-  provided Dockerfile defaults the dir to `/var/lib/pharos/keys/keystore`).
-* Back the volume up; losing the keys breaks external verification of prior records.
-* Restrict access to the volume — the key files are plaintext JSON (0600).
+ephemeral volume. Those keys sign every evidence record, so development and migration
+environments must persist, back up, and restrict the keystore. The production Compose file does
+not mount local key storage.
 
 Do not describe a local filesystem keystore as an HSM boundary.
+
+## Trusted timestamp authority
+
+Obtain the RFC 3161 leaf-certificate SHA-256 fingerprint from the contracted TSA or enterprise
+trust office through a channel independent of the API endpoint and evidence bundles. Configure it
+as `PHAROS_TSA_CERT_SHA256` (or `config.tsaCertSha256`). During planned rotation, deploy the old
+and new fingerprints as a comma-separated overlap set, confirm new tokens use the new signer, and
+only then remove the retired pin. A mismatched pin, unavailable TSA, malformed response, invalid
+CMS signature, weak digest, missing timestamping EKU, or certificate outside its validity window
+fails anchoring closed; Pharos never stores an unverified token. See
+[`docs/runbooks/tsa-trust-rotation.md`](../docs/runbooks/tsa-trust-rotation.md).
 
 ## Upgrades & migrations
 

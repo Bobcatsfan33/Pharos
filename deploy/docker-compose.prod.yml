@@ -1,77 +1,34 @@
-# Pharos — hardened customer-hosted deployment (Compose).
-# Zero default credentials: every secret is required from the environment (no fallbacks).
-# CPU-only judge inference; airgap-tolerant (no outbound calls required at runtime).
+# Pharos — customer-hosted production API.
 #
-#   cp deploy/.env.prod.example .env.prod && edit it
-#   docker compose -f deploy/docker-compose.prod.yml --env-file .env.prod up -d
+# Stateful dependencies are deliberately not bundled: production uses TLS-verifying managed
+# PostgreSQL/Redis/object storage, workload identity for AWS KMS/S3, and a contracted RFC 3161 TSA.
+# Supply an image by immutable, verified digest in PHAROS_IMAGE.
 services:
-  postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${PHAROS_PG_USER:?set PHAROS_PG_USER}
-      POSTGRES_PASSWORD: ${PHAROS_PG_PASSWORD:?set PHAROS_PG_PASSWORD}
-      POSTGRES_DB: ${PHAROS_PG_DB:?set PHAROS_PG_DB}
-    volumes:
-      - pharos_pg:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    command:
-      [
-        "redis-server",
-        "--appendonly",
-        "yes",
-        "--requirepass",
-        "${PHAROS_REDIS_PASSWORD:?set PHAROS_REDIS_PASSWORD}",
-      ]
-    volumes:
-      - pharos_redis:/data
-
-  minio:
-    image: minio/minio:latest
-    restart: unless-stopped
-    command: ["server", "/data"]
-    environment:
-      MINIO_ROOT_USER: ${PHAROS_S3_ACCESS_KEY:?set PHAROS_S3_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${PHAROS_S3_SECRET_KEY:?set PHAROS_S3_SECRET_KEY}
-    volumes:
-      - pharos_minio:/data
-
   api:
-    image: ${PHAROS_IMAGE:-pharos/api:latest}
+    image: ${PHAROS_IMAGE:?set PHAROS_IMAGE to a verified image digest}
     restart: unless-stopped
-    depends_on: [postgres, redis, minio]
     environment:
       PHAROS_ENV: prod
-      PHAROS_PG_URL: postgres://${PHAROS_PG_USER}:${PHAROS_PG_PASSWORD}@postgres:5432/${PHAROS_PG_DB}
-      PHAROS_REDIS_URL: redis://:${PHAROS_REDIS_PASSWORD}@redis:6379
-      PHAROS_S3_ENDPOINT: http://minio:9000
-      PHAROS_S3_REGION: ${PHAROS_S3_REGION:-us-east-1}
-      PHAROS_S3_BUCKET: ${PHAROS_S3_BUCKET:-pharos-evidence}
-      PHAROS_S3_ACCESS_KEY: ${PHAROS_S3_ACCESS_KEY}
-      PHAROS_S3_SECRET_KEY: ${PHAROS_S3_SECRET_KEY}
-      PHAROS_S3_FORCE_PATH_STYLE: "true"
-      PHAROS_KMS_PROVIDER: ${PHAROS_KMS_PROVIDER:-local-kms}
-      # local-kms signing keys MUST outlive the container: they sign every
-      # evidence record, and losing them breaks external verification of
-      # prior records. Keep this pinned to the pharos_keys volume below.
-      PHAROS_KMS_KEYSTORE_DIR: /var/lib/pharos/keys/keystore
+      PHAROS_PG_URL: ${PHAROS_PG_URL:?set a TLS-verifying PostgreSQL URL}
+      PHAROS_REDIS_URL: ${PHAROS_REDIS_URL:?set a rediss URL}
+      PHAROS_S3_ENDPOINT: ${PHAROS_S3_ENDPOINT:?set an HTTPS object-storage endpoint}
+      PHAROS_S3_REGION: ${PHAROS_S3_REGION:?set PHAROS_S3_REGION}
+      PHAROS_S3_BUCKET: ${PHAROS_S3_BUCKET:?set PHAROS_S3_BUCKET}
+      PHAROS_S3_FORCE_PATH_STYLE: ${PHAROS_S3_FORCE_PATH_STYLE:-false}
+      PHAROS_KMS_PROVIDER: aws-kms
+      PHAROS_KMS_AWS_REGION: ${PHAROS_KMS_AWS_REGION:?set PHAROS_KMS_AWS_REGION}
+      PHAROS_TSA_PROVIDER: rfc3161
+      PHAROS_TSA_URL: ${PHAROS_TSA_URL:?set the contracted RFC 3161 endpoint}
+      PHAROS_TSA_CERT_SHA256: ${PHAROS_TSA_CERT_SHA256:?set approved TSA certificate pins}
+      PHAROS_TSA_ANCHOR_INTERVAL_MS: ${PHAROS_TSA_ANCHOR_INTERVAL_MS:-3600000}
       PHAROS_ADMIN_TOKEN: ${PHAROS_ADMIN_TOKEN:?set PHAROS_ADMIN_TOKEN}
       PHAROS_ALLOWED_ORIGINS: ${PHAROS_ALLOWED_ORIGINS:-}
     ports:
       - "${PHAROS_API_PORT:-4000}:4000"
-    volumes:
-      - pharos_keys:/var/lib/pharos/keys
-
-volumes:
-  pharos_pg:
-  pharos_redis:
-  pharos_minio:
-  pharos_keys:
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

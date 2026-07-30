@@ -64,7 +64,7 @@ realistic concurrency on a documented reference box, deleting the 3.7ms headline
 it appears — roadmap task **S7-T1**. Whether the 800ms envelope holds at target concurrency
 is an open question that task answers.
 
-## 3. KMS: the default is local KMS (Ed25519 on disk); AWS KMS is implemented but not yet the default
+## 3. KMS: production requires AWS KMS; local KMS remains a development default
 
 > **Tracking issue:** [#34](https://github.com/Bobcatsfan33/Pharos/issues/34)
 
@@ -76,13 +76,15 @@ plus `PHAROS_KMS_AWS_REGION` (credentials from the standard AWS chain). The prov
 the shared `SigningProvider` conformance suite and `pnpm demo:durability --verify` runs
 end-to-end under it; the "refuses to boot" placeholder is gone.
 
-The **default remains `local-kms`** (Ed25519 in an on-disk keystore,
+The **local-development default remains `local-kms`** (Ed25519 in an on-disk keystore,
 [`localKms.ts`](../packages/core/src/signing/localKms.ts)) — appropriate for dev and
-self-hosted-without-AWS, but not an HSM boundary.
+self-hosted evaluation, but not an HSM boundary. `PHAROS_ENV=prod`, the Helm production chart,
+and the production Compose deployment fail closed unless `aws-kms` is selected without an
+endpoint override. KMS-unreachable signing is fail closed behind a bounded circuit breaker;
+the operational rotation and outage procedures are documented in the KMS runbook.
 
-**Remaining (this phase):** KMS-unreachable failure-mode policy (**S3-T2**) and the
-key-migration / rotation runbook (**S3-T3**); Vault Transit is the stretch **S3-T4**. This
-entry shrinks to "default is local-kms" once those land.
+**Remaining:** AWS KMS is the only production HSM integration; customer-managed Vault Transit
+and non-AWS HSM integrations remain future portability work.
 
 ## 4. Trusted-time anchoring: real RFC 3161 supported; `local` is the default for hermetic dev
 
@@ -91,15 +93,15 @@ entry shrinks to "default is local-kms" once those land.
 **Today (S4-T1 landed):** anchoring supports a **real RFC 3161 TSA**
 ([`packages/evidence/src/rfc3161.ts`](../packages/evidence/src/rfc3161.ts)) selected via
 `PHAROS_TSA_PROVIDER=rfc3161` + `PHAROS_TSA_URL`. Pharos builds the `TimeStampReq` (DER/ASN.1
-via `pkijs`/`asn1js`, not hand-rolled), stores the full DER `TimeStampToken`, and the token
-**verifies fully offline** against its embedded TSA certificate — a third-party token that
-carries independent legal weight. The default provider is still **`local`** (a simulated TSA:
-a separate key stamps the time), which keeps CI and local dev hermetic; a `local` token is not
-a third-party RFC 3161 token and carries no independent legal weight.
+via `pkijs`/`asn1js`, not hand-rolled), stores the full DER `TimeStampToken`, and verifies it
+fully offline. Production also requires `PHAROS_TSA_CERT_SHA256`, obtained independently from
+the contracted TSA, so an embedded certificate is not allowed to establish its own trust. The
+default provider remains **`local`** only for hermetic local development.
 
-**Remaining:** the default deployment ships `local`; operators must configure a production TSA
-(DigiCert/Sectigo) to get third-party weight. Scheduled per-tenant anchoring, chain-view
-surfacing, and missing-anchor gap warnings are roadmap task **S4-T2**.
+Production configuration and manifests fail closed without RFC 3161, HTTPS, an approved
+certificate pin, and a nonzero anchoring interval. Scheduled per-tenant anchoring and
+missing/stale-anchor warnings are implemented. **Remaining:** contracted TSA onboarding,
+pin-rotation approval, and legal validation are deployment-specific human gates.
 
 ## 5. The policy compiler is a constrained-grammar compiler (v1), not a natural-language compiler
 

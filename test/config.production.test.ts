@@ -13,6 +13,7 @@ function productionEnv(overrides: Partial<NodeJS.ProcessEnv> = {}): NodeJS.Proce
     PHAROS_KMS_AWS_REGION: "us-east-1",
     PHAROS_TSA_PROVIDER: "rfc3161",
     PHAROS_TSA_URL: "https://timestamp.example.internal",
+    PHAROS_TSA_CERT_SHA256: "a".repeat(64),
     PHAROS_ADMIN_TOKEN: "a-secure-random-token-with-32-characters",
     ...overrides,
   };
@@ -37,6 +38,16 @@ describe("production configuration posture", () => {
     ["local timestamps", { PHAROS_TSA_PROVIDER: "local" }, "tsa.provider"],
     ["a missing TSA URL", { PHAROS_TSA_URL: undefined }, "tsa.url"],
     ["a plaintext TSA URL", { PHAROS_TSA_URL: "http://tsa.internal" }, "tsa.url"],
+    [
+      "a missing TSA certificate pin",
+      { PHAROS_TSA_CERT_SHA256: undefined },
+      "tsa.trustedCertSha256",
+    ],
+    [
+      "a malformed TSA certificate pin",
+      { PHAROS_TSA_CERT_SHA256: "not-a-fingerprint" },
+      "tsa.trustedCertSha256",
+    ],
     ["disabled anchoring", { PHAROS_TSA_ANCHOR_INTERVAL_MS: "0" }, "tsa.intervalMs"],
     ["plaintext object storage", { PHAROS_S3_ENDPOINT: "http://minio:9000" }, "s3.endpoint"],
     [

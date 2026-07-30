@@ -90,9 +90,11 @@ config:
   #    needed — key material never leaves KMS.
   kmsProvider: aws-kms
   kmsAwsRegion: us-east-1
-  # A real TSA is the production default. Set tsaUrl to the contracted RFC 3161 endpoint.
+  # A real TSA is the production default. Set the endpoint and independently obtained leaf
+  # certificate SHA-256 pin(s); use a comma-separated overlap set during certificate rotation.
   tsaProvider: rfc3161
   tsaUrl: ""
+  tsaCertSha256: ""
   localKms:
     # Required when kmsProvider=local-kms; the chart never stores signing keys in emptyDir.
     existingClaim: ""
