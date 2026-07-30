@@ -91,7 +91,7 @@
     },
     "config": {
       "type": "object",
-      "required": ["env", "kmsProvider", "kmsAwsRegion", "tsaProvider"],
+      "required": ["env", "kmsProvider", "kmsAwsRegion", "tsaProvider", "tsaUrl", "tsaCertSha256"],
       "properties": {
         "env": {
           "type": "string",
@@ -106,7 +106,11 @@
           "type": "string",
           "enum": ["local", "rfc3161"]
         },
-        "tsaUrl": { "type": "string" }
+        "tsaUrl": { "type": "string" },
+        "tsaCertSha256": {
+          "type": "string",
+          "pattern": "^$|^[a-fA-F0-9]{64}(,[a-fA-F0-9]{64})*$"
+        }
       }
     }
   },

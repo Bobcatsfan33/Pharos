@@ -5,6 +5,7 @@ import {
   verifyRfc3161Token,
   buildTimeStampRequest,
   verifyTimestamp,
+  requestTimestamp,
   type TrustedTimestamp,
 } from "@pharos/evidence";
 
@@ -17,6 +18,8 @@ const fixture = JSON.parse(
   readFileSync(fileURLToPath(new URL("./fixtures/rfc3161-token.json", import.meta.url)), "utf8"),
 ) as Fixture;
 const tokenDer = Buffer.from(fixture.tokenBase64, "base64");
+const FREE_TSA_FIXTURE_CERT_SHA256 =
+  "32e841a95cc1164101ffde41298ef2fc75c1c4372ef095e88a6bbd47dfb191fc";
 
 describe("RFC 3161 token verification (offline, real FreeTSA token)", () => {
   it("verifies a real token against the anchored value and extracts genTime", () => {
@@ -24,6 +27,19 @@ describe("RFC 3161 token verification (offline, real FreeTSA token)", () => {
     expect(v.valid).toBe(true);
     expect(v.genTime).toBe(fixture.genTime);
     expect(v.error).toBeUndefined();
+  });
+
+  it("accepts the token only when its signer matches an enterprise-approved certificate pin", () => {
+    const trusted = verifyRfc3161Token(tokenDer, fixture.anchoredValue, {
+      trustedCertSha256: [FREE_TSA_FIXTURE_CERT_SHA256],
+    });
+    const substituted = verifyRfc3161Token(tokenDer, fixture.anchoredValue, {
+      trustedCertSha256: ["a".repeat(64)],
+    });
+
+    expect(trusted.valid).toBe(true);
+    expect(substituted.valid).toBe(false);
+    expect(substituted.error).toMatch(/not enterprise-approved/);
   });
 
   it("rejects a token verified against the WRONG anchored value (messageImprint mismatch)", () => {
@@ -48,6 +64,14 @@ describe("RFC 3161 token verification (offline, real FreeTSA token)", () => {
     expect(req.length).toBeGreaterThan(30);
     expect(req[0]).toBe(0x30); // SEQUENCE
   });
+
+  it("fails closed when the contracted TSA is unavailable", async () => {
+    await expect(
+      requestTimestamp("https://tsa.example.test/tsr", fixture.anchoredValue, {
+        fetchImpl: async () => new Response("unavailable", { status: 503 }),
+      }),
+    ).rejects.toThrow("returned HTTP 503");
+  });
 });
 
 describe("verifyTimestamp dispatch (rfc3161 vs local)", () => {
@@ -59,7 +83,16 @@ describe("verifyTimestamp dispatch (rfc3161 vs local)", () => {
       token: fixture.tokenBase64,
     };
     // the local keyset verifier must be ignored for rfc3161
-    expect(verifyTimestamp(ts, () => false)).toBe(true);
+    expect(
+      verifyTimestamp(ts, () => false, {
+        trustedCertSha256: [FREE_TSA_FIXTURE_CERT_SHA256],
+      }),
+    ).toBe(true);
+    expect(
+      verifyTimestamp(ts, () => false, {
+        trustedCertSha256: ["b".repeat(64)],
+      }),
+    ).toBe(false);
   });
 
   it("rfc3161: rejected when the recorded time is altered from the token's genTime", () => {

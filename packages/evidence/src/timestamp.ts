@@ -1,5 +1,10 @@
 import { type SigningProvider, sha256Hex } from "@pharos/core";
-import { requestTimestamp, verifyRfc3161Token, type Rfc3161Options } from "./rfc3161.js";
+import {
+  requestTimestamp,
+  verifyRfc3161Token,
+  type Rfc3161Options,
+  type Rfc3161TrustPolicy,
+} from "./rfc3161.js";
 
 /**
  * Trusted timestamps and external anchoring.
@@ -27,7 +32,7 @@ export interface TrustedTimestamp {
   keyId?: string;
   signature?: string;
   // rfc3161 provider:
-  /** Base64 DER RFC 3161 TimeStampToken (self-verifiable against the embedded TSA cert). */
+  /** Base64 DER RFC 3161 token; verify its signer against independent approved trust material. */
   token?: string;
 }
 
@@ -90,15 +95,16 @@ export async function createTimestamp(
 /**
  * Verify a timestamp offline. `verifyLocalKeyset` checks a local-provider signature against the
  * TSA's published public key (the same keyset verifier used for chain signatures); rfc3161
- * tokens are self-verifiable against their embedded TSA cert and ignore it.
+ * tokens use an independently supplied approved certificate pin and ignore the local keyset.
  */
 export function verifyTimestamp(
   ts: TrustedTimestamp,
   verifyLocalKeyset: (keyId: string, message: Buffer, signature: string) => boolean,
+  rfc3161Trust?: Rfc3161TrustPolicy,
 ): boolean {
   if (ts.provider === "rfc3161") {
     if (!ts.token) return false;
-    const verdict = verifyRfc3161Token(Buffer.from(ts.token, "base64"), ts.hash);
+    const verdict = verifyRfc3161Token(Buffer.from(ts.token, "base64"), ts.hash, rfc3161Trust);
     // The token's own genTime is authoritative; require it to match the recorded time.
     return verdict.valid && verdict.genTime === ts.time;
   }

@@ -66,6 +66,13 @@ const ConfigSchema = z
       provider: z.enum(["local", "rfc3161"]).default("local"),
       /** RFC 3161 TSA endpoint (rfc3161 only). Dev default FreeTSA; DigiCert/Sectigo in prod. */
       url: z.string().optional(),
+      /**
+       * Independently approved RFC 3161 leaf-certificate SHA-256 fingerprints. Multiple pins
+       * permit overlap during a contracted TSA certificate rotation.
+       */
+      trustedCertSha256: z
+        .array(z.string().regex(/^[a-fA-F0-9]{64}$/, "must be a 64-character SHA-256 hex value"))
+        .default([]),
       /** Scheduled anchoring interval (ms). Default 1h. 0 disables the background scheduler. */
       intervalMs: z.coerce.number().int().min(0).default(3_600_000),
     }),
@@ -151,6 +158,13 @@ const ConfigSchema = z
         code: "custom",
         path: ["tsa", "url"],
         message: "production requires an HTTPS RFC 3161 endpoint",
+      });
+    }
+    if (config.tsa.trustedCertSha256.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["tsa", "trustedCertSha256"],
+        message: "production requires at least one approved TSA certificate SHA-256 fingerprint",
       });
     }
     if (config.tsa.intervalMs === 0) {
@@ -284,6 +298,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
     tsa: {
       provider: env.PHAROS_TSA_PROVIDER,
       url: env.PHAROS_TSA_URL,
+      trustedCertSha256: csv(env.PHAROS_TSA_CERT_SHA256),
       intervalMs: env.PHAROS_TSA_ANCHOR_INTERVAL_MS,
     },
     api: {

@@ -14,14 +14,19 @@ supported ([`timestamp.ts`](../packages/evidence/src/timestamp.ts)):
   hand-rolled), POSTs it to a configurable TSA (`PHAROS_TSA_URL`), and stores the full DER
   `TimeStampToken` verbatim in the anchor. The token carries the TSA's signing certificate, so
   it **verifies fully offline** — `verifyRfc3161Token` checks the CMS signature against the
-  embedded cert and that the `messageImprint` equals `sha256(head)`. No third-party token is
-  minted by a key Pharos controls, so this carries independent legal weight.
+  embedded cert, requires the timestamping EKU and certificate validity at `genTime`, and checks
+  that the `messageImprint` equals `sha256(head)`. Production additionally requires
+  `PHAROS_TSA_CERT_SHA256`: one or more leaf-certificate fingerprints obtained independently
+  from the contracted TSA. This prevents a substituted or self-signed TSA endpoint from becoming
+  trusted merely because its certificate was embedded in the token.
 - **`local`** — a separate keystore key stamps the time (hermetic; the dev/test default). The
   TSA key is still not the platform key, so tamper-evidence does not require trusting Pharos,
   but the token is not a third-party RFC 3161 token.
 
 Anchors are stored in `chain_anchors` (provider + DER token) and embedded in claims packs; the
 offline verifier (`scripts/external-verify.ts --bundle`) validates them with no Pharos access.
+For RFC 3161 bundles, pass the independently approved pin with `--tsa-cert-sha256`; trust
+material intentionally does not come from the evidence bundle it authenticates.
 
 ### Scheduling & gap detection
 
@@ -60,7 +65,8 @@ the original is preserved for litigation. The hold itself is logged.
 One-click assembly from an incident ([`claimsPack.ts`](../packages/evidence/src/claimsPack.ts)):
 a scoped record set + custody attestation + verification bundle (keysets, anchors,
 procedure), audience-scoped (claims adjuster / outside counsel / regulator / broker), with
-statuses draft → sealed → released. `verifyClaimsPack` validates a bundle **offline**.
+statuses draft → sealed → released. `verifyClaimsPack` validates a bundle **offline** using
+independently approved RFC 3161 trust material when such anchors are present.
 
 ## Regulatory exports
 

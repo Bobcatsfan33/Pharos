@@ -181,7 +181,7 @@ and fully verifiable.
 
 Reference: [`rfc3161.ts`](../../packages/evidence/src/rfc3161.ts). An anchor over a chain head is a
 real RFC 3161 `TimeStampToken` (CMS `SignedData` wrapping `TSTInfo`) stored as base64 DER. It
-**verifies fully offline** because the token carries the TSA's signing certificate. Two checks
+**verifies fully offline** because the token carries the TSA's signing certificate. Three checks
 establish trusted time for a head hash `H`:
 
 1. **The token is for us:** the token's `messageImprint` equals `SHA-256(H)`.
@@ -189,11 +189,14 @@ establish trusted time for a head hash `H`:
    certificate**, over the DER of the signed attributes (with the implicit `[0]` tag replaced by
    the universal `SET OF` tag `0x31`, per CMS); the `messageDigest` signed attribute equals the
    hash of the encapsulated `TSTInfo`.
+3. **The signer is approved:** the signing certificate has the timestamping EKU, was valid at
+   `genTime`, and its SHA-256 fingerprint matches trust material obtained independently from the
+   contracted TSA or enterprise trust office.
 
 On success the token yields `genTime` — the authority's asserted time. Combined with the chain
 (§6), this proves *"these records existed no later than `genTime`"* without trusting Pharos.
-Optionally, requiring the TSA cert to chain to a trusted root is a stronger check; the core proof
-is (1) + (2).
+The certificate pin is mandatory in production and in the external verifier for RFC 3161 packs;
+allowing evidence to supply its own trust material would only prove integrity, not signer identity.
 
 ---
 
@@ -246,7 +249,9 @@ For the **full** CMS-signature verification of the token (step 2 of §9), the re
 implementation with no hand-coding:
 
 ```bash
-pnpm exec tsx scripts/external-verify.ts --bundle test/fixtures/bundle-ecdsa-p256-rfc3161-anchored.json
+pnpm exec tsx scripts/external-verify.ts \
+  --bundle test/fixtures/bundle-ecdsa-p256-rfc3161-anchored.json \
+  --tsa-cert-sha256 32e841a95cc1164101ffde41298ef2fc75c1c4372ef095e88a6bbd47dfb191fc
 # → "Chain verification: PASS - admissible"
 # → "Anchor verification: PASS - head existed before the stamped time"
 ```
