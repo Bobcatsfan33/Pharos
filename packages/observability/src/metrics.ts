@@ -49,6 +49,27 @@ export class Counter {
   }
 }
 
+export class Gauge {
+  private readonly values = new Map<string, { labels: Labels; value: number }>();
+  constructor(
+    readonly name: string,
+    readonly help: string,
+  ) {}
+  set(labels: Labels, value: number): void {
+    if (!Number.isFinite(value)) throw new Error(`${this.name} gauge value must be finite`);
+    this.values.set(key(labels), { labels, value });
+  }
+  get(labels: Labels = {}): number | undefined {
+    return this.values.get(key(labels))?.value;
+  }
+  render(): string {
+    const lines = [`# HELP ${this.name} ${this.help}`, `# TYPE ${this.name} gauge`];
+    for (const { labels, value } of this.values.values())
+      lines.push(`${this.name}${renderLabels(labels)} ${value}`);
+    return lines.join("\n");
+  }
+}
+
 const DEFAULT_BUCKETS = [1, 5, 10, 25, 50, 100, 250, 500, 800, 1000, 2500];
 
 export class Histogram {
@@ -110,6 +131,35 @@ export class MetricsRegistry {
     "pharos_kms_unavailable_total",
     "Total KMS-unavailable events at seal time (signing provider unreachable / breaker open)",
   );
+  readonly judgeInferences = new Counter(
+    "pharos_judge_inferences_total",
+    "Total judge inferences by concern, model version, and flagged result",
+  );
+  readonly judgeScores = new Histogram(
+    "pharos_judge_score_probability",
+    "Calibrated judge probability distribution by concern and model version",
+    [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+  );
+  readonly judgeDriftProfileReady = new Gauge(
+    "pharos_judge_drift_profile_ready",
+    "Whether the active model version has an approved drift baseline profile",
+  );
+  readonly judgeDriftProfileMissing = new Counter(
+    "pharos_judge_drift_profile_missing_total",
+    "Active model versions observed without an approved matching drift profile",
+  );
+  readonly judgeDriftSamples = new Gauge(
+    "pharos_judge_drift_window_samples",
+    "Observations in the current bounded drift window",
+  );
+  readonly judgeDriftPsi = new Gauge(
+    "pharos_judge_drift_psi",
+    "Population stability index against the approved model-version baseline",
+  );
+  readonly judgeDriftStatus = new Gauge(
+    "pharos_judge_drift_status",
+    "One-hot drift state by concern, model version, and status",
+  );
 
   render(): string {
     return (
@@ -120,6 +170,13 @@ export class MetricsRegistry {
         this.verdictLatency,
         this.errors,
         this.kmsUnavailable,
+        this.judgeInferences,
+        this.judgeScores,
+        this.judgeDriftProfileReady,
+        this.judgeDriftProfileMissing,
+        this.judgeDriftSamples,
+        this.judgeDriftPsi,
+        this.judgeDriftStatus,
       ]
         .map((m) => m.render())
         .join("\n\n") + "\n"

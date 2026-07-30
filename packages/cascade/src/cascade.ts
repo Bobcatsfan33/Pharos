@@ -51,6 +51,11 @@ export interface CascadeDeps {
    * drive which judge models run (to produce the probabilities the rules test).
    */
   policyArtifacts?: PolicyArtifact[];
+  /**
+   * Privacy-safe model monitoring hook. Receives only bounded judge outputs after Tier 3; callers
+   * must not attach prompts, payloads, tenant IDs, or identities to model metrics.
+   */
+  onJudgeResults?: (results: readonly JudgeResult[]) => void;
   /** Test hook: inject Tier-3 faults (failure / slowness) to exercise fail modes. */
   faults?: CascadeFaults;
 }
@@ -121,6 +126,7 @@ export class VerdictCascade {
     const judgeResults = await this.runJudges(req);
     perTier["3"] = elapsedMs(t3Start);
     tierReached = 3;
+    this.deps.onJudgeResults?.(judgeResults);
 
     // Default citation: the most salient judge (highest probability), even if not flagged.
     let topProb = -1;

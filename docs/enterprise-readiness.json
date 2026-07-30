@@ -199,14 +199,19 @@
         "docs/benchmarks/system-encoding-eval.md",
         "packages/judge/models/manifest.json",
         "packages/judge/src/onnxModel.ts",
+        "packages/observability/src/judgeDrift.ts",
         "services/api/src/platform.ts",
         "test/platform.judges.test.ts",
+        "test/observability.judge-drift.test.ts",
+        "docs/model-cards/production-judges.md",
+        "docs/runbooks/judge-drift.md",
         "docs/decision-cascade.md",
         "docs/LIMITATIONS.md"
       ],
       "gaps": [
         "Production requires and preloads the hash-verified ONNX transformers, but independent representative and adversarial efficacy approval for all three concerns is incomplete.",
-        "Approved prevalence-adjusted operating points, OOD calibration, model cards, drift monitoring, and production latency evidence remain open."
+        "Version-pinned model cards and fail-closed drift-monitoring infrastructure exist; independently approved representative ONNX reference distributions and a completed drift alert/rollback exercise remain open.",
+        "Approved prevalence-adjusted operating points, OOD calibration, and production latency evidence remain open."
       ]
     }
   ],
@@ -217,7 +222,7 @@
       "status": "open",
       "blocking": true,
       "ownerRole": "AI Engineering",
-      "acceptanceCriteria": "Production transformer judges, model cards, adversarial and representative evaluation, calibrated operating points, drift monitoring, and production latency evidence pass approved thresholds.",
+      "acceptanceCriteria": "Production transformer judges, independently approved model cards, adversarial and representative evaluation, calibrated operating points, version-pinned drift profiles plus alert/rollback exercise, and production latency evidence pass approved thresholds.",
       "evidence": []
     },
     {

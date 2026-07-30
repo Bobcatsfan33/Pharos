@@ -149,6 +149,15 @@
         "podSelector": { "type": "object", "minProperties": 1 }
       }
     },
+    "judgeDriftProfile": {
+      "type": "object",
+      "required": ["existingConfigMap"],
+      "properties": {
+        "existingConfigMap": {
+          "type": "string"
+        }
+      }
+    },
     "egressDestination": {
       "type": "object",
       "required": ["port", "cidrs", "namespaceSelector", "podSelector"],

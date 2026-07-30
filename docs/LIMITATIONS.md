@@ -47,8 +47,12 @@ encoding evaluation is not a production efficacy approval.
 
 **Remaining production promotion:** independent representative and adversarial evaluation
 for all three concerns, approved prevalence-adjusted operating points, OOD calibration,
-model cards, drift monitoring, and a sustained customer-topology latency/load run. Until
-those pass, the transformer release remains pre-release and the enterprise deployment
+independent approval of the restricted-preproduction model cards and version-pinned reference
+distributions, a completed drift alert/rollback exercise, and a sustained customer-topology
+latency/load run. The runtime already exports privacy-safe bounded score/drift metrics and
+production fails closed when an exact active model lacks an approved profile; no reference
+distribution is fabricated from the unrelated linear baseline. Until the external promotion
+evidence passes, the transformer release remains pre-release and the enterprise deployment
 decision remains not approved.
 
 Related: [decision-cascade.md](decision-cascade.md), [benchmarks/latency.md](benchmarks/latency.md).

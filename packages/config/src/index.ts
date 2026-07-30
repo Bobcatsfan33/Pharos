@@ -81,6 +81,8 @@ const ConfigSchema = z
       provider: z.enum(["linear", "onnx"]).default("linear"),
       /** Content-addressed ONNX/tokenizer cache. Pre-stage this path for restricted networks. */
       modelDir: z.string().min(1).optional(),
+      /** Version-pinned reference distributions and approved PSI thresholds. */
+      driftProfilePath: z.string().min(1).optional(),
     }),
     api: z.object({
       port: z.coerce.number().int().positive().default(4000),
@@ -192,6 +194,13 @@ const ConfigSchema = z
         code: "custom",
         path: ["judge", "modelDir"],
         message: "production requires an explicit writable or pre-staged judge model cache",
+      });
+    }
+    if (!config.judge.driftProfilePath) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["judge", "driftProfilePath"],
+        message: "production requires an approved judge drift profile",
       });
     }
     if (!isHttpsUrl(config.s3.endpoint)) {
@@ -324,6 +333,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
     judge: {
       provider: env.PHAROS_JUDGE_PROVIDER,
       modelDir: env.PHAROS_JUDGE_MODEL_DIR,
+      driftProfilePath: env.PHAROS_JUDGE_DRIFT_PROFILE_PATH,
     },
     api: {
       port: env.PHAROS_API_PORT,

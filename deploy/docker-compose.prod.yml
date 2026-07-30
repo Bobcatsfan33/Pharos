@@ -23,6 +23,7 @@ services:
       PHAROS_TSA_ANCHOR_INTERVAL_MS: ${PHAROS_TSA_ANCHOR_INTERVAL_MS:-3600000}
       PHAROS_JUDGE_PROVIDER: onnx
       PHAROS_JUDGE_MODEL_DIR: /var/lib/pharos/judges
+      PHAROS_JUDGE_DRIFT_PROFILE_PATH: /etc/pharos/judge-drift/profile.json
       PHAROS_ADMIN_TOKEN: ${PHAROS_ADMIN_TOKEN:?set PHAROS_ADMIN_TOKEN}
       PHAROS_ALLOWED_ORIGINS: ${PHAROS_ALLOWED_ORIGINS:-}
     ports:
@@ -32,6 +33,7 @@ services:
       - /tmp:rw,noexec,nosuid,size=64m
     volumes:
       - pharos-judge-models:/var/lib/pharos/judges
+      - ${PHAROS_JUDGE_DRIFT_PROFILE_HOST_PATH:?set an approved drift profile path}:/etc/pharos/judge-drift/profile.json:ro
     cap_drop:
       - ALL
     security_opt:

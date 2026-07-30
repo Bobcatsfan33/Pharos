@@ -39,7 +39,12 @@ import {
 } from "@pharos/judge";
 import { VerdictCascade, DEFAULT_PACK_BINDINGS } from "@pharos/cascade";
 import { SHIPPED_PACKS, type PolicyArtifact } from "@pharos/policy";
-import { MetricsRegistry, Tracer } from "@pharos/observability";
+import {
+  JudgeDriftMonitor,
+  MetricsRegistry,
+  Tracer,
+  loadJudgeDriftProfile,
+} from "@pharos/observability";
 import { ReviewSlaService } from "./reviewSla.js";
 
 /**
@@ -67,6 +72,7 @@ export interface Platform {
   /** Active policy artifacts for a tenant (shipped packs + active custom policies). */
   activePolicyArtifacts: (tenantId: string) => Promise<PolicyArtifact[]>;
   metrics: MetricsRegistry;
+  judgeDrift: JudgeDriftMonitor;
   tracer: Tracer;
   /** Independent timestamp authority (separate keys) for trusted-time anchoring. */
   tsa: TsaProvider;
@@ -220,6 +226,18 @@ export async function buildPlatform(
   // Preload and verify the complete configured model set before the service can become healthy.
   // A partial production judge fleet is a startup failure, never a silent fallback to linear.
   const registry = await buildJudgeRegistry(config, options.loadJudge);
+  const driftProfile = config.judge.driftProfilePath
+    ? loadJudgeDriftProfile(config.judge.driftProfilePath)
+    : null;
+  const judgeDrift = new JudgeDriftMonitor(metrics, driftProfile);
+  if (config.env === "prod") {
+    judgeDrift.assertModelsConfigured(
+      PRODUCTION_JUDGE_CONCERNS.map((concern) => ({
+        concern,
+        judgeVersion: registry.activeVersion(concern)!,
+      })),
+    );
+  }
   const shippedArtifacts = Object.values(SHIPPED_PACKS);
   const cascade = new VerdictCascade({
     engine,
@@ -227,6 +245,18 @@ export async function buildPlatform(
     deadlineMs: config.api.verdictDeadlineMs,
     packs: DEFAULT_PACK_BINDINGS,
     policyArtifacts: shippedArtifacts, // citation-level rules by default; per-call override adds tenant policies
+    onJudgeResults: (results) => {
+      for (const result of results) {
+        try {
+          judgeDrift.observe(result);
+        } catch (err) {
+          // Monitoring must fail visible, but it must never convert a valid policy decision into
+          // an unsealed 500. Exact profile coverage is enforced synchronously at production boot.
+          metrics.errors.inc({ route: "judge_monitoring" });
+          console.error("[judge-monitoring] observation rejected:", (err as Error).message);
+        }
+      }
+    },
   });
   const policyStore = new PolicyStore(pool);
   const assurance = new AssuranceStore(pool);
@@ -307,6 +337,7 @@ export async function buildPlatform(
     assurance,
     activePolicyArtifacts,
     metrics,
+    judgeDrift,
     tracer,
     tsa,
     tsaKeyset,
