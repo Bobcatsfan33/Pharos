@@ -140,7 +140,7 @@ Provider chosen at boot ([`platform.ts:89`](../../services/api/src/platform.ts))
 | STRIDE | Threat | Mitigation (code / test) or Accepted risk |
 |--------|--------|-------------------------------------------|
 | **S** | Sign as another key / version | keyIds are globally unique `<name>#v<n>` ([`provider.ts:54`](../../packages/core/src/signing/provider.ts)); rotation continues the sequence, never restarts. Test: [`integration.key-migration.test.ts:107`](../../test/integration.key-migration.test.ts) |
-| **I** | Exfiltrate private key material | **AWS KMS**: private key never leaves the HSM ([`awsKms.ts:20`](../../packages/core/src/signing/awsKms.ts)). **LocalKms** stores plaintext PKCS8 in `0o600` JSON and is dev/test only; production configuration and deployment templates refuse it. |
+| **I** | Exfiltrate private key material | **AWS KMS**: private key never leaves the HSM ([`awsKms.ts:20`](../../packages/core/src/signing/awsKms.ts)). **LocalKms** stores plaintext PKCS8 in `0o600` JSON and is dev/test only; production refuses it at boot ([`config/index.ts:143`](../../packages/config/src/index.ts)) and at render ([`deployment.yaml:5`](../../deploy/helm/templates/deployment.yaml)). Tests: [`config.production.test.ts`](../../test/config.production.test.ts) "rejects local KMS" + the ci.yml helm gate "production must reject the local development KMS". Dev-only at-rest hardening: [#115](https://github.com/Bobcatsfan33/Pharos/issues/115) |
 | **T** | Substitute the published keyset | Keyset is append-only; old public keys stay published so history verifies ([`awsKms.ts:210`](../../packages/core/src/signing/awsKms.ts)). Verifiers pin the keyset out of band |
 | **R** | Repudiate a signature after key rotation | Rotation adds a version; old versions stay enabled for verify (§8). No record is re-signed |
 | **D** | KMS outage stalls sealing | `ResilientSigner` circuit breaker fails **closed** with a distinct `kms_unavailable` (503), no partial write ([`resilience.ts:111`](../../packages/core/src/signing/resilience.ts)). Test: [`integration.kms-failmode.test.ts:116`](../../test/integration.kms-failmode.test.ts) |
@@ -277,7 +277,7 @@ consistency check for `schemaVersion ≥ 1.1`. Tracked in **[#67](https://github
 | [#75](https://github.com/Bobcatsfan33/Pharos/issues/75) | Admin token: non-constant-time, no rotation | Gateway | Accepted; hardening filed |
 | [#76](https://github.com/Bobcatsfan33/Pharos/issues/76) | No in-app TLS/mTLS | All | Accepted deployment dependency |
 | [#77](https://github.com/Bobcatsfan33/Pharos/issues/77) | WORM: no verify-on-read / reconcile / Object-Lock assert | WORM | Accepted; Object Lock is the backstop |
-| [#78](https://github.com/Bobcatsfan33/Pharos/issues/78) | LocalKms plaintext keys | KMS | Accepted for dev; production boot guard implemented |
+| [#115](https://github.com/Bobcatsfan33/Pharos/issues/115) | LocalKms plaintext keys | KMS | Dev-only residual; production refusal implemented **and regression-gated** ([#78](https://github.com/Bobcatsfan33/Pharos/issues/78) closed) |
 | [#79](https://github.com/Bobcatsfan33/Pharos/issues/79) | Console: no CSP/headers, unauthenticated, demo-tenant | Console | Accepted for demo dashboard |
 | [#80](https://github.com/Bobcatsfan33/Pharos/issues/80) | SDKs do no runtime input validation | SDK | Accepted; server validates |
 | [#81](https://github.com/Bobcatsfan33/Pharos/issues/81) | Caller-controlled liability & judge input | Cascade | Accepted pending attestation model |

@@ -54,6 +54,36 @@ jobs:
           grep -q 'sizeLimit: 2Gi' rendered-api.yaml
           grep -q 'name: PHAROS_JUDGE_DRIFT_PROFILE_PATH' rendered-api.yaml
           grep -q 'name: "pharos-judge-drift"' rendered-api.yaml
+          # The signing boundary must be a real HSM, never the on-disk dev keystore (#78).
+          grep -q 'name: PHAROS_KMS_PROVIDER' rendered-api.yaml
+          grep -q 'value: "aws-kms"' rendered-api.yaml
+      - name: production must reject the local development KMS
+        # Issue #78: local-kms writes plaintext PKCS8 private keys to disk, so production
+        # must refuse it. `config.localKms.existingClaim` is supplied deliberately: without
+        # it the render fails on a `required` persistent-claim lookup instead, which would
+        # make this gate pass even if the posture guard were deleted. Asserting the specific
+        # failure message pins the guard itself, not an incidental error.
+        run: |
+          set +e
+          out=$(helm template pharos deploy/helm \
+            --namespace pharos \
+            --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+            --set config.tsaUrl=https://tsa.example.com/tsr \
+            --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
+            --set judgeDriftProfile.existingConfigMap=pharos-judge-drift \
+            --set config.kmsProvider=local-kms \
+            --set config.localKms.existingClaim=pharos-signing-keys 2>&1)
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "production unexpectedly rendered with the local development KMS"
+            exit 1
+          fi
+          if ! printf '%s' "$out" | grep -q 'production deployments require config.kmsProvider=aws-kms'; then
+            echo "render failed, but not on the production KMS posture guard:"
+            printf '%s\n' "$out"
+            exit 1
+          fi
       - name: production must reject the linear judge baseline
         run: |
           if helm template pharos deploy/helm \
