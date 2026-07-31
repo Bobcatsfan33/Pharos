@@ -24,4 +24,4 @@ AI RMF 1.0 is under revision and must be reassessed when NIST publishes a final 
 
 The existing [SOC 2 and procurement pack](compliance/soc2-and-procurement.md) is a product control
 inventory, not an attestation or completed vendor review. Run
-`python3 scripts/verify_enterprise_readiness.py` before relying on this decision.
+`node scripts/verify-enterprise-readiness.mjs` before relying on this decision.
