@@ -7,6 +7,7 @@ import {
   type Verdict,
   PharosError,
 } from "./types.js";
+import { validateSubmitInput } from "./validate.js";
 
 export interface PharosClientOptions {
   baseUrl: string;
@@ -96,6 +97,10 @@ export class PharosClient {
 
   /** Submit an action for a verdict + sealed record. Falls back to a local default if unreachable. */
   async submit(input: SubmitInput): Promise<SubmitResult> {
+    // Validate BEFORE transmit and before any fail-mode path (#80). This throws rather
+    // than falling back: an unvalidated `liability` would otherwise pick the local
+    // fail-mode, so a typo could allow an irreversible action the server never saw.
+    validateSubmitInput(input);
     const start = Date.now();
     try {
       const result = await this.request<SubmitResult>("POST", "/v1/actions", input);

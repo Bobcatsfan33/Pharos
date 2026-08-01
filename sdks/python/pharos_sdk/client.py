@@ -15,6 +15,8 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional
 
+from .validation import validate_submit_input
+
 
 class PharosError(Exception):
     def __init__(self, message: str, code: str = "error", status: Optional[int] = None):
@@ -80,6 +82,10 @@ class PharosClient:
 
     def submit(self, **kwargs: Any) -> dict:
         """Submit an action. kwargs: tenantId, action, liability, mandateId?, idempotencyKey?."""
+        # Validate BEFORE transmit and before any fail-mode path (#80). This raises rather
+        # than falling back: an unvalidated liability would otherwise pick the local
+        # fail-mode, so a typo could allow an irreversible action the server never saw.
+        validate_submit_input(kwargs)
         start = time.time()
         try:
             result = self._request("POST", "/v1/actions", kwargs)
