@@ -26,6 +26,10 @@ export default defineConfig({
       "@pharos/gateway": r("./services/gateway/src/index.ts"),
       "@pharos/review": r("./packages/review/src/index.ts"),
       "@pharos/storage": r("./packages/storage/src/index.ts"),
+      // The console middleware (auth gate + nonce CSP, #79) imports next/server. Next is
+      // a dependency of apps/console, not the root, so point the alias at the installed
+      // package rather than adding Next as a root dependency just to test one module.
+      "next/server": r("./apps/console/node_modules/next/server.js"),
     },
   },
   test: {

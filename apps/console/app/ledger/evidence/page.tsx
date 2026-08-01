@@ -1,4 +1,5 @@
-import { api, DEMO_TENANT } from "../../lib/api";
+import { api } from "../../lib/api";
+import { requireSession } from "../../lib/session";
 
 interface ActionRecord {
   content: {
@@ -17,11 +18,14 @@ interface ActionRecord {
 }
 
 export default async function EvidencePage() {
-  const chain = await api<{ count: number }>(`/v1/chain/${DEMO_TENANT}`);
+  // Auth gate + per-user tenant scoping (#79): verified BEFORE any evidence is fetched.
+  const { principal, token } = await requireSession();
+  const tenantId = principal.tenantId;
+  const chain = await api<{ count: number }>(`/v1/chain/${tenantId}`, token);
   const count = chain?.count ?? 0;
   const records: ActionRecord[] = [];
   for (let seq = Math.max(0, count - 25); seq < count; seq++) {
-    const r = await api<ActionRecord>(`/v1/records/${DEMO_TENANT}/${seq}`);
+    const r = await api<ActionRecord>(`/v1/records/${tenantId}/${seq}`, token);
     if (r) records.push(r);
   }
   records.reverse();

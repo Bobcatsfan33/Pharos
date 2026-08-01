@@ -1,41 +1,15 @@
 /**
- * Console security headers (#79).
+ * Console static security headers (#79).
  *
- * The console renders evidence — verdicts, sealed records, chain state. It shipped with
- * no `headers()` at all: no CSP, no HSTS, no framing protection. Even as a read-only
- * dashboard that is a real exposure, because the page is exactly the surface an attacker
- * would want to frame (clickjacking) or inject into (to exfiltrate what the server
- * components rendered).
+ * The Content-Security-Policy is NOT here. It carries a per-request nonce, so it is set
+ * in `middleware.ts` alongside the auth gate — a header that must change every request
+ * cannot come from static config. Emitting it in both places would send two CSP headers,
+ * and a browser enforces the intersection, which is a confusing way to express a policy.
  *
- * These headers are deliberately scoped to what this app actually needs, and the two
- * `'unsafe-inline'` allowances are called out rather than hidden — see each residual.
+ * What remains here is the genuinely static posture: transport, framing, sniffing,
+ * referrer, and permissions.
  */
-const CSP = [
-  // Nothing loads from anywhere but this origin unless a directive below says otherwise.
-  "default-src 'self'",
-  // RESIDUAL (#79): Next's App Router injects inline bootstrap/flight scripts. Removing
-  // 'unsafe-inline' requires nonce-based CSP wired through middleware, which belongs with
-  // the auth gate before multi-tenant console GA.
-  "script-src 'self' 'unsafe-inline'",
-  // RESIDUAL (#79): the layout styles components with React `style` props, which emit
-  // inline style attributes. Tightening this means CSS modules or a nonce.
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:",
-  "font-src 'self'",
-  // The console talks to the API only from server components; the key never reaches the
-  // browser, so the browser has no reason to reach the API directly.
-  "connect-src 'self'",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  // frame-ancestors is the modern control; X-Frame-Options below covers browsers that
-  // honour only the legacy header.
-  "frame-ancestors 'none'",
-  "upgrade-insecure-requests",
-].join("; ");
-
 const SECURITY_HEADERS = [
-  { key: "Content-Security-Policy", value: CSP },
   // The console is expected to be served over TLS at the ingress (see #76); this makes a
   // downgrade non-silent rather than invisible.
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
@@ -55,6 +29,17 @@ const nextConfig = {
   poweredByHeader: false,
   env: {
     PHAROS_API_BASE: process.env.PHAROS_API_BASE ?? "http://localhost:4000",
+  },
+  // The console verifies sessions with the platform's own @pharos/identity rather than a
+  // parallel auth system (#79). That package is TypeScript source using ESM `.js`
+  // specifiers, so webpack needs both instructions: transpile it, and map `.js` -> `.ts`.
+  transpilePackages: ["@pharos/identity"],
+  webpack(config) {
+    config.resolve.extensionAlias = {
+      ...(config.resolve.extensionAlias ?? {}),
+      ".js": [".ts", ".tsx", ".js"],
+    };
+    return config;
   },
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];

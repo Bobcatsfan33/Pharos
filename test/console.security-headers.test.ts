@@ -23,35 +23,22 @@ const applied = rules[0]!;
 const header = (name: string): string | undefined =>
   applied.headers.find((h) => h.key.toLowerCase() === name.toLowerCase())?.value;
 
-describe("console security headers", () => {
-  it("applies to every path, not just the index", () => {
-    expect(rules).toHaveLength(1);
-    expect(applied.source).toBe("/:path*");
+describe("console static security headers", () => {
+  // The Content-Security-Policy is deliberately NOT here any more: it carries a
+  // per-request nonce and is set in middleware (#79). Emitting it from static config too
+  // would send two CSP headers. That it is ABSENT here is itself part of the contract.
+  it("does not emit a Content-Security-Policy from static config", () => {
+    expect(header("Content-Security-Policy")).toBeUndefined();
   });
 
-  it("sets a Content-Security-Policy that confines loads to this origin", () => {
-    const csp = header("Content-Security-Policy");
-    expect(csp).toBeDefined();
-    expect(csp).toContain("default-src 'self'");
-    expect(csp).toContain("object-src 'none'");
-    expect(csp).toContain("base-uri 'self'");
-    expect(csp).toContain("form-action 'self'");
-    expect(csp).toContain("connect-src 'self'");
-  });
-
-  it("forbids framing through both the modern and legacy controls", () => {
-    // Clickjacking an evidence view is the concrete risk; browsers honour one or the
-    // other, so both are set.
-    expect(header("Content-Security-Policy")).toContain("frame-ancestors 'none'");
+  it("still forbids framing through the legacy header", () => {
+    // frame-ancestors moved to the middleware CSP; X-Frame-Options stays static.
     expect(header("X-Frame-Options")).toBe("DENY");
   });
 
-  it("does not permit remote script or style origins", () => {
-    const csp = header("Content-Security-Policy")!;
-    // 'unsafe-inline' is a documented residual; loading code from another origin is not.
-    expect(csp).not.toMatch(/script-src[^;]*https?:/);
-    expect(csp).not.toMatch(/style-src[^;]*https?:/);
-    expect(csp).not.toContain("'unsafe-eval'");
+  it("applies to every path, not just the index", () => {
+    expect(rules).toHaveLength(1);
+    expect(applied.source).toBe("/:path*");
   });
 
   it("sets HSTS, nosniff, a private referrer policy, and a permissions policy", () => {
