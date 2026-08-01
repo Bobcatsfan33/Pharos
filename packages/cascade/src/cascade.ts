@@ -35,11 +35,6 @@ export interface JudgePackBinding {
   citation: Omit<RuleCitation, "description">;
 }
 
-export interface CascadeFaults {
-  judgeThrows?: boolean;
-  judgeDelayMs?: number;
-}
-
 export interface CascadeDeps {
   engine: VerdictEngine;
   registry: ModelRegistry;
@@ -56,12 +51,19 @@ export interface CascadeDeps {
    * must not attach prompts, payloads, tenant IDs, or identities to model metrics.
    */
   onJudgeResults?: (results: readonly JudgeResult[]) => void;
-  /** Test hook: inject Tier-3 faults (failure / slowness) to exercise fail modes. */
-  faults?: CascadeFaults;
 }
 
+/**
+ * The production decision cascade.
+ *
+ * This class carries **no fault-injection path** (#82). Exercising fail modes is done
+ * by `FaultInjectingCascade` in `./testing.js`, which subclasses this one and overrides
+ * the judge step. Keeping the seam out of the shipped class means there is no branch a
+ * production instance could take into injected failure, however its dependencies are
+ * constructed — a stronger guarantee than "the server never sets that field".
+ */
 export class VerdictCascade {
-  constructor(private readonly deps: CascadeDeps) {}
+  constructor(protected readonly deps: CascadeDeps) {}
 
   async evaluate(
     req: VerdictRequest,
@@ -179,9 +181,8 @@ export class VerdictCascade {
     return this.compose(decision, tierReached, citations, riskScore, judgeVersion, perTier);
   }
 
-  private async runJudges(req: VerdictRequest): Promise<JudgeResult[]> {
-    if (this.deps.faults?.judgeThrows) throw new JudgeFault("injected judge failure");
-    if (this.deps.faults?.judgeDelayMs) await sleep(this.deps.faults.judgeDelayMs);
+  /** Protected so the test-only subclass in ./testing.js can wrap it; never faulted here. */
+  protected async runJudges(req: VerdictRequest): Promise<JudgeResult[]> {
     const raw = actionText(req);
     // Cascade-owned normalization (ADR 0004): score the RAW text AND the normalized variants
     // (unicode-canonicalized + reversibly-decoded), and take the MORE-SEVERE verdict per pack.
@@ -262,7 +263,13 @@ export class VerdictCascade {
   }
 }
 
-class JudgeFault extends Error {
+/**
+ * A Tier-3 judge failure, routed to the fail-mode path rather than propagating.
+ *
+ * Exported so the test-only subclass can raise it and exercise fail modes through
+ * exactly the production code path; the production class itself never throws it.
+ */
+export class JudgeFault extends Error {
   constructor(message: string) {
     super(message);
     this.name = "JudgeFault";
@@ -278,13 +285,6 @@ function mostSevere(a: VerdictDecision, b: VerdictDecision): VerdictDecision {
 
 function elapsedMs(start: bigint): number {
   return Number(process.hrtime.bigint() - start) / 1e6;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    const t = setTimeout(resolve, ms);
-    t.unref?.();
-  });
 }
 
 /** Extract a text representation of the action for semantic evaluation. */
