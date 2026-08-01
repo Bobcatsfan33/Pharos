@@ -35,7 +35,7 @@
     "bench:latency": "tsx --env-file=.env scripts/bench-latency.ts"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.1092.0",
+    "@aws-sdk/client-s3": "^3.1097.0",
     "@changesets/cli": "^2.31.1",
     "@eslint/js": "^9.39.5",
     "@types/node": "^22.20.1",
