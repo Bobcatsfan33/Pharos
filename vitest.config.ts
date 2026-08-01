@@ -11,6 +11,9 @@ export default defineConfig({
       "@pharos/identity": r("./packages/identity/src/index.ts"),
       "@pharos/judge": r("./packages/judge/src/index.ts"),
       "@pharos/judge-eval": r("./packages/judge-eval/src/index.ts"),
+      // Deep subpath must precede the bare package alias so it is not shadowed.
+      // Fault injection lives here and NOT on the package index (#82).
+      "@pharos/cascade/testing": r("./packages/cascade/src/testing.ts"),
       "@pharos/cascade": r("./packages/cascade/src/index.ts"),
       "@pharos/evidence": r("./packages/evidence/src/index.ts"),
       "@pharos/policy": r("./packages/policy/src/index.ts"),

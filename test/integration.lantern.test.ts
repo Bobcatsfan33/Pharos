@@ -143,17 +143,20 @@ describe("Lantern — served cascade over the API", () => {
   it("CHAOS: a judge fault fails closed (irreversible) and seals an explaining record", async (ctx) => {
     if (!available || !platform) return ctx.skip();
     const { buildApp } = await import("../services/api/src/app.js");
-    const { VerdictCascade, DEFAULT_PACK_BINDINGS } =
-      await import("../packages/cascade/src/index.js");
+    const { DEFAULT_PACK_BINDINGS } = await import("../packages/cascade/src/index.js");
+    const { FaultInjectingCascade } = await import("../packages/cascade/src/testing.js");
     const { VerdictEngine } = await import("../packages/core/src/index.js");
-    // Swap in a cascade whose Tier-3 judge always faults.
-    platform.cascade = new VerdictCascade({
-      engine: new VerdictEngine({ deadlineMs: 800 }),
-      registry: platform.registry,
-      deadlineMs: 800,
-      packs: DEFAULT_PACK_BINDINGS,
-      faults: { judgeThrows: true },
-    });
+    // Swap in a cascade whose Tier-3 judge always faults. The fault seam lives in the
+    // test-only subclass (#82); the production class has no such branch.
+    platform.cascade = new FaultInjectingCascade(
+      {
+        engine: new VerdictEngine({ deadlineMs: 800 }),
+        registry: platform.registry,
+        deadlineMs: 800,
+        packs: DEFAULT_PACK_BINDINGS,
+      },
+      { judgeThrows: true },
+    );
     const app = await buildApp(platform);
 
     const irreversible = await submit(app, {

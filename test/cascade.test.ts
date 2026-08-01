@@ -1,24 +1,24 @@
 import { describe, it, expect } from "vitest";
 import { VerdictEngine, type VerdictRequest, type LiabilityContext } from "@pharos/core";
 import { loadDefaultRegistry } from "@pharos/judge";
-import {
-  VerdictCascade,
-  DEFAULT_PACK_BINDINGS,
-  fingerprintVerdict,
-  type CascadeFaults,
-} from "@pharos/cascade";
+import { VerdictCascade, DEFAULT_PACK_BINDINGS, fingerprintVerdict } from "@pharos/cascade";
+// Fault injection lives outside the shipped class (#82) and is reached only by this
+// explicit deep import, never from the package index.
+import { FaultInjectingCascade, type CascadeFaults } from "@pharos/cascade/testing";
 
 const registry = loadDefaultRegistry();
 const now = new Date("2026-04-01T00:00:00.000Z");
 
 function cascade(deadlineMs = 800, faults?: CascadeFaults): VerdictCascade {
-  return new VerdictCascade({
+  const deps = {
     engine: new VerdictEngine({ deadlineMs }),
     registry,
     deadlineMs,
     packs: DEFAULT_PACK_BINDINGS,
-    faults,
-  });
+  };
+  // Without faults this is the production class verbatim — the same object the server
+  // builds — so the unfaulted tests still exercise the shipped code path.
+  return faults ? new FaultInjectingCascade(deps, faults) : new VerdictCascade(deps);
 }
 
 function req(

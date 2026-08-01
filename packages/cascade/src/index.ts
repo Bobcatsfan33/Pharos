@@ -9,11 +9,13 @@ export {
 } from "./normalize.js";
 export {
   VerdictCascade,
+  JudgeFault,
   actionText,
   type CascadeDeps,
-  type CascadeFaults,
   type JudgePackBinding,
 } from "./cascade.js";
+// NOTE: ./testing.js (fault injection) is deliberately NOT exported here — see #82.
+// It is reachable only by an explicit deep import from tests.
 
 import type { JudgePackBinding } from "./cascade.js";
 
