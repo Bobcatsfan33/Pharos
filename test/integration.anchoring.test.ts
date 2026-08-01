@@ -44,6 +44,16 @@ beforeAll(async () => {
     platform = await buildPlatform();
     app = await buildApp(platform);
     await platform.tenants.createTenant({ tenantId: TENANT, displayName: "Anchor" });
+    // Mandate authority is server-resolved (#81): store the grant once, then reference
+    // it by id on every submit below.
+    await platform.mandates.create({
+      tenantId: TENANT,
+      mandateId: "m",
+      scope: "pay",
+      limits: { maxAmount: 1_000_000 },
+      grantor: "cfo",
+      expiresAt: null,
+    });
     auth["x-api-key"] = (
       await platform.apiKeys.create(TENANT, "anchor", [
         "actions:write",
@@ -71,15 +81,11 @@ async function submit(amount: number) {
     payload: {
       tenantId: TENANT,
       action: { type: "payment.transfer", agentId: "treasury", payload: { amount, to: "vendor" } },
+      // Mandate authority is server-resolved (#81); the grant is stored in beforeAll
+      // and referenced by id here.
+      mandateId: "m",
       liability: {
-        mandate: {
-          id: "m",
-          scope: "pay",
-          limits: { maxAmount: 1_000_000 },
-          grantor: "cfo",
-          expiresAt: null,
-          version: "1",
-        },
+        mandate: null,
         oversightMode: "human_on_loop",
         blastRadius: { financialAmount: amount, currency: "USD", reversibility: "reversible" },
         modelMetadata: null,
