@@ -57,14 +57,51 @@ export async function authenticate(
   throw new AuthorizationError("unauthenticated", "no credentials provided");
 }
 
-/** Best-effort per-principal fixed-window rate limit. Fails open if the cache is down. */
-async function withinRateLimit(platform: Platform, principal: Principal): Promise<boolean> {
+/**
+ * Admission decision for one request.
+ *
+ * `rate_limited` means the counter store answered and the budget is spent.
+ * `rate_limiter_unavailable` means it could not answer at all — a distinct condition,
+ * because "we know you are over budget" and "we cannot tell" warrant different
+ * responses and different operator alerts.
+ */
+type RateLimitDecision =
+  | { ok: true }
+  | { ok: false; code: "rate_limited" }
+  | { ok: false; code: "rate_limiter_unavailable" };
+
+/**
+ * Fixed-window rate limit, enforced on two axes:
+ *
+ *   - per principal (tenant + subject), and
+ *   - per tenant in aggregate.
+ *
+ * The tenant axis matters because a tenant that mints N API keys would otherwise
+ * multiply its effective ingest budget by N — the per-principal limit alone caps a
+ * credential, not a customer.
+ *
+ * Fail mode: if the counter store is unreachable the request is REFUSED by default.
+ * The counter store is the only component that can establish a request is within
+ * budget; admitting unmetered traffic when it is down turns "degrade the cache" into
+ * "remove the rate limit", which is an attacker-reachable escalation. Production
+ * configuration pins this to fail-closed (`api.rateLimitFailMode`).
+ */
+async function withinRateLimit(
+  platform: Platform,
+  principal: Principal,
+): Promise<RateLimitDecision> {
+  const { rateLimitPerMin, rateLimitTenantPerMin, rateLimitFailMode } = platform.config.api;
   try {
-    const key = `rl:${principal.tenantId}:${principal.subject}`;
-    const count = await platform.cache.incr(key, 60);
-    return count <= platform.config.api.rateLimitPerMin;
+    const [principalCount, tenantCount] = await Promise.all([
+      platform.cache.incr(`rl:p:${principal.tenantId}:${principal.subject}`, 60),
+      platform.cache.incr(`rl:t:${principal.tenantId}`, 60),
+    ]);
+    if (principalCount > rateLimitPerMin) return { ok: false, code: "rate_limited" };
+    if (tenantCount > rateLimitTenantPerMin) return { ok: false, code: "rate_limited" };
+    return { ok: true };
   } catch {
-    return true;
+    if (rateLimitFailMode === "open") return { ok: true };
+    return { ok: false, code: "rate_limiter_unavailable" };
   }
 }
 
@@ -87,7 +124,21 @@ export async function requireAuth(
     return null;
   }
 
-  if (!(await withinRateLimit(platform, principal))) {
+  const admission = await withinRateLimit(platform, principal);
+  if (!admission.ok) {
+    if (admission.code === "rate_limiter_unavailable") {
+      // 503, not 429: the caller is not necessarily over budget — admission control
+      // itself is down. Retryable, and distinguishable in operator dashboards.
+      reply
+        .status(503)
+        .send(
+          errorBody(
+            "rate_limiter_unavailable",
+            "request admission control is temporarily unavailable",
+          ),
+        );
+      return null;
+    }
     reply.status(429).send(errorBody("rate_limited", "request rate limit exceeded"));
     return null;
   }

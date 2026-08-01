@@ -91,6 +91,19 @@ const ConfigSchema = z
       allowedOrigins: z.array(z.string()).default([]),
       /** Per-principal (tenant+subject) request budget per minute. */
       rateLimitPerMin: z.coerce.number().int().positive().default(600),
+      /**
+       * Per-tenant aggregate request budget per minute, applied in addition to the
+       * per-principal budget. A tenant that mints many API keys would otherwise
+       * multiply its effective ingest budget by the number of principals it holds.
+       */
+      rateLimitTenantPerMin: z.coerce.number().int().positive().default(6000),
+      /**
+       * Admission behavior when the rate-limit counter store is unreachable.
+       * "closed" refuses the request (503); "open" admits it unmetered. Production
+       * must be "closed" — an attacker who can degrade the cache must not thereby
+       * remove the ingest limit.
+       */
+      rateLimitFailMode: z.enum(["closed", "open"]).default("closed"),
     }),
     /** Trusted OIDC issuers (Okta, Entra, ...). Optional; empty disables SSO bearer auth. */
     oidc: z.array(OidcIssuerSchema).default([]),
@@ -140,6 +153,20 @@ const ConfigSchema = z
       }
     }
 
+    if (config.api.rateLimitFailMode !== "closed") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["api", "rateLimitFailMode"],
+        message: "production requires a fail-closed rate limiter; admission cannot fail open",
+      });
+    }
+    if (config.api.rateLimitTenantPerMin < config.api.rateLimitPerMin) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["api", "rateLimitTenantPerMin"],
+        message: "tenant aggregate budget cannot be below the per-principal budget",
+      });
+    }
     if (config.kms.provider !== "aws-kms") {
       ctx.addIssue({
         code: "custom",
@@ -340,6 +367,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
       verdictDeadlineMs: env.PHAROS_VERDICT_DEADLINE_MS,
       allowedOrigins: csv(env.PHAROS_ALLOWED_ORIGINS),
       rateLimitPerMin: env.PHAROS_RATE_LIMIT_PER_MIN,
+      rateLimitTenantPerMin: env.PHAROS_RATE_LIMIT_TENANT_PER_MIN,
+      rateLimitFailMode: env.PHAROS_RATE_LIMIT_FAIL_MODE,
     },
     oidc: env.PHAROS_OIDC_ISSUERS ? safeJsonArray(env.PHAROS_OIDC_ISSUERS) : [],
     admin: { token: env.PHAROS_ADMIN_TOKEN },

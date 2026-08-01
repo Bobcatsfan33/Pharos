@@ -76,7 +76,7 @@ same auth path.
 | **T** | Replay of a valid submit | **Accepted risk [#74](https://github.com/Bobcatsfan33/Pharos/issues/74)** — no idempotency guard on ingest (append is content-addressed but per-request replays create new records). Escalation dedupe exists ([`escalationStore.ts:89`](../../packages/storage/src/escalationStore.ts)) |
 | **R** | "I never submitted that" | Every record is signed + chain-linked at seal (§3); the embedded `keyId` + `sealedAt` bind authorship. Offline-verifiable |
 | **I** | Cross-tenant read via IDOR | `authorize` rejects tenant mismatch ([`principal.ts:50`](../../packages/identity/src/principal.ts)); RLS backstop ([`migrations.ts:106`](../../packages/storage/src/migrations.ts)). Test: [`integration.gatehouse.test.ts:114`](../../test/integration.gatehouse.test.ts) |
-| **D** | Flood the ingest path | Per-principal fixed-window rate limit ([`auth.ts:60`](../../services/api/src/auth.ts), default 600/min). **Accepted risk [#73](https://github.com/Bobcatsfan33/Pharos/issues/73)** — fails **open** on cache outage; no tenant-aggregate cap |
+| **D** | Flood the ingest path | Fixed-window rate limit on two axes — per principal (default 600/min) **and per tenant in aggregate** (default 6000/min), so minting extra API keys cannot multiply a tenant's budget ([`auth.ts`](../../services/api/src/auth.ts), `withinRateLimit`). **Fails closed**: an unreachable counter store yields `503 rate_limiter_unavailable`, never unmetered admission, and production pins `api.rateLimitFailMode=closed` ([`config/index.ts`](../../packages/config/src/index.ts)). Tests: [`api.rate-limit.test.ts`](../../test/api.rate-limit.test.ts), [`config.production.test.ts`](../../test/config.production.test.ts) |
 | **E** | Read-only key performs a write | Scope check denies `actions:write` ([`principal.ts:50`](../../packages/identity/src/principal.ts)). Test: [`integration.gatehouse.test.ts:137`](../../test/integration.gatehouse.test.ts) |
 
 ---
@@ -272,7 +272,7 @@ consistency check for `schemaVersion ≥ 1.1`. Tracked in **[#67](https://github
 | ID | Risk | Surface | Disposition |
 |----|------|---------|-------------|
 | [#67](https://github.com/Bobcatsfan33/Pharos/issues/67) | `seal.algorithm` misstated for non-Ed25519 keys | Seal | Fix via schema v1.1 RFC; blocks aws-kms prod default |
-| [#73](https://github.com/Bobcatsfan33/Pharos/issues/73) | Rate limiter fails open on cache outage | Ingestion | Accepted; fail-closed option filed |
+| ~~[#73](https://github.com/Bobcatsfan33/Pharos/issues/73)~~ | ~~Rate limiter fails open on cache outage~~ | Ingestion | **Resolved** — fail-closed admission + tenant-aggregate cap, production-pinned and regression-tested |
 | [#74](https://github.com/Bobcatsfan33/Pharos/issues/74) | No replay/idempotency guard on ingest | Ingestion | Accepted; optional idempotency key |
 | [#75](https://github.com/Bobcatsfan33/Pharos/issues/75) | Admin token: non-constant-time, no rotation | Gateway | Accepted; hardening filed |
 | [#76](https://github.com/Bobcatsfan33/Pharos/issues/76) | No in-app TLS/mTLS | All | Accepted deployment dependency |
