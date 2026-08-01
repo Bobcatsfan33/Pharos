@@ -135,6 +135,42 @@ podDisruptionBudget:
 networkPolicy:
   enabled: true
 
+# --- TLS / mTLS termination contract (#76) ---------------------------------------
+# Pharos does NOT terminate TLS in-process. The container listens on plain HTTP and MUST
+# sit behind a terminating front door that the HOST owns. That is a deliberate design
+# choice — terminating in the app would put certificate lifecycle, cipher policy, and
+# client-cert verification inside a process whose job is deciding and sealing verdicts.
+#
+# The risk is not the choice; it is leaving the choice UNDECLARED. In production this
+# chart therefore refuses to render unless you say which component terminates: either set
+# `ingress.enabled=true` to render the reference Ingress below, or name your own in
+# `ingress.externalTerminator`. Silence is not an acceptable answer.
+ingress:
+  # Render the reference Ingress. Leave false if a mesh/LB you manage terminates instead.
+  enabled: false
+  className: nginx
+  # Required when enabled.
+  host: ""
+  annotations: {}
+  tls:
+    # Kubernetes Secret (type kubernetes.io/tls) holding the serving certificate.
+    secretName: ""
+    # Floor, not a target. TLS 1.2 is permitted only for legacy clients that cannot do 1.3.
+    minVersion: TLSv1.3
+    # Seconds. Emitted as HSTS on the terminator, not by the app.
+    hstsMaxAge: 63072000
+  # Mutual TLS at the front door: the terminator verifies client certificates before any
+  # request reaches Pharos. Required for the VPC/customer-hosted topologies where the
+  # caller is a machine identity rather than a browser.
+  mtls:
+    enabled: false
+    # Secret holding ca.crt used to verify client certificates. Required when mtls.enabled.
+    clientCaSecret: ""
+  # Name the component that terminates TLS when this chart does not (e.g.
+  # "istio-ingressgateway", "aws-alb", "cloudflare"). Recorded so the operator's own
+  # runbook and this deployment agree on who owns the front door.
+  externalTerminator: ""
+
 resources:
   requests:
     cpu: "1"

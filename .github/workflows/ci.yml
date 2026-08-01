@@ -39,6 +39,9 @@ jobs:
           --set config.tsaUrl=https://tsa.example.com/tsr
           --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
           --set judgeDriftProfile.existingConfigMap=pharos-judge-drift
+          --set ingress.enabled=true
+          --set ingress.host=pharos.example.com
+          --set ingress.tls.secretName=pharos-tls
       - name: render production manifests
         run: |
           helm template pharos deploy/helm \
@@ -47,6 +50,9 @@ jobs:
             --set config.tsaUrl=https://tsa.example.com/tsr \
             --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
             --set judgeDriftProfile.existingConfigMap=pharos-judge-drift \
+            --set ingress.enabled=true \
+            --set ingress.host=pharos.example.com \
+            --set ingress.tls.secretName=pharos-tls \
             > rendered-api.yaml
           grep -q 'name: PHAROS_JUDGE_PROVIDER' rendered-api.yaml
           grep -q 'value: "onnx"' rendered-api.yaml
@@ -57,6 +63,91 @@ jobs:
           # The signing boundary must be a real HSM, never the on-disk dev keystore (#78).
           grep -q 'name: PHAROS_KMS_PROVIDER' rendered-api.yaml
           grep -q 'value: "aws-kms"' rendered-api.yaml
+          # The front door must actually terminate TLS (#76). Pharos listens on plain HTTP
+          # by design, so these assertions are the only thing standing between a rendered
+          # production deployment and serving evidence over cleartext.
+          grep -q 'kind: Ingress' rendered-api.yaml
+          grep -q 'force-ssl-redirect: "true"' rendered-api.yaml
+          grep -q 'ssl-protocols: "TLSv1.3"' rendered-api.yaml
+          grep -q 'hsts: "true"' rendered-api.yaml
+          # Rendered as an integer, not "6.3072e+07" — nginx rejects scientific notation.
+          grep -q 'hsts-max-age: "63072000"' rendered-api.yaml
+          grep -q 'secretName: "pharos-tls"' rendered-api.yaml
+      - name: production must reject an undeclared TLS terminator
+        # Issue #76: Pharos does not terminate TLS in-process, so the risk is not the
+        # design — it is leaving the terminator UNDECLARED, which is how a cluster ends
+        # up serving evidence over cleartext while everyone assumes someone else handled
+        # it. Asserting the specific message pins the guard rather than an incidental
+        # render failure.
+        run: |
+          set +e
+          out=$(helm template pharos deploy/helm \
+            --namespace pharos \
+            --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+            --set config.tsaUrl=https://tsa.example.com/tsr \
+            --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
+            --set judgeDriftProfile.existingConfigMap=pharos-judge-drift 2>&1)
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "production rendered with no declared TLS terminator"
+            exit 1
+          fi
+          if ! printf '%s' "$out" | grep -q 'production requires a declared TLS terminator'; then
+            echo "render failed, but not on the TLS terminator guard:"
+            printf '%s\n' "$out"
+            exit 1
+          fi
+      - name: production must reject an ingress without a TLS secret
+        run: |
+          set +e
+          out=$(helm template pharos deploy/helm \
+            --namespace pharos \
+            --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+            --set config.tsaUrl=https://tsa.example.com/tsr \
+            --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
+            --set judgeDriftProfile.existingConfigMap=pharos-judge-drift \
+            --set ingress.enabled=true \
+            --set ingress.host=pharos.example.com 2>&1)
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "ingress rendered with no TLS secret"
+            exit 1
+          fi
+          printf '%s' "$out" | grep -q 'never be exposed over cleartext'
+      - name: an external terminator must be declared by name, and renders no Ingress
+        # The escape hatch for a mesh/LB this chart does not manage. It must be a
+        # positive declaration naming the owner, not merely the absence of an Ingress.
+        run: |
+          helm template pharos deploy/helm \
+            --namespace pharos \
+            --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+            --set config.tsaUrl=https://tsa.example.com/tsr \
+            --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
+            --set judgeDriftProfile.existingConfigMap=pharos-judge-drift \
+            --set ingress.externalTerminator=istio-ingressgateway \
+            > rendered-external.yaml
+          if grep -q 'kind: Ingress' rendered-external.yaml; then
+            echo "external terminator declared but the chart still rendered an Ingress"
+            exit 1
+          fi
+      - name: mTLS at the front door renders client-certificate verification
+        run: |
+          helm template pharos deploy/helm \
+            --namespace pharos \
+            --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+            --set config.tsaUrl=https://tsa.example.com/tsr \
+            --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
+            --set judgeDriftProfile.existingConfigMap=pharos-judge-drift \
+            --set ingress.enabled=true \
+            --set ingress.host=pharos.example.com \
+            --set ingress.tls.secretName=pharos-tls \
+            --set ingress.mtls.enabled=true \
+            --set ingress.mtls.clientCaSecret=pharos-client-ca \
+            > rendered-mtls.yaml
+          grep -q 'auth-tls-verify-client: "on"' rendered-mtls.yaml
+          grep -q 'auth-tls-secret: "pharos/pharos-client-ca"' rendered-mtls.yaml
       - name: production must reject the local development KMS
         # Issue #78: local-kms writes plaintext PKCS8 private keys to disk, so production
         # must refuse it. `config.localKms.existingClaim` is supplied deliberately: without
@@ -71,6 +162,9 @@ jobs:
             --set config.tsaUrl=https://tsa.example.com/tsr \
             --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
             --set judgeDriftProfile.existingConfigMap=pharos-judge-drift \
+            --set ingress.enabled=true \
+            --set ingress.host=pharos.example.com \
+            --set ingress.tls.secretName=pharos-tls \
             --set config.kmsProvider=local-kms \
             --set config.localKms.existingClaim=pharos-signing-keys 2>&1)
           rc=$?
@@ -92,6 +186,9 @@ jobs:
             --set config.tsaUrl=https://tsa.example.com/tsr \
             --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
             --set judgeDriftProfile.existingConfigMap=pharos-judge-drift \
+            --set ingress.enabled=true \
+            --set ingress.host=pharos.example.com \
+            --set ingress.tls.secretName=pharos-tls \
             --set config.judgeProvider=linear; then
             echo "production unexpectedly rendered with the linear judge baseline"
             exit 1
@@ -102,7 +199,10 @@ jobs:
             --namespace pharos \
             --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
             --set config.tsaUrl=https://tsa.example.com/tsr \
-            --set judgeDriftProfile.existingConfigMap=pharos-judge-drift; then
+            --set judgeDriftProfile.existingConfigMap=pharos-judge-drift \
+            --set ingress.enabled=true \
+            --set ingress.host=pharos.example.com \
+            --set ingress.tls.secretName=pharos-tls; then
             echo "production unexpectedly rendered without an approved TSA certificate pin"
             exit 1
           fi
@@ -112,7 +212,10 @@ jobs:
             --namespace pharos \
             --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
             --set config.tsaUrl=https://tsa.example.com/tsr \
-            --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb; then
+            --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
+            --set ingress.enabled=true \
+            --set ingress.host=pharos.example.com \
+            --set ingress.tls.secretName=pharos-tls; then
             echo "production unexpectedly rendered without an approved judge drift profile"
             exit 1
           fi
@@ -123,6 +226,9 @@ jobs:
             --set config.tsaUrl=https://tsa.example.com/tsr
             --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
             --set judgeDriftProfile.existingConfigMap=pharos-judge-drift
+            --set ingress.enabled=true
+            --set ingress.host=pharos.example.com
+            --set ingress.tls.secretName=pharos-tls
             --set gateway.enabled=true
             --set gateway.secretName=pharos-gateway-secrets
             --set gateway.tenantId=tenant-a
@@ -147,6 +253,9 @@ jobs:
             --set config.tsaUrl=https://tsa.example.com/tsr \
             --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
             --set judgeDriftProfile.existingConfigMap=pharos-judge-drift \
+            --set ingress.enabled=true \
+            --set ingress.host=pharos.example.com \
+            --set ingress.tls.secretName=pharos-tls \
             --set gateway.enabled=true \
             --set gateway.secretName=pharos-gateway-secrets \
             --set gateway.tenantId=tenant-a \
@@ -164,6 +273,9 @@ jobs:
             --set config.tsaUrl=https://tsa.example.com/tsr \
             --set config.tsaCertSha256=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
             --set judgeDriftProfile.existingConfigMap=pharos-judge-drift \
+            --set ingress.enabled=true \
+            --set ingress.host=pharos.example.com \
+            --set ingress.tls.secretName=pharos-tls \
             --set gateway.enabled=true \
             --set gateway.secretName=pharos-gateway-secrets \
             --set gateway.tenantId=tenant-a \

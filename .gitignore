@@ -19,3 +19,6 @@ build/
 __pycache__/
 .pytest_cache/
 *.pyc
+
+# Helm render artifacts from the CI helm job / local reproductions of it (#76).
+rendered-*.yaml

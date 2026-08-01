@@ -29,6 +29,35 @@ pre-staging improves availability without weakening artifact identity. The curre
 release is still pre-release pending independent efficacy, calibration, reference-profile
 approval, drift exercise, and production-latency gates in `docs/LIMITATIONS.md`.
 
+## TLS termination is yours (#76)
+
+Pharos listens on **plain HTTP** and does not terminate TLS in-process. Every deployment
+must put a terminating front door in front of it, and the Helm chart will not render a
+production release until you declare which one:
+
+```bash
+# Option 1 — render the reference Ingress (nginx): forced SSL redirect, TLS 1.3 floor,
+# HSTS, and optional mTLS client-certificate verification.
+--set ingress.enabled=true \
+--set ingress.host=pharos.example.com \
+--set ingress.tls.secretName=pharos-tls \
+# add mTLS when callers are machine identities rather than browsers:
+--set ingress.mtls.enabled=true \
+--set ingress.mtls.clientCaSecret=pharos-client-ca
+
+# Option 2 — a mesh / cloud LB / gateway this chart does not manage. Name it, so your
+# runbook and this deployment agree on who owns the front door.
+--set ingress.externalTerminator=istio-ingressgateway
+```
+
+Omitting both fails the render with *"production requires a declared TLS terminator"*.
+TLS 1.2 is accepted only with the annotation `pharos.io/tls12-accepted-risk` naming who
+accepted it.
+
+**You own** certificate issuance and rotation, the serving private key, the client CA for
+mTLS, and the network path between terminator and pod. Pharos cannot verify at runtime
+that a terminator is in front of it — see `docs/LIMITATIONS.md` §7.
+
 ## Option A — Docker Compose (single host / pilot)
 
 ```bash
