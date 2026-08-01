@@ -1,14 +1,14 @@
 export default function Home() {
   return (
     <div>
-      <h1 style={{ fontSize: 28, marginBottom: 8 }}>Pharos</h1>
-      <p style={{ color: "#9ca3af", maxWidth: 640, lineHeight: 1.6 }}>
+      <h1 className="fs-28 mb-8">Pharos</h1>
+      <p className="c-muted maxw-640 lh-1-6">
         The trust control plane for enterprise AI agents. Every consequential agent action passes
         through Pharos twice: once before it happens — a real-time policy verdict — and once after —
         a tamper-evident, cryptographically signed evidence record. The same event that governs the
         action becomes the proof of how it was governed.
       </p>
-      <div style={{ display: "flex", gap: 16, marginTop: 28 }}>
+      <div className="display-flex gap-16 mt-28">
         <Card
           title="Beam — Decide"
           body="Policy packs, the verdict cascade, and review operations. Deterministic, citation-backed verdicts under an 800ms budget."
@@ -28,17 +28,10 @@ function Card({ title, body, href }: { title: string; body: string; href: string
   return (
     <a
       href={href}
-      style={{
-        flex: 1,
-        border: "1px solid #1f2937",
-        borderRadius: 12,
-        padding: 20,
-        textDecoration: "none",
-        color: "inherit",
-      }}
+      className="flex-1 border-1px-solid-1f2937 radius-12 p-20 text-decoration-none c-inherit"
     >
-      <div style={{ fontWeight: 600, marginBottom: 8 }}>{title}</div>
-      <div style={{ color: "#9ca3af", fontSize: 14, lineHeight: 1.5 }}>{body}</div>
+      <div className="fw-600 mb-8">{title}</div>
+      <div className="c-muted fs-14 lh-1-5">{body}</div>
     </a>
   );
 }

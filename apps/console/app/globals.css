@@ -1,0 +1,387 @@
+/*
+ * Console stylesheet (#79).
+ *
+ * GENERATED MECHANICALLY from the inline `style` props this file replaced, so every
+ * class carries exactly the declaration its attribute did — the conversion is
+ * equivalence-by-construction, not a re-design. One class per (property, value) pair, so
+ * a former `style={{ padding: 8, color: "#9ca3af" }}` becomes `className="p-8 c-muted"`.
+ *
+ * Why it exists: CSP nonces attach to <style>/<script> ELEMENTS and can never cover a
+ * style ATTRIBUTE, so `style-src` could not drop 'unsafe-inline' while the console
+ * styled itself inline. With these classes it can, and does.
+ *
+ * No styling framework is introduced; these are the app's own declarations, extracted.
+ */
+
+/* align-items */
+.align-items-center {
+  align-items: center;
+}
+
+/* background */
+.bg-canvas {
+  background: #0b0f17;
+}
+
+/* border */
+.border-1px-solid-1f2937 {
+  border: 1px solid #1f2937;
+}
+
+/* border-bottom */
+.border-bottom-1px-solid-111827 {
+  border-bottom: 1px solid #111827;
+}
+.border-bottom-1px-solid-1f2937 {
+  border-bottom: 1px solid #1f2937;
+}
+
+/* border-collapse */
+.border-collapse-collapse {
+  border-collapse: collapse;
+}
+
+/* border-radius */
+.radius-10 {
+  border-radius: 10px;
+}
+.radius-12 {
+  border-radius: 12px;
+}
+
+/* border-right */
+.border-right-1px-solid-1f2937 {
+  border-right: 1px solid #1f2937;
+}
+
+/* color */
+.c-bad-soft {
+  color: #fca5a5;
+}
+.c-body {
+  color: #d1d5db;
+}
+.c-dim {
+  color: #6b7280;
+}
+.c-faint {
+  color: #4b5563;
+}
+.c-fg {
+  color: #e5e7eb;
+}
+.c-inherit {
+  color: inherit;
+}
+.c-muted {
+  color: #9ca3af;
+}
+.c-ok {
+  color: #34d399;
+}
+.c-strong {
+  color: #f9fafb;
+}
+.c-warn {
+  color: #fbbf24;
+}
+.c-warn-soft {
+  color: #fcd34d;
+}
+
+/* display */
+.display-block {
+  display: block;
+}
+.display-flex {
+  display: flex;
+}
+
+/* flex */
+.flex-1 {
+  flex: 1;
+}
+
+/* flex-direction */
+.flex-direction-column {
+  flex-direction: column;
+}
+
+/* flex-wrap */
+.flex-wrap-wrap {
+  flex-wrap: wrap;
+}
+
+/* font-family */
+.font-family-ui-monospace-monospace {
+  font-family: ui-monospace, monospace;
+}
+.font-family-ui-sans-serif-system-ui-sans-serif {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+/* font-size */
+.fs-11 {
+  font-size: 11px;
+}
+.fs-12 {
+  font-size: 12px;
+}
+.fs-13 {
+  font-size: 13px;
+}
+.fs-14 {
+  font-size: 14px;
+}
+.fs-16 {
+  font-size: 16px;
+}
+.fs-18 {
+  font-size: 18px;
+}
+.fs-20 {
+  font-size: 20px;
+}
+.fs-22 {
+  font-size: 22px;
+}
+.fs-24 {
+  font-size: 24px;
+}
+.fs-26 {
+  font-size: 26px;
+}
+.fs-28 {
+  font-size: 28px;
+}
+.fs-32 {
+  font-size: 32px;
+}
+
+/* font-weight */
+.fw-600 {
+  font-weight: 600;
+}
+.fw-700 {
+  font-weight: 700;
+}
+.fw-800 {
+  font-weight: 800;
+}
+
+/* gap */
+.gap-10 {
+  gap: 10px;
+}
+.gap-12 {
+  gap: 12px;
+}
+.gap-16 {
+  gap: 16px;
+}
+.gap-8 {
+  gap: 8px;
+}
+
+/* justify-content */
+.justify-content-space-between {
+  justify-content: space-between;
+}
+
+/* letter-spacing */
+.ls-1 {
+  letter-spacing: 1px;
+}
+
+/* line-height */
+.lh-1-5 {
+  line-height: 1.5;
+}
+.lh-1-6 {
+  line-height: 1.6;
+}
+
+/* margin */
+.m-0 {
+  margin: 0;
+}
+
+/* margin-bottom */
+.mb-24 {
+  margin-bottom: 24px;
+}
+.mb-28 {
+  margin-bottom: 28px;
+}
+.mb-4 {
+  margin-bottom: 4px;
+}
+.mb-8 {
+  margin-bottom: 8px;
+}
+
+/* margin-top */
+.mt-10 {
+  margin-top: 10px;
+}
+.mt-12 {
+  margin-top: 12px;
+}
+.mt-16 {
+  margin-top: 16px;
+}
+.mt-20 {
+  margin-top: 20px;
+}
+.mt-24 {
+  margin-top: 24px;
+}
+.mt-28 {
+  margin-top: 28px;
+}
+.mt-4 {
+  margin-top: 4px;
+}
+.mt-6 {
+  margin-top: 6px;
+}
+.mt-8 {
+  margin-top: 8px;
+}
+
+/* max-width */
+.maxw-1100 {
+  max-width: 1100px;
+}
+.maxw-640 {
+  max-width: 640px;
+}
+.maxw-680 {
+  max-width: 680px;
+}
+
+/* min-height */
+.minh-100vh {
+  min-height: 100vh;
+}
+
+/* min-width */
+.minw-110 {
+  min-width: 110px;
+}
+.minw-120 {
+  min-width: 120px;
+}
+.minw-180 {
+  min-width: 180px;
+}
+
+/* padding */
+.p-10px-14px {
+  padding: 10px 14px;
+}
+.p-12px-16px {
+  padding: 12px 16px;
+}
+.p-12px-20px {
+  padding: 12px 20px;
+}
+.p-14 {
+  padding: 14px;
+}
+.p-16 {
+  padding: 16px;
+}
+.p-20 {
+  padding: 20px;
+}
+.p-24px-16px {
+  padding: 24px 16px;
+}
+.p-32px-40px {
+  padding: 32px 40px;
+}
+.p-6px-8px {
+  padding: 6px 8px;
+}
+.p-8 {
+  padding: 8px;
+}
+
+/* text-align */
+.text-align-left {
+  text-align: left;
+}
+
+/* text-decoration */
+.text-decoration-none {
+  text-decoration: none;
+}
+
+/* text-transform */
+.text-transform-uppercase {
+  text-transform: uppercase;
+}
+
+/* width */
+.w-100 {
+  width: 100%;
+}
+.w-240 {
+  width: 240px;
+}
+
+/* ---------------------------------------------------------------------------
+ * State tones (#79).
+ *
+ * The 13 sites that computed a colour at runtime did NOT compute a continuous
+ * value — every one selected from this fixed palette by discrete state (verdict
+ * decision, policy status, pass/fail, grade). So each became a conditional CLASS
+ * rather than a style attribute; no CSS custom properties and no nonced <style>
+ * element were needed, and no site had to keep attribute form.
+ * ------------------------------------------------------------------------- */
+.tone-ok {
+  color: #34d399;
+}
+.tone-bad {
+  color: #f87171;
+}
+.tone-warn {
+  color: #fbbf24;
+}
+.tone-info {
+  color: #60a5fa;
+}
+.tone-muted {
+  color: #9ca3af;
+}
+.tone-dim {
+  color: #6b7280;
+}
+.tone-neutral {
+  color: #e5e7eb;
+}
+
+/* Chain-integrity banner: border + background move together with the verdict. */
+.panel-ok {
+  border: 1px solid #065f46;
+  background: #04231b;
+}
+.panel-bad {
+  border: 1px solid #7f1d1d;
+  background: #2a0e0e;
+}
+
+/* Risk grade: the same hue drives both the ring and the letter. */
+.grade-ring-a {
+  border: 2px solid #34d399;
+}
+.grade-ring-b {
+  border: 2px solid #60a5fa;
+}
+.grade-ring-c {
+  border: 2px solid #fbbf24;
+}
+.grade-ring-d {
+  border: 2px solid #f87171;
+}

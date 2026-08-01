@@ -10,13 +10,10 @@ import { NextResponse, type NextRequest } from "next/server";
  *    Router propagates the nonce to its own bootstrap/flight scripts when it is set on
  *    both the request and response headers.
  *
- *    `style-src` still carries `'unsafe-inline'`. That is a real, named residual, not an
- *    oversight: the console styles components with React `style` props, which emit style
- *    *attributes*, and CSP nonces apply to `<style>`/`<script>` ELEMENTS — an attribute
- *    can never carry one. Removing it requires converting ~150 inline style props to CSS
- *    classes, which is a separate mechanical change. Script injection is the execution
- *    vector and it is closed here; inline style is a weaker exposure (exfiltration by
- *    selector, defacement).
+ *    `style-src` carries NO inline allowance either. The console's 156 inline `style`
+ *    props were converted to classes in app/globals.css, so the policy now permits
+ *    exactly one thing for both scripts and styles: this origin. There is no `'unsafe-*'`
+ *    token anywhere in it.
  *
  * 2. **Auth presence gate.** A request with no session token is redirected before any
  *    route renders, so an unauthenticated caller never reaches code that fetches
@@ -40,8 +37,11 @@ function contentSecurityPolicy(nonce: string): string {
     // own chunks without enumerating them, and is ignored by browsers that do not
     // understand it (which then fall back to the 'self' source list).
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
-    // RESIDUAL (#79): React `style` props emit style attributes, which nonces cannot cover.
-    "style-src 'self' 'unsafe-inline'",
+    // No inline allowance at all (#79). The console's declarations moved to
+    // app/globals.css, so there are no style attributes left for 'unsafe-inline' to
+    // cover — and a nonce could never have covered them anyway, since nonces attach to
+    // <style>/<script> ELEMENTS, not attributes.
+    "style-src 'self'",
     "img-src 'self' data:",
     "font-src 'self'",
     "connect-src 'self'",

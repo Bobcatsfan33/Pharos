@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { NextRequest } from "next/server";
 import { middleware } from "../apps/console/middleware";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 /**
  * Console auth gate and nonce CSP (#79, the half #122 deferred).
@@ -18,9 +21,10 @@ import { middleware } from "../apps/console/middleware";
  * development: an expired token and a garbage token both redirect to /signin even though
  * the cookie is present, so the gate is verification, not mere cookie presence.
  *
- * `style-src` still carries `'unsafe-inline'`. Named residual, asserted below so it
- * cannot be forgotten: React `style` props emit style *attributes*, and CSP nonces apply
- * to `<style>`/`<script>` ELEMENTS — an attribute can never carry one.
+ * As of #79's final PR the policy carries NO inline allowance at all: the console's 156
+ * inline `style` props were converted to classes in `app/globals.css`, so `style-src` is
+ * plain `'self'`. Both halves are asserted below, including a blanket check that no
+ * `'unsafe-*'` token appears anywhere in the policy.
  */
 const ORIGIN = "https://console.example.test";
 
@@ -126,14 +130,51 @@ describe("console nonce CSP", () => {
     }
   });
 
-  it("documents the style-src residual rather than quietly carrying it", () => {
-    // Asserted deliberately: if someone removes 'unsafe-inline' from style-src without
-    // converting the ~150 React inline style props, the console renders unstyled. This
-    // test failing is the signal that the conversion happened and the docs need updating.
+  it("permits NO inline styles — style-src is plain 'self'", () => {
+    // The last named residual of #79. Nonces attach to <style>/<script> ELEMENTS and can
+    // never cover a style ATTRIBUTE, so this could only be closed by removing the
+    // attributes themselves — which app/globals.css did.
     const policy = csp(middleware(request("/signin", { accept: "text/html" })));
     const styleSrc = policy.split(";").find((d) => d.trim().startsWith("style-src"))!;
-    expect(styleSrc).toContain("'unsafe-inline'");
-    // But it must never permit a remote origin.
+    expect(styleSrc.trim()).toBe("style-src 'self'");
+    expect(styleSrc).not.toContain("'unsafe-inline'");
     expect(styleSrc).not.toMatch(/https?:/);
   });
+
+  it("contains no 'unsafe-*' token anywhere in the policy", () => {
+    // One assertion that cannot be satisfied by loosening a different directive.
+    const policy = csp(middleware(request("/signin", { accept: "text/html" })));
+    expect(policy).not.toMatch(/'unsafe-[a-z-]+'/);
+  });
+});
+
+/**
+ * With `style-src 'self'`, a single reintroduced `style` prop would be silently dropped
+ * by the browser — the element renders unstyled and nothing fails loudly. So the absence
+ * of style attributes is pinned at the source, not left to review.
+ */
+describe("console source carries no inline style attributes", () => {
+  const appDir = fileURLToPath(new URL("../apps/console/app", import.meta.url));
+
+  function tsxFiles(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const p = join(dir, e.name);
+      return e.isDirectory() ? tsxFiles(p) : p.endsWith(".tsx") ? [p] : [];
+    });
+  }
+
+  const files = tsxFiles(appDir);
+
+  it("finds the console pages (so the check below cannot pass vacuously)", () => {
+    expect(files.length).toBeGreaterThanOrEqual(11);
+  });
+
+  it.each(files.map((f) => [f.slice(appDir.length + 1), f]))(
+    "%s uses className, never a style prop",
+    (_name, file) => {
+      const source = readFileSync(file, "utf8");
+      expect(source).not.toMatch(/style=\{\{/);
+      expect(source).not.toMatch(/style="/);
+    },
+  );
 });

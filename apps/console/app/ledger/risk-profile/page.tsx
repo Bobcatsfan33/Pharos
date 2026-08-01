@@ -29,11 +29,11 @@ interface Readiness {
   }>;
 }
 
-const GRADE_COLOR: Record<string, string> = {
-  A: "#34d399",
-  B: "#60a5fa",
-  C: "#fbbf24",
-  D: "#f87171",
+const GRADE_TONE: Record<string, { ring: string; text: string }> = {
+  A: { ring: "grade-ring-a", text: "tone-ok" },
+  B: { ring: "grade-ring-b", text: "tone-info" },
+  C: { ring: "grade-ring-c", text: "tone-warn" },
+  D: { ring: "grade-ring-d", text: "tone-bad" },
 };
 
 export default async function RiskProfilePage() {
@@ -50,24 +50,22 @@ export default async function RiskProfilePage() {
 
   return (
     <div>
-      <h1 style={{ fontSize: 24 }}>Risk profile</h1>
-      <p style={{ color: "#9ca3af", maxWidth: 680 }}>
+      <h1 className="fs-24">Risk profile</h1>
+      <p className="c-muted maxw-680">
         Continuous posture from sealed records plus Beam signals, the measured Wilson-score
         verified-accuracy bound, and the external-release readiness gate. This is the
         underwriter-feed signal.
       </p>
 
       {assurance && (
-        <div style={{ marginTop: 16, border: "1px solid #1f2937", borderRadius: 12, padding: 16 }}>
-          <div
-            style={{ fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: 1 }}
-          >
+        <div className="mt-16 border-1px-solid-1f2937 radius-12 p-16">
+          <div className="fs-12 c-dim text-transform-uppercase ls-1">
             Verified accuracy (Wilson 95%)
           </div>
-          <div style={{ fontSize: 26, fontWeight: 700, color: "#34d399" }}>
+          <div className="fs-26 fw-700 c-ok">
             ≥ {(assurance.verifiedAccuracy.lower * 100).toFixed(1)}%
           </div>
-          <div style={{ color: "#9ca3af", fontSize: 13 }}>
+          <div className="c-muted fs-13">
             point {(assurance.verifiedAccuracy.point * 100).toFixed(1)}% · n=
             {assurance.verifiedAccuracy.n} · measured, not modeled
           </div>
@@ -76,26 +74,10 @@ export default async function RiskProfilePage() {
 
       {p && (
         <>
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              marginTop: 16,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <div
-              style={{
-                border: `2px solid ${GRADE_COLOR[p.grade]}`,
-                borderRadius: 12,
-                padding: "12px 20px",
-              }}
-            >
-              <div style={{ fontSize: 11, color: "#6b7280" }}>GRADE</div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: GRADE_COLOR[p.grade] }}>
-                {p.grade}
-              </div>
+          <div className="display-flex gap-12 mt-16 align-items-center flex-wrap-wrap">
+            <div className={`radius-12 p-12px-20px ${GRADE_TONE[p.grade]?.ring ?? ""}`}>
+              <div className="fs-11 c-dim">GRADE</div>
+              <div className={`fs-32 fw-800 ${GRADE_TONE[p.grade]?.text ?? ""}`}>{p.grade}</div>
             </div>
             <Stat label="Composite risk" value={`${p.compositeRisk}/100`} />
             <Stat label="Autonomy rate" value={pct(p.autonomyRate)} />
@@ -107,19 +89,17 @@ export default async function RiskProfilePage() {
         </>
       )}
 
-      <h2 style={{ fontSize: 16, marginTop: 28 }}>Readiness gate</h2>
+      <h2 className="fs-16 mt-28">Readiness gate</h2>
       {readiness ? (
-        <div style={{ marginTop: 8 }}>
-          <div
-            style={{ color: readiness.readiness.blocked ? "#f87171" : "#34d399", fontWeight: 600 }}
-          >
+        <div className="mt-8">
+          <div className={`fw-600 ${readiness.readiness.blocked ? "tone-bad" : "tone-ok"}`}>
             {readiness.readiness.blocked
               ? "❌ External release blocked"
               : "✅ Ready for external release"}
           </div>
-          <ul style={{ marginTop: 8, fontSize: 14, color: "#9ca3af" }}>
+          <ul className="mt-8 fs-14 c-muted">
             {readiness.readiness.checks.map((c) => (
-              <li key={c.id} style={{ color: c.passed ? "#9ca3af" : "#f87171" }}>
+              <li key={c.id} className={c.passed ? "tone-muted" : "tone-bad"}>
                 {c.passed ? "✓" : "✗"} {c.description} ({(c.value * 100).toFixed(0)}%
                 {c.excepted ? ", exception granted" : ""})
               </li>
@@ -127,7 +107,7 @@ export default async function RiskProfilePage() {
           </ul>
         </div>
       ) : (
-        <p style={{ color: "#6b7280" }}>No data.</p>
+        <p className="c-dim">No data.</p>
       )}
     </div>
   );
@@ -138,13 +118,9 @@ function pct(x: number): string {
 }
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div
-      style={{ border: "1px solid #1f2937", borderRadius: 10, padding: "10px 14px", minWidth: 110 }}
-    >
-      <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: 1 }}>
-        {label}
-      </div>
-      <div style={{ fontSize: 18, fontWeight: 700 }}>{value}</div>
+    <div className="border-1px-solid-1f2937 radius-10 p-10px-14px minw-110">
+      <div className="fs-11 c-dim text-transform-uppercase ls-1">{label}</div>
+      <div className="fs-18 fw-700">{value}</div>
     </div>
   );
 }
