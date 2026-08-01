@@ -9,11 +9,35 @@ action resumes after a human verdict instead of stranding the agent.
 
 ```
 POST /v1/actions  { tenantId, action, liability, mandateId?, idempotencyKey? }
-  -> { verdict, record, escalation }
+  -> 201 { verdict, record, escalation, replayed: false }   // sealed a new record
+  -> 200 { verdict, record, escalation, replayed: true  }   // replay; nothing created
+  -> 409 { error: { code: "idempotency_key_reuse" } }       // key re-used for another request
 ```
 
 `mandateId` binds a stored mandate (resolved server-side, sealed into the record).
 `escalation` is non-null when the verdict is `escalate` — the handle for continuation.
+
+### `idempotencyKey` — exactly-once ingest
+
+Delivery to the ingest path is at-least-once in practice: SDKs retry, proxies retry, queues
+redeliver. Because the ledger is append-only, each redelivery would otherwise seal another
+valid, signed record, and nothing downstream could distinguish *"the agent acted twice"* from
+*"the network retried once"*.
+
+Supplying `idempotencyKey` makes ingest exactly-once for that request. The claim on the key
+commits in the **same transaction** as the append, so there is no window in which a record
+exists without its claim (a replay would seal a second record) or a claim exists without its
+record (a replay would resolve to nothing). Redeliveries — including concurrent ones — return
+the original record with `replayed: true` and HTTP `200`, and report the same `escalation`.
+
+The key binds one exact request: a fingerprint over `tenantId`, `action`, `liability`, and
+`mandateId`. `action.emittedAt` is deliberately excluded, since a client that re-stamps the
+timestamp on retry is still redelivering the same action. Re-using a key for a *materially
+different* request is refused with `409 idempotency_key_reuse` rather than collapsed —
+answering with an unrelated sealed record would misreport what was governed.
+
+Keys are scoped per tenant. The guard is **opt-in**: a client that sends no key keeps the
+prior at-least-once behavior.
 
 ## SDKs
 

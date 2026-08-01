@@ -3,8 +3,11 @@ export { runMigrations, MIGRATIONS, type Migration } from "./migrations.js";
 export { WormStore, type WormStoreConfig, type WormPutResult } from "./wormStore.js";
 export {
   EvidenceStore,
+  IdempotencyConflictError,
+  IdempotencyReplayError,
   type AppendInput,
   type EvidenceStoreDeps,
+  type IdempotencyClaim,
   type RecordDisclosure,
 } from "./evidenceStore.js";
 export {

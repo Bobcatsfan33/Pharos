@@ -381,6 +381,35 @@ export const MIGRATIONS: Migration[] = [
         ON gateway_held_requests (tenant_id, key_id);
     `,
   },
+  {
+    version: "0013_ingest_idempotency",
+    sql: /* sql */ `
+      -- Replay guard for POST /v1/actions (#74). One row per (tenant, client key);
+      -- the primary key IS the guard, so concurrent deliveries of the same key
+      -- serialize on it and exactly one can win.
+      --
+      -- request_fingerprint is a SHA-256 over the canonicalized submission. It is a
+      -- digest, never the request body: this table must not become a second, weaker
+      -- copy of evidence that lives outside WORM and the hash chain.
+      CREATE TABLE IF NOT EXISTS ingest_idempotency (
+        tenant_id           TEXT   NOT NULL,
+        idempotency_key     TEXT   NOT NULL,
+        request_fingerprint TEXT   NOT NULL,
+        sequence            BIGINT NOT NULL,
+        created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (tenant_id, idempotency_key),
+        CHECK (length(idempotency_key) BETWEEN 1 AND 255),
+        CHECK (request_fingerprint ~ '^[0-9a-f]{64}$')
+      );
+
+      ALTER TABLE ingest_idempotency ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE ingest_idempotency FORCE ROW LEVEL SECURITY;
+      DROP POLICY IF EXISTS ingest_idempotency_tenant_isolation ON ingest_idempotency;
+      CREATE POLICY ingest_idempotency_tenant_isolation ON ingest_idempotency
+        USING (tenant_id = current_setting('pharos.tenant_id', true))
+        WITH CHECK (tenant_id = current_setting('pharos.tenant_id', true));
+    `,
+  },
 ];
 
 export async function runMigrations(pool: Pool): Promise<string[]> {

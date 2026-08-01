@@ -161,6 +161,19 @@ export class EscalationStore {
     return res.rows[0] ? this.rowTo(res.rows[0]) : null;
   }
 
+  /**
+   * Look up the escalation parked under a client idempotency key. Used by the ingest
+   * replay path (#74) so a redelivered submission reports the escalation it already
+   * created, instead of appearing to have created none.
+   */
+  async getByIdempotencyKey(tenantId: string, idempotencyKey: string): Promise<Escalation | null> {
+    const res = await this.pool.query<EscalationRow>(
+      `SELECT * FROM escalations WHERE tenant_id = $1 AND idempotency_key = $2`,
+      [tenantId, idempotencyKey],
+    );
+    return res.rows[0] ? this.rowTo(res.rows[0]) : null;
+  }
+
   async listPending(tenantId: string): Promise<Escalation[]> {
     const res = await this.pool.query<EscalationRow>(
       `SELECT * FROM escalations WHERE tenant_id = $1 AND status = 'pending' ORDER BY created_at ASC`,
