@@ -1,0 +1,86 @@
+{{/*
+  TLS / mTLS termination contract (#76).
+
+  Pharos listens on plain HTTP by design; the front door is the host's. These guards run
+  on every render — including when `ingress.enabled=false` — because the thing being
+  gated is not "did you use our Ingress" but "did you DECLARE who terminates TLS".
+  An undeclared terminator in production is the actual defect: it is how a cluster ends
+  up serving evidence over cleartext while everyone assumes someone else handled it.
+*/}}
+
+{{- if eq .Values.config.env "prod" }}
+  {{- if and (not .Values.ingress.enabled) (not .Values.ingress.externalTerminator) }}
+    {{- fail "production requires a declared TLS terminator: set ingress.enabled=true to render the reference Ingress, or set ingress.externalTerminator to the component that terminates (e.g. istio-ingressgateway, aws-alb)" }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+  {{- if not .Values.ingress.host }}
+    {{- fail "ingress.enabled requires ingress.host" }}
+  {{- end }}
+  {{- if not .Values.ingress.tls.secretName }}
+    {{- fail "ingress.enabled requires ingress.tls.secretName — Pharos must never be exposed over cleartext" }}
+  {{- end }}
+  {{- if not (has .Values.ingress.tls.minVersion (list "TLSv1.2" "TLSv1.3")) }}
+    {{- fail "ingress.tls.minVersion must be TLSv1.2 or TLSv1.3" }}
+  {{- end }}
+  {{- if and .Values.ingress.mtls.enabled (not .Values.ingress.mtls.clientCaSecret) }}
+    {{- fail "ingress.mtls.enabled requires ingress.mtls.clientCaSecret" }}
+  {{- end }}
+  {{- if and (eq .Values.config.env "prod") (eq .Values.ingress.tls.minVersion "TLSv1.2") }}
+    {{- /* Permitted, but it must be a decision someone made, not a default they inherited. */}}
+    {{- if not (index .Values.ingress.annotations "pharos.io/tls12-accepted-risk") }}
+      {{- fail "production with ingress.tls.minVersion=TLSv1.2 requires the annotation pharos.io/tls12-accepted-risk naming who accepted it" }}
+    {{- end }}
+  {{- end }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  # Named to match the Service in deployment.yaml, which is a fixed `pharos-api` rather
+  # than a release-scoped name. Deriving this from .Release.Name would silently point the
+  # front door at a Service that does not exist under any release not called "pharos".
+  name: pharos-api
+  labels:
+    app.kubernetes.io/name: pharos
+    app.kubernetes.io/component: api
+  annotations:
+    # Cleartext is refused at the edge, not merely discouraged.
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-protocols: {{ .Values.ingress.tls.minVersion | quote }}
+    # HSTS belongs on the terminator: it is a statement about the transport, and the app
+    # cannot make it truthfully because the app never sees the TLS layer.
+    nginx.ingress.kubernetes.io/hsts: "true"
+    # int64 before quoting: a large YAML number renders as "6.3072e+07" otherwise, which
+    # nginx rejects. Caught by rendering the manifest rather than reading the template.
+    nginx.ingress.kubernetes.io/hsts-max-age: {{ .Values.ingress.tls.hstsMaxAge | int64 | quote }}
+    nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
+{{- if .Values.ingress.mtls.enabled }}
+    # mTLS: client certificates are verified BEFORE any request reaches Pharos.
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
+    nginx.ingress.kubernetes.io/auth-tls-secret: {{ printf "%s/%s" .Release.Namespace .Values.ingress.mtls.clientCaSecret | quote }}
+    nginx.ingress.kubernetes.io/auth-tls-verify-depth: "2"
+    # Pass the verified subject upstream so the audit trail can record who presented it.
+    nginx.ingress.kubernetes.io/auth-tls-pass-certificate-to-upstream: "true"
+{{- end }}
+{{- with .Values.ingress.annotations }}
+{{ toYaml . | indent 4 }}
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className | quote }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host | quote }}
+      secretName: {{ .Values.ingress.tls.secretName | quote }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pharos-api
+                port:
+                  number: {{ .Values.api.port }}
+{{- end }}

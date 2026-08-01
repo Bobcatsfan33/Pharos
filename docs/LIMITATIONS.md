@@ -160,6 +160,37 @@ tenant-scoped re-encryption job. Rotation is not automatic: operators must run a
 the expand → activate → re-encrypt → contract runbook for every tenant before removing an
 old key. A delivering row is intentionally skipped until its lease completes or expires.
 
+## 7. Pharos does not terminate TLS — the host owns the front door
+
+> **Tracking issue:** [#76](https://github.com/Bobcatsfan33/Pharos/issues/76)
+
+**Today:** the API container listens on plain HTTP and does not implement TLS or mTLS
+in-process. That is deliberate, not an omission: terminating TLS in the app would put
+certificate lifecycle, cipher policy, renewal, and client-certificate verification inside
+the process whose job is deciding and sealing verdicts, and would duplicate infrastructure
+every serious deployment already runs.
+
+**What Pharos owns.** The Helm chart refuses to render a production deployment unless a
+terminator is *declared*. Either `ingress.enabled=true` renders the reference Ingress —
+forced SSL redirect, `ssl-protocols` floor of TLS 1.3, HSTS with `includeSubDomains`, and
+optional mTLS that verifies client certificates before any request reaches Pharos — or
+`ingress.externalTerminator` names the component that terminates instead (mesh, cloud LB,
+external gateway). TLS 1.2 is permitted only with an annotation naming who accepted it.
+CI asserts the rendered manifest carries this posture and that an undeclared terminator
+fails the render.
+
+**What the host owns, and what that means.** Certificate issuance and rotation, the private
+key for the serving certificate, the client CA for mTLS, and the correctness of the network
+path between the terminator and the pod. **Pharos cannot verify at runtime that a
+terminator is actually in front of it** — a cluster that deletes the Ingress after install,
+or routes around it, will serve cleartext and the application will not know. The chart makes
+the requirement explicit and unskippable at deploy time; it cannot make it self-enforcing at
+runtime. Treat the terminator as part of your trust boundary and monitor it as such.
+
+**Consequence for the SDKs:** `http://localhost:4000` defaults are development-only. Point
+production clients at the terminator's HTTPS endpoint; both SDKs use standard
+`fetch`/`urllib` with certificate verification enabled by default.
+
 ---
 
 *Maintenance: when a roadmap task above lands, delete its entry here (and the corresponding
