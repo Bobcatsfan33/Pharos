@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  ACTION_RECORD_SCHEMA_VERSION,
   ActionRecordContentSchema,
   fromFlightlineEvent,
   fromLighthouseVerdict,
@@ -13,9 +14,12 @@ describe("legacy migration adapters", () => {
   it("migrates the AI Lighthouse demo dataset cleanly into v1", () => {
     LIGHTHOUSE_DEMO.forEach((raw, i) => {
       const content = fromLighthouseVerdict(raw, { tenantId: "demo", sequence: i });
-      // Migrated content must satisfy the frozen v1 schema.
+      // Migrated content must satisfy the current schema. Asserted against the
+      // constant, not a literal: the adapter's job is to produce whatever version this
+      // codebase writes today, so pinning "1.0.0" would fail on every future bump for
+      // no reason (it did, on the 1.1.0 bump in #67).
       expect(() => ActionRecordContentSchema.parse(content)).not.toThrow();
-      expect(content.schemaVersion).toBe("1.0.0");
+      expect(content.schemaVersion).toBe(ACTION_RECORD_SCHEMA_VERSION);
       expect(content.sequence).toBe(i);
     });
   });
