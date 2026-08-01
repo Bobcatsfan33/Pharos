@@ -24,43 +24,43 @@ export default async function AccessAuditPage() {
 
   return (
     <div>
-      <h1 style={{ fontSize: 24 }}>Access audit</h1>
-      <p style={{ color: "#9ca3af", maxWidth: 640 }}>
+      <h1 className="fs-24">Access audit</h1>
+      <p className="c-muted maxw-640">
         An evidence product whose own access is itself evidence. Every view, export, share, and
         verification of evidence is recorded as a hash-chained, tamper-evident entry.
       </p>
       {verify && (
-        <div style={{ marginTop: 12, fontSize: 14, color: verify.ok ? "#34d399" : "#f87171" }}>
+        <div className={`mt-12 fs-14 ${verify.ok ? "tone-ok" : "tone-bad"}`}>
           {verify.ok ? "✅" : "❌"} Audit chain {verify.ok ? "verified" : "broken"} ·{" "}
           {verify.entriesChecked} entries
         </div>
       )}
       {entries.length === 0 ? (
-        <p style={{ color: "#6b7280", marginTop: 24 }}>
+        <p className="c-dim mt-24">
           No access recorded yet (or a read-scoped <code>PHAROS_CONSOLE_API_KEY</code> is not
           configured).
         </p>
       ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 16, fontSize: 13 }}>
+        <table className="w-100 border-collapse-collapse mt-16 fs-13">
           <thead>
-            <tr style={{ textAlign: "left", color: "#6b7280", borderBottom: "1px solid #1f2937" }}>
-              <th style={{ padding: 8 }}>#</th>
-              <th style={{ padding: 8 }}>Actor</th>
-              <th style={{ padding: 8 }}>Action</th>
-              <th style={{ padding: 8 }}>Resource</th>
-              <th style={{ padding: 8 }}>When</th>
+            <tr className="text-align-left c-dim border-bottom-1px-solid-1f2937">
+              <th className="p-8">#</th>
+              <th className="p-8">Actor</th>
+              <th className="p-8">Action</th>
+              <th className="p-8">Resource</th>
+              <th className="p-8">When</th>
             </tr>
           </thead>
           <tbody>
             {entries.map((e) => (
-              <tr key={e.sequence} style={{ borderBottom: "1px solid #111827" }}>
-                <td style={{ padding: 8, color: "#6b7280" }}>{e.sequence}</td>
-                <td style={{ padding: 8 }}>
-                  {e.actor} <span style={{ color: "#6b7280" }}>({e.actorKind})</span>
+              <tr key={e.sequence} className="border-bottom-1px-solid-111827">
+                <td className="p-8 c-dim">{e.sequence}</td>
+                <td className="p-8">
+                  {e.actor} <span className="c-dim">({e.actorKind})</span>
                 </td>
-                <td style={{ padding: 8 }}>{e.action}</td>
-                <td style={{ padding: 8, color: "#9ca3af" }}>{e.resource}</td>
-                <td style={{ padding: 8, color: "#6b7280" }}>{e.at}</td>
+                <td className="p-8">{e.action}</td>
+                <td className="p-8 c-muted">{e.resource}</td>
+                <td className="p-8 c-dim">{e.at}</td>
               </tr>
             ))}
           </tbody>

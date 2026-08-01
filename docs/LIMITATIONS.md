@@ -201,27 +201,6 @@ runtime. Treat the terminator as part of your trust boundary and monitor it as s
 production clients at the terminator's HTTPS endpoint; both SDKs use standard
 `fetch`/`urllib` with certificate verification enabled by default.
 
-## 8. Console CSP still permits inline *styles*
-
-> **Tracking issue:** [#79](https://github.com/Bobcatsfan33/Pharos/issues/79)
-
-**Today:** the console requires an authenticated, tenant-scoped session before any route
-renders evidence, and its `script-src` carries a per-request nonce with no
-`'unsafe-inline'` — so an injected `<script>` cannot execute even if it reaches the page.
-
-**The residual:** `style-src` still carries `'unsafe-inline'`. This is a property of how
-the app is written, not an oversight in the policy. The console styles components with
-React `style` props, which emit style **attributes**, and a CSP nonce can only be carried
-by a `<style>` or `<script>` **element** — an attribute can never have one. Removing the
-allowance therefore requires converting roughly 150 inline style props across 11 files to
-CSS classes, which is a mechanical change with its own review surface, kept separate from
-the auth work.
-
-**What that does and does not expose.** Script injection is the code-execution vector and
-it is closed. Inline style is a weaker exposure: CSS-based data exfiltration by attribute
-selector, and defacement. Both require an injection point to already exist, and the
-console renders only server-fetched evidence with no user-supplied HTML.
-
 ---
 
 *Maintenance: when a roadmap task above lands, delete its entry here (and the corresponding

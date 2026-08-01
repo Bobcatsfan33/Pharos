@@ -32,44 +32,19 @@ const SECTIONS = [
 
 export function Nav() {
   return (
-    <nav
-      style={{
-        width: 240,
-        borderRight: "1px solid #1f2937",
-        padding: "24px 16px",
-        minHeight: "100vh",
-      }}
-    >
-      <Link href="/" style={{ textDecoration: "none" }}>
-        <div style={{ fontWeight: 700, fontSize: 20, color: "#f9fafb", marginBottom: 4 }}>
-          Pharos
-        </div>
-        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 28 }}>Decide. Prove.</div>
+    <nav className="w-240 border-right-1px-solid-1f2937 p-24px-16px minh-100vh">
+      <Link href="/" className="text-decoration-none">
+        <div className="fw-700 fs-20 c-strong mb-4">Pharos</div>
+        <div className="fs-12 c-dim mb-28">Decide. Prove.</div>
       </Link>
       {SECTIONS.map((section) => (
-        <div key={section.title} style={{ marginBottom: 24 }}>
-          <div
-            style={{
-              fontSize: 11,
-              textTransform: "uppercase",
-              letterSpacing: 1,
-              color: "#6b7280",
-              marginBottom: 8,
-            }}
-          >
-            {section.title}
-          </div>
+        <div key={section.title} className="mb-24">
+          <div className="fs-11 text-transform-uppercase ls-1 c-dim mb-8">{section.title}</div>
           {section.items.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              style={{
-                display: "block",
-                padding: "6px 8px",
-                color: "#d1d5db",
-                textDecoration: "none",
-                fontSize: 14,
-              }}
+              className="display-block p-6px-8px c-body text-decoration-none fs-14"
             >
               {item.label}
             </Link>

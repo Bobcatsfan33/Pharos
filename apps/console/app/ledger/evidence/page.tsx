@@ -32,27 +32,24 @@ export default async function EvidencePage() {
 
   return (
     <div>
-      <h1 style={{ fontSize: 24 }}>Evidence explorer</h1>
-      <p style={{ color: "#9ca3af" }}>
+      <h1 className="fs-24">Evidence explorer</h1>
+      <p className="c-muted">
         Each sealed ActionRecord binds the action to its mandate, oversight state, blast radius,
         verdict, and the key that signed it — chained to its predecessor.
       </p>
       {records.length === 0 ? (
-        <p style={{ color: "#6b7280", marginTop: 24 }}>No evidence yet.</p>
+        <p className="c-dim mt-24">No evidence yet.</p>
       ) : (
-        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className="mt-16 display-flex flex-direction-column gap-10">
           {records.map((r) => (
-            <div
-              key={r.content.id}
-              style={{ border: "1px solid #1f2937", borderRadius: 10, padding: 14, fontSize: 13 }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div key={r.content.id} className="border-1px-solid-1f2937 radius-10 p-14 fs-13">
+              <div className="display-flex justify-content-space-between">
                 <strong>
                   #{r.content.sequence} · {r.content.action.type}
                 </strong>
-                <span style={{ color: "#6b7280" }}>{r.content.sealedAt}</span>
+                <span className="c-dim">{r.content.sealedAt}</span>
               </div>
-              <div style={{ color: "#9ca3af", marginTop: 6 }}>
+              <div className="c-muted mt-6">
                 verdict <b>{r.content.verdict.decision}</b> · oversight{" "}
                 {r.content.liability.oversightMode} · blast{" "}
                 {r.content.liability.blastRadius.financialAmount}{" "}
@@ -60,14 +57,7 @@ export default async function EvidencePage() {
                 {r.content.liability.blastRadius.reversibility}) · mandate{" "}
                 {r.content.liability.mandate?.id ?? "none"}
               </div>
-              <div
-                style={{
-                  color: "#4b5563",
-                  marginTop: 6,
-                  fontFamily: "ui-monospace, monospace",
-                  fontSize: 11,
-                }}
-              >
+              <div className="c-faint mt-6 font-family-ui-monospace-monospace fs-11">
                 hash {r.seal.contentHash.slice(0, 24)}… ← prev {r.seal.prevHash.slice(0, 16)}… · key{" "}
                 {r.seal.keyId}
               </div>
