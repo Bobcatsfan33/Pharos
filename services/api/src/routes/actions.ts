@@ -5,9 +5,13 @@ import {
   LiabilityContextSchema,
   ActionRecordSchema,
   KmsUnavailableError,
+  canonicalize,
+  sha256Hex,
 } from "@pharos/core";
 import { fingerprintVerdict } from "@pharos/cascade";
 import { routeEscalation } from "@pharos/review";
+import { IdempotencyConflictError, IdempotencyReplayError } from "@pharos/storage";
+import type { ActionRecord } from "@pharos/core";
 import type { Platform } from "../platform.js";
 import { requireAuth } from "../auth.js";
 
@@ -26,9 +30,58 @@ const SubmitBodySchema = z.object({
   liability: LiabilityContextSchema,
   /** Optional: bind a stored mandate by id (resolved server-side and sealed into the record). */
   mandateId: z.string().optional(),
-  /** Optional idempotency key for the escalation parked on an escalate verdict. */
-  idempotencyKey: z.string().optional(),
+  /**
+   * Optional client replay guard (#74). Supplying it makes ingest exactly-once for
+   * this request: a redelivery returns the record the first delivery sealed instead of
+   * sealing another. Also keys the escalation parked on an `escalate` verdict.
+   */
+  idempotencyKey: z.string().min(1).max(255).optional(),
 });
+
+/**
+ * Bind an idempotency key to one exact request.
+ *
+ * Covers everything that determines what gets governed and sealed: the tenant, the
+ * action, the declared liability, and the referenced mandate. `emittedAt` is excluded
+ * deliberately — an SDK that stamps a fresh timestamp on each retry is still
+ * redelivering the same action, and fingerprinting the timestamp would defeat the
+ * guard for exactly the clients that need it most.
+ */
+function requestFingerprint(body: {
+  tenantId: string;
+  action: { emittedAt?: string };
+  liability: unknown;
+  mandateId?: string;
+}): string {
+  const { emittedAt: _ignored, ...action } = body.action;
+  return sha256Hex(
+    canonicalize({
+      tenantId: body.tenantId,
+      action,
+      liability: body.liability,
+      mandateId: body.mandateId ?? null,
+    }),
+  );
+}
+
+/** The submit response body, shared by the fresh-append and replay paths. */
+function submitPayload(
+  record: ActionRecord,
+  escalation: { id: string; status: string } | null,
+  replayed: boolean,
+) {
+  return {
+    success: true,
+    data: {
+      verdict: record.content.verdict,
+      record: ActionRecordSchema.parse(record),
+      escalation,
+      /** True when this response replayed an earlier delivery; nothing was created. */
+      replayed,
+    },
+    error: null,
+  };
+}
 
 export function registerActionRoutes(app: FastifyInstance, platform: Platform): void {
   app.post("/v1/actions", async (request, reply) => {
@@ -44,6 +97,51 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
 
     const principal = await requireAuth(platform, request, reply, "actions:write", body.tenantId);
     if (!principal) return reply;
+
+    // Replay guard (#74). Resolved after authorization — an unauthenticated caller must
+    // not be able to probe which idempotency keys a tenant has used.
+    const fingerprint = body.idempotencyKey ? requestFingerprint(body) : null;
+
+    /** Answer a redelivery with the record the original delivery sealed. */
+    const replay = async (record: ActionRecord) => {
+      const existing = body.idempotencyKey
+        ? await platform.escalations.getByIdempotencyKey(body.tenantId, body.idempotencyKey)
+        : null;
+      // 200, not 201: this request created nothing.
+      return reply
+        .status(200)
+        .send(
+          submitPayload(
+            record,
+            existing ? { id: existing.id, status: existing.status } : null,
+            true,
+          ),
+        );
+    };
+
+    if (body.idempotencyKey && fingerprint) {
+      try {
+        const prior = await platform.store.findByIdempotencyKey(
+          body.tenantId,
+          body.idempotencyKey,
+          fingerprint,
+        );
+        if (prior) return await replay(prior);
+      } catch (err) {
+        if (err instanceof IdempotencyConflictError) {
+          return reply.status(409).send({
+            success: false,
+            data: null,
+            error: {
+              code: "idempotency_key_reuse",
+              message:
+                "this idempotency key was already used for a different request; use a new key",
+            },
+          });
+        }
+        throw err;
+      }
+    }
 
     const action = {
       ...body.action,
@@ -79,8 +177,22 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
         action,
         verdict,
         liability,
+        ...(body.idempotencyKey && fingerprint
+          ? { idempotency: { key: body.idempotencyKey, requestFingerprint: fingerprint } }
+          : {}),
       });
     } catch (err) {
+      if (err instanceof IdempotencyReplayError && body.idempotencyKey && fingerprint) {
+        // A concurrent delivery of the same key committed first. This append rolled
+        // back, so no second record exists; answer with the winner's record.
+        const winner = await platform.store.findByIdempotencyKey(
+          body.tenantId,
+          body.idempotencyKey,
+          fingerprint,
+        );
+        if (winner) return await replay(winner);
+        throw err;
+      }
       if (err instanceof KmsUnavailableError) {
         // KMS down ⇒ the record cannot be sealed ⇒ the action cannot be governed. Return 503
         // with a distinct code (no partial/unsealed write happened); the SDK's local fail-mode
@@ -135,15 +247,15 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
       platform.metrics.escalations.inc({ queue: routing.queue });
     }
 
-    return reply.status(201).send({
-      success: true,
-      data: {
-        verdict: record.content.verdict,
-        record: ActionRecordSchema.parse(record),
-        escalation: escalation ? { id: escalation.id, status: escalation.status } : null,
-      },
-      error: null,
-    });
+    return reply
+      .status(201)
+      .send(
+        submitPayload(
+          record,
+          escalation ? { id: escalation.id, status: escalation.status } : null,
+          false,
+        ),
+      );
   });
 
   app.get<{ Params: { tenantId: string; sequence: string } }>(

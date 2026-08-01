@@ -19,7 +19,42 @@ export interface AppendInput {
   action: ActionIntent;
   verdict: VerdictContext;
   liability: LiabilityContext;
+  /**
+   * Optional replay guard (#74). When present, the append and the claim on the key
+   * commit together, so a redelivery of the same request cannot seal a second record.
+   */
+  idempotency?: IdempotencyClaim;
 }
+
+export interface IdempotencyClaim {
+  /** Client-supplied key, unique per tenant. */
+  key: string;
+  /** SHA-256 over the canonicalized submission; binds the key to one exact request. */
+  requestFingerprint: string;
+}
+
+/**
+ * The key exists but was claimed by a *different* request. Never resolved by
+ * returning the earlier record: the caller asked for something else, and answering
+ * with an unrelated sealed record would misreport what was governed.
+ */
+export class IdempotencyConflictError extends Error {
+  constructor(readonly key: string) {
+    super(`idempotency key already used for a different request`);
+    this.name = "IdempotencyConflictError";
+  }
+}
+
+/** A concurrent delivery won the race for this key; the caller should re-read and replay. */
+export class IdempotencyReplayError extends Error {
+  constructor(readonly key: string) {
+    super(`idempotency key was claimed concurrently`);
+    this.name = "IdempotencyReplayError";
+  }
+}
+
+/** Postgres unique_violation. */
+const PG_UNIQUE_VIOLATION = "23505";
 
 export interface EvidenceStoreDeps {
   pool: Pool;
@@ -138,6 +173,30 @@ export class EvidenceStore {
         [input.tenantId, sequence, record.seal.contentHash],
       );
 
+      // Claim the idempotency key in THIS transaction. Committing the claim together
+      // with the record is what makes the guard exact: there is no window in which a
+      // record exists without its claim (a replay would seal a second record) or a
+      // claim exists without its record (a replay would resolve to nothing).
+      //
+      // The primary key is the arbiter. Concurrent deliveries already serialize on the
+      // tenant_chain_head row lock taken above, so the loser reaches this INSERT after
+      // the winner has committed and takes the unique violation.
+      if (input.idempotency) {
+        try {
+          await client.query(
+            `INSERT INTO ingest_idempotency (tenant_id, idempotency_key, request_fingerprint, sequence)
+             VALUES ($1,$2,$3,$4)`,
+            [input.tenantId, input.idempotency.key, input.idempotency.requestFingerprint, sequence],
+          );
+        } catch (err) {
+          if ((err as { code?: string }).code !== PG_UNIQUE_VIOLATION) throw err;
+          // Someone else claimed the key. The enclosing catch rolls this append back
+          // entirely — no record is sealed — and the caller re-reads and answers with
+          // the winner's record.
+          throw new IdempotencyReplayError(input.idempotency.key);
+        }
+      }
+
       await client.query("COMMIT");
       return record;
     } catch (err) {
@@ -196,6 +255,40 @@ export class EvidenceStore {
       );
       return res.rows[0] ? this.rowToRecord(res.rows[0]) : null;
     });
+  }
+
+  /**
+   * Resolve a previously-claimed idempotency key (#74).
+   *
+   * Returns the sealed record the key produced, or null if the key is unused. Throws
+   * IdempotencyConflictError when the key was claimed by a materially different
+   * request — re-using a key against a new action is refused, not collapsed, so a
+   * caller cannot point an old approval at a new action.
+   */
+  async findByIdempotencyKey(
+    tenantId: string,
+    key: string,
+    requestFingerprint: string,
+  ): Promise<ActionRecord | null> {
+    const claim = await this.withTenant(tenantId, async (client) => {
+      const res = await client.query<{ sequence: string; request_fingerprint: string }>(
+        `SELECT sequence, request_fingerprint FROM ingest_idempotency
+         WHERE tenant_id = $1 AND idempotency_key = $2`,
+        [tenantId, key],
+      );
+      return res.rows[0] ?? null;
+    });
+    if (!claim) return null;
+    if (claim.request_fingerprint !== requestFingerprint) {
+      throw new IdempotencyConflictError(key);
+    }
+    const record = await this.getRecord(tenantId, Number(claim.sequence));
+    if (!record) {
+      // The claim and the record commit in one transaction, so this is unreachable
+      // short of out-of-band deletion. Fail loudly rather than silently re-appending.
+      throw new Error(`idempotency claim ${key} references missing record ${claim.sequence}`);
+    }
+    return record;
   }
 
   async getRecordById(tenantId: string, id: string): Promise<ActionRecord | null> {
