@@ -94,7 +94,7 @@ Built at [`platform.ts:172`](../../services/api/src/platform.ts); invoked on the
 |--------|--------|-------------------------------------------|
 | **S** | Spoof a favorable verdict | Verdict is computed server-side and **sealed into the record** (§3); it cannot be asserted by the caller. Determinism test: [`cascade.test.ts:163`](../../test/cascade.test.ts) |
 | **T** | Prompt-inject the T3 judge / spoof liability | Judge input is harvested from caller-controlled `action.payload` ([`cascade.ts:274`](../../packages/cascade/src/cascade.ts)) and `liability` drives T1/T2/fail-mode. **Accepted risk [#81](https://github.com/Bobcatsfan33/Pharos/issues/81)** (trust assumption: liability is attested by trusted middleware/mandate; adversarial judge robustness is quantified in Sprint 5-7 evals) |
-| **T** | Trigger injected faults in prod | `CascadeFaults` hooks ship on the class. **Accepted risk [#82](https://github.com/Bobcatsfan33/Pharos/issues/82)** — only fire when `deps.faults` is set, which the server never does |
+| **T** | Trigger injected faults in prod | **No fault path ships on the production class.** The seam moved to `FaultInjectingCascade` ([`cascade/src/testing.ts`](../../packages/cascade/src/testing.ts)), a subclass reachable only by an explicit `@pharos/cascade/testing` deep import and deliberately absent from the package index — a structural guarantee rather than the operational claim "the server never sets that field". Test: [`cascade.no-fault-hooks.test.ts`](../../test/cascade.no-fault-hooks.test.ts) |
 | **R** | Dispute how a decision was reached | Citations accumulate through all tiers and are composed into the verdict ([`cascade.ts:187`](../../packages/cascade/src/cascade.ts)), then sealed — reproducible |
 | **D** | Slow judge stalls the request | Deadline race ([`deadline.ts:16`](../../packages/cascade/src/deadline.ts), 800ms budget) |
 | **E** | Bypass a Tier-1 block | Block short-circuits later tiers ([`cascade.ts:96`](../../packages/cascade/src/cascade.ts)); on timeout/fault the fail-mode is reversibility-aware (reversible→fail-open, else fail-closed/escalate — [`cascade.ts:221`](../../packages/cascade/src/cascade.ts)). Test: [`cascade.test.ts:127`](../../test/cascade.test.ts) |
@@ -281,7 +281,7 @@ consistency check for `schemaVersion ≥ 1.1`. Tracked in **[#67](https://github
 | [#79](https://github.com/Bobcatsfan33/Pharos/issues/79) | Console: no CSP/headers, unauthenticated, demo-tenant | Console | Accepted for demo dashboard |
 | [#80](https://github.com/Bobcatsfan33/Pharos/issues/80) | SDKs do no runtime input validation | SDK | Accepted; server validates |
 | [#81](https://github.com/Bobcatsfan33/Pharos/issues/81) | Caller-controlled liability & judge input | Cascade | Accepted pending attestation model |
-| [#82](https://github.com/Bobcatsfan33/Pharos/issues/82) | Fault-injection hooks on prod cascade class | Cascade | Accepted; never wired server-side |
+| ~~[#82](https://github.com/Bobcatsfan33/Pharos/issues/82)~~ | ~~Fault-injection hooks on prod cascade class~~ | Cascade | **Resolved** — seam moved to a test-only subclass off the package index; regression-tested |
 
 ## External / human gates (not claimed here)
 
