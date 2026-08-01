@@ -1,4 +1,5 @@
-import { api, DEMO_TENANT } from "../../lib/api";
+import { api } from "../../lib/api";
+import { requireSession } from "../../lib/session";
 
 interface Pack {
   id: string;
@@ -18,7 +19,10 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default async function ClaimsPacksPage() {
-  const data = await api<{ packs: Pack[] }>(`/v1/tenants/${DEMO_TENANT}/claims-packs`);
+  // Auth gate + per-user tenant scoping (#79): verified BEFORE any evidence is fetched.
+  const { principal, token } = await requireSession();
+  const tenantId = principal.tenantId;
+  const data = await api<{ packs: Pack[] }>(`/v1/tenants/${tenantId}/claims-packs`, token);
   const packs = data?.packs ?? [];
   return (
     <div>

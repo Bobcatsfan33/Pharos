@@ -1,4 +1,5 @@
-import { api, DEMO_TENANT } from "../../lib/api";
+import { api } from "../../lib/api";
+import { requireSession } from "../../lib/session";
 
 interface PolicyVersion {
   id: string;
@@ -21,8 +22,12 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default async function PoliciesPage() {
+  // Auth gate + per-user tenant scoping (#79): verified BEFORE any evidence is fetched.
+  const { principal, token } = await requireSession();
+  const tenantId = principal.tenantId;
   const data = await api<{ policies: PolicyVersion[]; shippedPacks: ShippedPack[] }>(
-    `/v1/tenants/${DEMO_TENANT}/policies`,
+    `/v1/tenants/${tenantId}/policies`,
+    token,
   );
   const shipped = data?.shippedPacks ?? [
     { packId: "finra", version: "2.0.0", rules: 4 },

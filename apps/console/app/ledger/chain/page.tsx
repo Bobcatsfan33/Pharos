@@ -1,4 +1,5 @@
-import { api, DEMO_TENANT } from "../../lib/api";
+import { api } from "../../lib/api";
+import { requireSession } from "../../lib/session";
 
 interface ChainVerification {
   ok: boolean;
@@ -16,7 +17,10 @@ interface ChainVerification {
 }
 
 export default async function ChainPage() {
-  const report = await api<ChainVerification>(`/v1/chain/${DEMO_TENANT}/verify`);
+  // Auth gate + per-user tenant scoping (#79): verified BEFORE any evidence is fetched.
+  const { principal, token } = await requireSession();
+  const tenantId = principal.tenantId;
+  const report = await api<ChainVerification>(`/v1/chain/${tenantId}/verify`, token);
   return (
     <div>
       <h1 style={{ fontSize: 24 }}>Chain integrity</h1>
@@ -27,7 +31,7 @@ export default async function ChainPage() {
       </p>
       {report === null ? (
         <p style={{ color: "#6b7280", marginTop: 24 }}>
-          API unreachable, or no records for {DEMO_TENANT} yet.
+          API unreachable, or no records for {tenantId} yet.
         </p>
       ) : (
         <div

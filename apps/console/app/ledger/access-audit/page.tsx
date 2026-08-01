@@ -1,4 +1,5 @@
-import { api, DEMO_TENANT } from "../../lib/api";
+import { api } from "../../lib/api";
+import { requireSession } from "../../lib/session";
 
 interface AuditEntry {
   sequence: number;
@@ -11,9 +12,13 @@ interface AuditEntry {
 }
 
 export default async function AccessAuditPage() {
-  const data = await api<{ entries: AuditEntry[] }>(`/v1/tenants/${DEMO_TENANT}/audit`);
+  // Auth gate + per-user tenant scoping (#79): verified BEFORE any evidence is fetched.
+  const { principal, token } = await requireSession();
+  const tenantId = principal.tenantId;
+  const data = await api<{ entries: AuditEntry[] }>(`/v1/tenants/${tenantId}/audit`, token);
   const verify = await api<{ ok: boolean; entriesChecked: number }>(
-    `/v1/tenants/${DEMO_TENANT}/audit/verify`,
+    `/v1/tenants/${tenantId}/audit/verify`,
+    token,
   );
   const entries = (data?.entries ?? []).slice().reverse();
 

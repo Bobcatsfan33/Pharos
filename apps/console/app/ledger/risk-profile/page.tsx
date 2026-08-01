@@ -1,4 +1,5 @@
-import { api, DEMO_TENANT } from "../../lib/api";
+import { api } from "../../lib/api";
+import { requireSession } from "../../lib/session";
 
 interface RiskProfile {
   records: number;
@@ -36,11 +37,15 @@ const GRADE_COLOR: Record<string, string> = {
 };
 
 export default async function RiskProfilePage() {
+  // Auth gate + per-user tenant scoping (#79): verified BEFORE any evidence is fetched.
+  const { principal, token } = await requireSession();
+  const tenantId = principal.tenantId;
   const profile = await api<{ riskProfile: RiskProfile }>(
-    `/v1/tenants/${DEMO_TENANT}/risk-profile`,
+    `/v1/tenants/${tenantId}/risk-profile`,
+    token,
   );
-  const assurance = await api<Assurance>(`/v1/tenants/${DEMO_TENANT}/assurance`);
-  const readiness = await api<{ readiness: Readiness }>(`/v1/tenants/${DEMO_TENANT}/readiness`);
+  const assurance = await api<Assurance>(`/v1/tenants/${tenantId}/assurance`, token);
+  const readiness = await api<{ readiness: Readiness }>(`/v1/tenants/${tenantId}/readiness`, token);
   const p = profile?.riskProfile;
 
   return (

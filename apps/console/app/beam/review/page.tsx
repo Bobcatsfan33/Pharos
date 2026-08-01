@@ -1,4 +1,5 @@
-import { api, DEMO_TENANT } from "../../lib/api";
+import { api } from "../../lib/api";
+import { requireSession } from "../../lib/session";
 
 interface Analytics {
   resolved: number;
@@ -19,9 +20,13 @@ interface RuleCandidate {
 }
 
 export default async function ReviewOpsPage() {
-  const analytics = await api<Analytics>(`/v1/tenants/${DEMO_TENANT}/review/analytics`);
+  // Auth gate + per-user tenant scoping (#79): verified BEFORE any evidence is fetched.
+  const { principal, token } = await requireSession();
+  const tenantId = principal.tenantId;
+  const analytics = await api<Analytics>(`/v1/tenants/${tenantId}/review/analytics`, token);
   const disagreements = await api<{ ruleCandidates: RuleCandidate[] }>(
-    `/v1/tenants/${DEMO_TENANT}/review/disagreements`,
+    `/v1/tenants/${tenantId}/review/disagreements`,
+    token,
   );
 
   return (
