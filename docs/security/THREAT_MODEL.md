@@ -81,6 +81,46 @@ same auth path.
 
 ---
 
+### 1a. Why the ingest idempotency guard stays opt-in ([#74](https://github.com/Bobcatsfan33/Pharos/issues/74))
+
+The transactional guard is delivered and works. The open question was whether production
+configuration should *require* `idempotencyKey`, fail-closed, the way `PHAROS_ENV=prod`
+gates the KMS provider ([#78](https://github.com/Bobcatsfan33/Pharos/issues/78)) and the
+gateway's durable store ([#38](https://github.com/Bobcatsfan33/Pharos/issues/38)).
+
+**Decision: no. Opt-in is the honest posture, and this is recorded as an accepted residual.**
+
+The reason is not convenience. It is that **requiring the field cannot enforce the property
+that makes it valuable.** The guard works only when a key is *stable across redeliveries of
+the same logical action* and *distinct across different actions*. Only the caller knows
+which is which. A required field satisfied by `randomUUID()` on every attempt passes the
+check, provides exactly zero replay protection, and makes the deployment look compliant —
+strictly worse than an honest opt-in, because it converts a visible gap into an invisible one.
+
+The two first-party callers confirm this is not hypothetical. Neither has a stable key
+available:
+
+- **The gateway** ([`gateway.ts`](../../services/gateway/src/gateway.ts)) governs arbitrary
+  inbound HTTP. Absent an upstream-supplied identifier it would have to synthesise one by
+  hashing the request — which would silently collapse two *intentionally* identical
+  requests into one, dropping a real governed action. A missing action is a worse evidence
+  defect than a duplicate one. The gateway's exactly-once story is handled at the right
+  layer instead: the upstream idempotency conformance probe (`gateway.idempotencyProbePath`).
+- **The framework middlewares** ([`govern.ts`](../../packages/middleware/src/govern.ts)) wrap
+  a tool call with its arguments and have the same ambiguity — identical args may be two
+  deliberate invocations.
+
+**What this means in practice.** A client that retries — the common case — should supply a
+key derived from its own unit of work (job id, message id, workflow step). A client that
+does not gets at-least-once ingest, which is the documented pre-existing behaviour: every
+delivery produces an independently valid, signed record. Duplicates remain *detectable*
+(identical action payloads, adjacent sequences); they are simply not *collapsed*.
+
+Revisit if a future first-party caller gains a naturally stable work identifier — at that
+point requiring it *for that caller* becomes enforceable and therefore worth doing.
+
+---
+
 ## 2. Verdict cascade (`packages/cascade`)
 
 Built at [`platform.ts:172`](../../services/api/src/platform.ts); invoked on the live path at
@@ -309,7 +349,7 @@ production default.**
 |----|------|---------|-------------|
 | ~~[#67](https://github.com/Bobcatsfan33/Pharos/issues/67)~~ | ~~`seal.algorithm` misstated for non-Ed25519 keys~~ | Seal | **Resolved in schema v1.1.0** (ADR 0005). Legacy 1.0.0 records intentionally unchanged and still verify |
 | ~~[#73](https://github.com/Bobcatsfan33/Pharos/issues/73)~~ | ~~Rate limiter fails open on cache outage~~ | Ingestion | **Resolved** — fail-closed admission + tenant-aggregate cap, production-pinned and regression-tested |
-| [#74](https://github.com/Bobcatsfan33/Pharos/issues/74) | No replay/idempotency guard on ingest | Ingestion | **Mechanism delivered** — transactional `idempotencyKey` guard. Residual: opt-in, so keyless clients remain at-least-once |
+| [#74](https://github.com/Bobcatsfan33/Pharos/issues/74) | No replay/idempotency guard on ingest | Ingestion | **Mechanism delivered** — transactional `idempotencyKey` guard. **Decided: opt-in is the honest posture** (see §1a); a production requirement would be satisfiable by a fresh random value per attempt and would enforce nothing |
 | [#75](https://github.com/Bobcatsfan33/Pharos/issues/75) | ~~Admin token: non-constant-time~~, no rotation | Gateway | **Constant-time compare done** (fix-now half). Residual: rotation/expiry still accepted |
 | [#76](https://github.com/Bobcatsfan33/Pharos/issues/76) | No in-app TLS/mTLS | All | **Contract specified + render-gated** (declared terminator required in prod). Residual: the host owns the front door |
 | ~~[#77](https://github.com/Bobcatsfan33/Pharos/issues/77)~~ | ~~WORM: no verify-on-read / reconcile / Object-Lock assert~~ | WORM | **Resolved** — verify-on-read, `reconcile()` implemented, fail-closed Object-Lock assertion, all regression-tested |
