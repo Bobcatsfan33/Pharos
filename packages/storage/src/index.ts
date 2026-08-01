@@ -1,6 +1,13 @@
 export { createPool, type Pool } from "./pg.js";
 export { runMigrations, MIGRATIONS, type Migration } from "./migrations.js";
-export { WormStore, type WormStoreConfig, type WormPutResult } from "./wormStore.js";
+export {
+  WormStore,
+  WormIntegrityError,
+  type WormStoreConfig,
+  type WormPutResult,
+  type WormReconciliation,
+  type CommittedRecordRef,
+} from "./wormStore.js";
 export {
   EvidenceStore,
   IdempotencyConflictError,

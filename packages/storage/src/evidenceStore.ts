@@ -12,7 +12,7 @@ import {
   computeDisclosures,
   disclosureBindingMessage,
 } from "@pharos/core";
-import type { WormStore } from "./wormStore.js";
+import type { WormStore, WormReconciliation } from "./wormStore.js";
 
 export interface AppendInput {
   tenantId: string;
@@ -289,6 +289,25 @@ export class EvidenceStore {
       throw new Error(`idempotency claim ${key} references missing record ${claim.sequence}`);
     }
     return record;
+  }
+
+  /**
+   * Reconcile this tenant's committed records against the WORM objects that exist (#77).
+   *
+   * The claim that a post-PUT commit failure is "harmless because it is detected by
+   * reconcile()" is only true if reconcile() exists and is run. This supplies the
+   * authoritative Postgres side — every committed record and the object key it named —
+   * and delegates the comparison to the object store.
+   */
+  async reconcileWorm(tenantId: string): Promise<WormReconciliation> {
+    const committed = await this.withTenant(tenantId, async (client) => {
+      const res = await client.query<{ sequence: string; worm_key: string }>(
+        `SELECT sequence, worm_key FROM action_records WHERE tenant_id = $1 ORDER BY sequence ASC`,
+        [tenantId],
+      );
+      return res.rows.map((r) => ({ sequence: Number(r.sequence), wormKey: r.worm_key }));
+    });
+    return this.deps.worm.reconcile(tenantId, committed);
   }
 
   async getRecordById(tenantId: string, id: string): Promise<ActionRecord | null> {
