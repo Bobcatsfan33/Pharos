@@ -30,6 +30,24 @@ describe("production configuration posture", () => {
     expect(config.kms.provider).toBe("aws-kms");
     expect(config.tsa.provider).toBe("rfc3161");
     expect(config.judge.provider).toBe("onnx");
+    // Admission control must not silently degrade to unmetered ingest (#73).
+    expect(config.api.rateLimitFailMode).toBe("closed");
+  });
+
+  it("defaults to fail-closed admission even outside production", () => {
+    const config = loadConfig({
+      PHAROS_ENV: "local",
+      PHAROS_PG_URL: "postgres://localhost/pharos",
+      PHAROS_REDIS_URL: "redis://localhost:6379",
+      PHAROS_S3_ENDPOINT: "http://localhost:9000",
+      PHAROS_S3_REGION: "us-east-1",
+      PHAROS_S3_BUCKET: "test",
+      PHAROS_S3_ACCESS_KEY: "test",
+      PHAROS_S3_SECRET_KEY: "test",
+    });
+
+    expect(config.api.rateLimitFailMode).toBe("closed");
+    expect(config.api.rateLimitTenantPerMin).toBeGreaterThanOrEqual(config.api.rateLimitPerMin);
   });
 
   it.each([
@@ -79,6 +97,12 @@ describe("production configuration posture", () => {
     ],
     ["plaintext Redis", { PHAROS_REDIS_URL: "redis://redis.internal:6379" }, "redis.url"],
     ["a short admin token", { PHAROS_ADMIN_TOKEN: "change-me" }, "admin.token"],
+    ["a fail-open rate limiter", { PHAROS_RATE_LIMIT_FAIL_MODE: "open" }, "api.rateLimitFailMode"],
+    [
+      "a tenant budget below the per-principal budget",
+      { PHAROS_RATE_LIMIT_PER_MIN: "600", PHAROS_RATE_LIMIT_TENANT_PER_MIN: "100" },
+      "api.rateLimitTenantPerMin",
+    ],
   ])("rejects %s", (_name, override, path) => {
     expect(() => loadConfig(productionEnv(override))).toThrow(path);
   });
