@@ -143,7 +143,7 @@ low-stakes tools and should be overridden wherever the tool can move money or da
 | **T** | Splice a valid record elsewhere | v2 signature binds `{sequence, prevHash, contentHash}` ([`provider.ts:82`](../../packages/core/src/signing/provider.ts)); a spliced record fails signature even if the chain link matches. Test: [`core.seal-v2.test.ts:78`](../../test/core.seal-v2.test.ts) |
 | **T** | Break/reorder the chain | `verifyChain` walks genesis→head, checks sequence gaps, tenant consistency, and `prevHash` link ([`verify.ts:137`](../../packages/core/src/chain/verify.ts)). Test: [`core.seal-verify.test.ts:90`](../../test/core.seal-verify.test.ts) |
 | **T** | Concurrent-append race corrupts the chain | Head row locked `FOR UPDATE` serializes appends ([`evidenceStore.ts:59`](../../packages/storage/src/evidenceStore.ts)) |
-| **S/R** | Evidence misstates its own signature algorithm | **Accepted risk [#67](https://github.com/Bobcatsfan33/Pharos/issues/67)** — `seal.algorithm` is hardcoded `"ed25519"` and schema-locked ([`seal.ts:36`](../../packages/core/src/chain/seal.ts), [`actionRecord.ts:164`](../../packages/core/src/schema/actionRecord.ts)) even when the signer is ECDSA P-256. **Benign for verification** because verify dispatches on the *keyset entry's* algorithm, never the seal field ([`verify.ts:23`](../../packages/core/src/chain/verify.ts)); see the dedicated analysis in §9 |
+| **S/R** | Evidence misstates its own signature algorithm | **Fixed in schema v1.1.0** ([ADR 0005](../adr/0005-seal-algorithm-schema-v1-1.md), [#67](https://github.com/Bobcatsfan33/Pharos/issues/67)). `sealRecord` reads the algorithm from the signing key instead of hardcoding `"ed25519"`, and `verifyRecord` asserts it agrees with the keyset entry for `schemaVersion >= 1.1.0`. Verification still dispatches on the *keyset entry*, never the seal field ([`verify.ts`](../../packages/core/src/chain/verify.ts)) — the new check is consistency, not dispatch. Records sealed under 1.0.0 keep their misstatement by design and still verify; see §9 |
 | **R** | Forge a signature | Signature verified against the published keyset ([`verify.ts:109`](../../packages/core/src/chain/verify.ts)); forged sig fails. Test: [`core.seal-verify.test.ts:100`](../../test/core.seal-verify.test.ts) |
 | **T** | Non-canonical serialization desync | `canonicalize` is dependency-free, key-sorted, rejects non-finite numbers ([`canonical.ts:16`](../../packages/core/src/chain/canonical.ts)). Test: [`core.canonical.test.ts:5`](../../test/core.canonical.test.ts) |
 
@@ -289,16 +289,17 @@ misstates its own signature algorithm is an examiner-facing inconsistency, and a
 verifier that *naïvely trusted* `seal.algorithm` instead of the keyset would mis-dispatch. This is
 a credibility defect in exactly the audience Pharos sells to.
 
-**Disposition.** The seal is frozen schema v1 (roadmap §2 rule 4), so the fix goes through the
-schema-version machinery ([`schema/version.ts`](../../packages/core/src/schema/version.ts)).
-The design is settled in **[ADR 0005](../adr/0005-seal-algorithm-schema-v1-1.md)**: bump to
-v1.1.0 and widen `seal.algorithm` to the real algorithm; **never rewrite or re-seal historical
-records** (an evidence system that edits its past to tidy a cosmetic defect has destroyed the
-property that made it worth having); keep dispatching signature verification on the **keyset
-entry**, adding only a *consistency* check for `schemaVersion ≥ 1.1` — the gating version marker
-is itself authenticated, since `schemaVersion` lives inside the hashed, signed `content`.
-Implementation tracked in **[#67](https://github.com/Bobcatsfan33/Pharos/issues/67)**;
-**blocks flipping `aws-kms` to a production default** (does not block Sprint 4).
+**Disposition — DELIVERED in schema v1.1.0** ([ADR 0005](../adr/0005-seal-algorithm-schema-v1-1.md)).
+`seal.algorithm` widened to the real algorithm and `sealRecord` reads it from the signing key;
+`verifyRecord` adds a **consistency** check (`sealAlgorithmMatches`) for `schemaVersion >= 1.1.0`
+while signature verification still dispatches on the **published keyset entry** — trusting a
+self-declared field would let a record nominate the algorithm used to check it. The gating marker
+is authenticated: `schemaVersion` is inside the hashed, signed `content`. Records sealed under
+1.0.0 are **never rewritten** and still verify green, misstatement and all. Tests:
+[`integration.seal-algorithm-v11.test.ts`](../../test/integration.seal-algorithm-v11.test.ts) —
+real ECDSA seal under aws-kms, mismatch invalidation with the signature still valid, legacy
+1.0.0 record accepted, and a mixed 1.0.0 → 1.1.0 chain. **No longer blocks `aws-kms` as a
+production default.**
 
 ---
 
@@ -306,7 +307,7 @@ Implementation tracked in **[#67](https://github.com/Bobcatsfan33/Pharos/issues/
 
 | ID | Risk | Surface | Disposition |
 |----|------|---------|-------------|
-| [#67](https://github.com/Bobcatsfan33/Pharos/issues/67) | `seal.algorithm` misstated for non-Ed25519 keys | Seal | Fix via schema v1.1 RFC; blocks aws-kms prod default |
+| ~~[#67](https://github.com/Bobcatsfan33/Pharos/issues/67)~~ | ~~`seal.algorithm` misstated for non-Ed25519 keys~~ | Seal | **Resolved in schema v1.1.0** (ADR 0005). Legacy 1.0.0 records intentionally unchanged and still verify |
 | ~~[#73](https://github.com/Bobcatsfan33/Pharos/issues/73)~~ | ~~Rate limiter fails open on cache outage~~ | Ingestion | **Resolved** — fail-closed admission + tenant-aggregate cap, production-pinned and regression-tested |
 | [#74](https://github.com/Bobcatsfan33/Pharos/issues/74) | No replay/idempotency guard on ingest | Ingestion | **Mechanism delivered** — transactional `idempotencyKey` guard. Residual: opt-in, so keyless clients remain at-least-once |
 | [#75](https://github.com/Bobcatsfan33/Pharos/issues/75) | ~~Admin token: non-constant-time~~, no rotation | Gateway | **Constant-time compare done** (fix-now half). Residual: rotation/expiry still accepted |

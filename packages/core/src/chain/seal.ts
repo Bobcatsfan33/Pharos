@@ -30,10 +30,23 @@ export async function sealRecord(params: {
     params.keyId,
     signingMessageV2({ contentHash, prevHash: params.prevHash, sequence: content.sequence }),
   );
+
+  // The algorithm is read from the signing key, never hardcoded (ADR 0005 / #67).
+  // Hardcoding "ed25519" is what made every aws-kms record misstate itself. If the key
+  // cannot be resolved we refuse to seal rather than guess: a record that misdescribes
+  // its own signature is exactly the defect being removed.
+  const entry = await params.signer.getPublicKey(params.keyId);
+  if (!entry) {
+    throw new Error(
+      `cannot seal record: signing key ${params.keyId} has no published public key entry, ` +
+        `so its signature algorithm cannot be stated truthfully`,
+    );
+  }
+
   const seal: RecordSeal = {
     contentHash,
     prevHash: params.prevHash,
-    algorithm: "ed25519",
+    algorithm: entry.algorithm,
     keyId: params.keyId,
     signature,
     sigVersion: SEAL_SIGNATURE_VERSION,

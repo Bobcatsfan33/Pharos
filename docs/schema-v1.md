@@ -1,4 +1,4 @@
-# ActionRecord Schema v1.0.0 (frozen)
+# ActionRecord Schema v1.1.0
 
 The `ActionRecord` is the universal event of the Pharos platform — one event, two
 consumers. It carries the **Beam** (Decide) verdict context and the **Ledger** (Prove)
@@ -21,7 +21,7 @@ A record has two top-level parts:
 
 ```
 content
-├─ schemaVersion : "1.0.0"            literal; every record self-describes its version
+├─ schemaVersion : "1.0.0"|"1.1.0"    every record self-describes its version (hashed+signed)
 ├─ id            : uuid               globally unique record id
 ├─ tenantId      : string             isolation boundary
 ├─ sequence      : int ≥ 0            per-tenant monotonic; 0 is genesis
@@ -60,9 +60,32 @@ seal
 - **MAJOR** — breaking change; requires a forward migration adapter and a documented
   re-verification procedure for the chain.
 
-The version is frozen at `1.0.0` as of Sprint 0. Migration adapters translate the two
-legacy shapes (AI Lighthouse verdict records, Flightline liability events) into v1 and
+Current version: **`1.1.0`**. Migration adapters translate the two legacy shapes (AI
+Lighthouse verdict records, Flightline liability events) into the current version and
 back: [`packages/core/src/migration/`](../packages/core/src/migration/).
+
+### v1.1.0 — `seal.algorithm` states the real signing algorithm
+
+See [ADR 0005](adr/0005-seal-algorithm-schema-v1-1.md) and
+[#67](https://github.com/Bobcatsfan33/Pharos/issues/67). `seal.algorithm` widened from the
+literal `"ed25519"` to `"ed25519" | "ecdsa-p256"`, and `sealRecord` now reads it from the
+signing key rather than hardcoding it — previously every `aws-kms` record claimed Ed25519
+while its keyset entry said `ecdsa-p256`. MINOR, because widening an enum keeps every
+v1.0.0 record parseable.
+
+Three properties worth stating precisely:
+
+- **Records sealed under 1.0.0 are never rewritten.** Some of them permanently misstate
+  their algorithm. That is history, and an evidence system does not edit its past.
+- **Verification still dispatches on the published keyset entry**, never on
+  `seal.algorithm`. Trusting a self-declared field would let a record nominate the
+  algorithm used to check it. From 1.1.0 the field is *additionally* asserted to agree
+  with the keyset (`sealAlgorithmMatches`); below 1.1.0 it is informational only.
+- **The gating version marker is itself authenticated.** `schemaVersion` lives inside
+  `content`, which is hashed and signed, so a 1.1.0 record cannot be downgraded to escape
+  the consistency check without breaking its signature.
+
+Mixed chains spanning the boundary verify green end to end.
 
 ## Canonicalization
 

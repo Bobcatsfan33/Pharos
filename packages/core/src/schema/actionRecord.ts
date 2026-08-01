@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ACTION_RECORD_SCHEMA_VERSION } from "./version.js";
+import { SUPPORTED_SCHEMA_VERSIONS } from "./version.js";
 
 /**
  * The unified ActionRecord — the universal event of the Pharos platform.
@@ -137,7 +137,15 @@ export type LiabilityContext = z.infer<typeof LiabilityContextSchema>;
 // Content — the signed, hashed evidence body.
 // ---------------------------------------------------------------------------
 export const ActionRecordContentSchema = z.object({
-  schemaVersion: z.literal(ACTION_RECORD_SCHEMA_VERSION),
+  /**
+   * The schema version this record was sealed under. Every SUPPORTED version parses —
+   * a v1.1 reader must still read v1.0 records, because historical records are never
+   * rewritten (ADR 0005 D2). Only the current version is ever written.
+   *
+   * This field is inside `content`, so it is hashed and signed: the version marker that
+   * gates the v1.1 seal-algorithm check cannot be forged or downgraded.
+   */
+  schemaVersion: z.enum(SUPPORTED_SCHEMA_VERSIONS),
   /** Globally unique record id (uuid v4). */
   id: z.string().uuid(),
   /** Tenant that owns this record; isolation boundary. */
@@ -160,8 +168,20 @@ export const RecordSealSchema = z.object({
   contentHash: z.string().regex(/^[0-9a-f]{64}$/),
   /** `contentHash` of the previous record in this tenant's chain; GENESIS_HASH for sequence 0. */
   prevHash: z.string().regex(/^[0-9a-f]{64}$/),
-  /** Signature algorithm. */
-  algorithm: z.literal("ed25519"),
+  /**
+   * The algorithm that actually produced `signature` (ADR 0005, #67).
+   *
+   * Widened from `z.literal("ed25519")` in schema v1.1.0 so an aws-kms-sealed record
+   * stops claiming Ed25519 while its keyset entry says ecdsa-p256.
+   *
+   * Read carefully: this field is **never** the source of truth for verification.
+   * Signature verification dispatches on the *published keyset entry* — trusting a
+   * self-declared field would let a record nominate the algorithm used to check it.
+   * For `schemaVersion >= 1.1.0` it is additionally asserted to AGREE with that entry;
+   * for older records it is informational only, and legacy records that misstate it
+   * are left exactly as sealed (D2: evidence is never rewritten).
+   */
+  algorithm: z.enum(["ed25519", "ecdsa-p256"]),
   /** KMS key id that produced the signature (enables rotation with chain continuity). */
   keyId: z.string().min(1),
   /** Base64 signature over `contentHash` bytes. */

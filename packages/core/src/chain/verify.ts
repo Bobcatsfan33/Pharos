@@ -1,4 +1,5 @@
 import { type ActionRecord, ActionRecordSchema, GENESIS_HASH } from "../schema/actionRecord.js";
+import { sealAlgorithmIsAuthoritative } from "../schema/version.js";
 import { type PublicKeyEntry, sealSigningMessage } from "../signing/provider.js";
 import { sha256Hex } from "./canonical.js";
 import { verify as nodeVerify, createPublicKey } from "node:crypto";
@@ -35,6 +36,15 @@ export interface RecordVerification {
     contentHashMatches: boolean;
     signatureValid: boolean;
     chainLinkValid: boolean;
+    /**
+     * Does `seal.algorithm` agree with the keyset entry that verified the signature?
+     *
+     * Enforced only for `schemaVersion >= 1.1.0` (ADR 0005 / #67); `true` for older
+     * records, where the field is informational and legacy aws-kms seals are known to
+     * misstate it. This is a CONSISTENCY check reported alongside the others — it is
+     * never an input to signature verification, which always dispatches on the keyset.
+     */
+    sealAlgorithmMatches: boolean;
   };
   errors: string[];
 }
@@ -118,11 +128,37 @@ export function verifyRecord(
   if (!chainLinkValid)
     errors.push(`chain link broken: prevHash ${record.seal.prevHash} != expected ${prevHash}`);
 
+  // Consistency, NOT dispatch (ADR 0005 / #67). The signature was verified above against
+  // the keyset entry's algorithm; this asks the separate question of whether the record
+  // describes itself truthfully. Enforced from schema 1.1.0 onward — v1.0.0 records are
+  // known to misstate this for aws-kms seals and are never rewritten, so checking them
+  // would fail honest historical evidence.
+  //
+  // The gating `schemaVersion` is inside `content`, hence hashed and signed: a v1.1
+  // record cannot be downgraded to escape this check without breaking its signature.
+  const entry = keyset.get(record.seal.keyId);
+  let sealAlgorithmMatches = true;
+  if (sealAlgorithmIsAuthoritative(record.content.schemaVersion) && entry) {
+    sealAlgorithmMatches = record.seal.algorithm === entry.algorithm;
+    if (!sealAlgorithmMatches) {
+      errors.push(
+        `seal algorithm mismatch: record claims ${record.seal.algorithm} but key ` +
+          `${record.seal.keyId} is ${entry.algorithm}`,
+      );
+    }
+  }
+
   return {
-    ok: schemaValid && contentHashMatches && sig.ok && chainLinkValid,
+    ok: schemaValid && contentHashMatches && sig.ok && chainLinkValid && sealAlgorithmMatches,
     recordId: record.content.id,
     sequence: record.content.sequence,
-    checks: { schemaValid, contentHashMatches, signatureValid: sig.ok, chainLinkValid },
+    checks: {
+      schemaValid,
+      contentHashMatches,
+      signatureValid: sig.ok,
+      chainLinkValid,
+      sealAlgorithmMatches,
+    },
     errors,
   };
 }
