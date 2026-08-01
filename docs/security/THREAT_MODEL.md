@@ -290,9 +290,14 @@ verifier that *naïvely trusted* `seal.algorithm` instead of the keyset would mi
 a credibility defect in exactly the audience Pharos sells to.
 
 **Disposition.** The seal is frozen schema v1 (roadmap §2 rule 4), so the fix goes through the
-schema-version machinery ([`schema/version.ts`](../../packages/core/src/schema/version.ts)) with an
-RFC and a v1→v1.1 read adapter treating legacy `"ed25519"` as informational-only, plus a verify-time
-consistency check for `schemaVersion ≥ 1.1`. Tracked in **[#67](https://github.com/Bobcatsfan33/Pharos/issues/67)**;
+schema-version machinery ([`schema/version.ts`](../../packages/core/src/schema/version.ts)).
+The design is settled in **[ADR 0005](../adr/0005-seal-algorithm-schema-v1-1.md)**: bump to
+v1.1.0 and widen `seal.algorithm` to the real algorithm; **never rewrite or re-seal historical
+records** (an evidence system that edits its past to tidy a cosmetic defect has destroyed the
+property that made it worth having); keep dispatching signature verification on the **keyset
+entry**, adding only a *consistency* check for `schemaVersion ≥ 1.1` — the gating version marker
+is itself authenticated, since `schemaVersion` lives inside the hashed, signed `content`.
+Implementation tracked in **[#67](https://github.com/Bobcatsfan33/Pharos/issues/67)**;
 **blocks flipping `aws-kms` to a production default** (does not block Sprint 4).
 
 ---
