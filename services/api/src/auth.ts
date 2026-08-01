@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { AuthorizationError, authorize, type Permission, type Principal } from "@pharos/identity";
 import type { Platform } from "./platform.js";
@@ -156,7 +157,28 @@ export async function requireAuth(
   return principal;
 }
 
-/** Platform-operator bootstrap guard for tenant provisioning. */
+/**
+ * Constant-time equality for two secrets of unknown length.
+ *
+ * Both sides are reduced to a SHA-256 digest first, for two reasons: `timingSafeEqual`
+ * throws when the buffers differ in length, and comparing the raw secrets behind a
+ * length guard would still leak the expected token's length through the early return.
+ * Hashing makes every comparison exactly 32 bytes wide regardless of input.
+ */
+function secretsMatch(presented: string, expected: string): boolean {
+  const a = createHash("sha256").update(presented, "utf8").digest();
+  const b = createHash("sha256").update(expected, "utf8").digest();
+  return timingSafeEqual(a, b);
+}
+
+/**
+ * Platform-operator bootstrap guard for tenant provisioning.
+ *
+ * The admin token is the highest-privilege credential in the system, so the comparison
+ * is constant-time (#75). A `!==` on two strings short-circuits at the first differing
+ * byte, and that timing difference is the signal an attacker uses to recover a secret
+ * one byte at a time.
+ */
 export function requireAdminToken(
   platform: Platform,
   request: FastifyRequest,
@@ -165,10 +187,11 @@ export function requireAdminToken(
   const token = request.headers["x-pharos-admin"];
   const expected = platform.config.admin.token;
   if (!expected) {
+    // Unconfigured is refused, never treated as "no token required".
     reply.status(503).send(errorBody("admin_disabled", "platform admin token not configured"));
     return false;
   }
-  if (typeof token !== "string" || token !== expected) {
+  if (typeof token !== "string" || !secretsMatch(token, expected)) {
     reply.status(401).send(errorBody("unauthenticated", "invalid platform admin token"));
     return false;
   }
