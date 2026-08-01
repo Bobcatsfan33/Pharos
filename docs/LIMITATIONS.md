@@ -138,6 +138,16 @@ and the externally supplied master key. The integration test parks a request, re
 gateway process, verifies the database holds no plaintext, proves a different tenant cannot
 acquire it, and resumes from a fresh instance.
 
+**Duplicate resume is rejected** ([`integration.gateway-duplicate-resume.test.ts`](../test/integration.gateway-duplicate-resume.test.ts)),
+across all three shapes: a sequential re-resume of a delivered continuation (`404`, the
+successful delivery removed the row), a second resume issued at a *different* replica
+(proving the guard is in Postgres, not process memory), two replicas racing recovery
+(exactly one `200`, the loser refused), and an overlapping retry arriving mid-delivery
+(`409`, distinct from `404` — the continuation exists, delivery is in progress). Exactly-once
+rests on two independent gates and both are pinned: the held-request lease, and the
+server-side `claimResume` (`resumed_at IS NULL`), which refuses a second authorization even
+to a caller that bypasses the lease entirely.
+
 **Protocol limit:** the Pharos claim is an atomic **at-most-once authorization**, not a
 distributed transaction with an arbitrary HTTP target. A crash after the target commits but
 before the gateway records completion creates an ambiguous outcome. Recovery sends the
