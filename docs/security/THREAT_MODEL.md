@@ -93,11 +93,41 @@ Built at [`platform.ts:172`](../../services/api/src/platform.ts); invoked on the
 | STRIDE | Threat | Mitigation (code / test) or Accepted risk |
 |--------|--------|-------------------------------------------|
 | **S** | Spoof a favorable verdict | Verdict is computed server-side and **sealed into the record** (§3); it cannot be asserted by the caller. Determinism test: [`cascade.test.ts:163`](../../test/cascade.test.ts) |
-| **T** | Prompt-inject the T3 judge / spoof liability | Judge input is harvested from caller-controlled `action.payload` ([`cascade.ts:274`](../../packages/cascade/src/cascade.ts)) and `liability` drives T1/T2/fail-mode. **Accepted risk [#81](https://github.com/Bobcatsfan33/Pharos/issues/81)** (trust assumption: liability is attested by trusted middleware/mandate; adversarial judge robustness is quantified in Sprint 5-7 evals) |
+| **T** | Prompt-inject the T3 judge / spoof liability | Judge input is harvested from caller-controlled `action.payload` ([`cascade.ts`](../../packages/cascade/src/cascade.ts)); adversarial judge robustness is quantified in the Sprint 5–7 evals. **`liability.mandate` is now server-derived and refused inline** — see §"Liability trust contract" below and [`actions.ts`](../../services/api/src/routes/actions.ts) (`mandate_not_assertable`). Test: [`integration.mandate-forgery.test.ts`](../../test/integration.mandate-forgery.test.ts). **Residual [#81](https://github.com/Bobcatsfan33/Pharos/issues/81)** — the *declarative* half of liability (blast radius, oversight mode) remains caller-asserted by design and is sealed as an assertion, not an attestation |
 | **T** | Trigger injected faults in prod | **No fault path ships on the production class.** The seam moved to `FaultInjectingCascade` ([`cascade/src/testing.ts`](../../packages/cascade/src/testing.ts)), a subclass reachable only by an explicit `@pharos/cascade/testing` deep import and deliberately absent from the package index — a structural guarantee rather than the operational claim "the server never sets that field". Test: [`cascade.no-fault-hooks.test.ts`](../../test/cascade.no-fault-hooks.test.ts) |
 | **R** | Dispute how a decision was reached | Citations accumulate through all tiers and are composed into the verdict ([`cascade.ts:187`](../../packages/cascade/src/cascade.ts)), then sealed — reproducible |
 | **D** | Slow judge stalls the request | Deadline race ([`deadline.ts:16`](../../packages/cascade/src/deadline.ts), 800ms budget) |
 | **E** | Bypass a Tier-1 block | Block short-circuits later tiers ([`cascade.ts:96`](../../packages/cascade/src/cascade.ts)); on timeout/fault the fail-mode is reversibility-aware (reversible→fail-open, else fail-closed/escalate — [`cascade.ts:221`](../../packages/cascade/src/cascade.ts)). Test: [`cascade.test.ts:127`](../../test/cascade.test.ts) |
+
+### Liability trust contract ([#81](https://github.com/Bobcatsfan33/Pharos/issues/81))
+
+`liability` is not one kind of thing. It carries a **declaration** about an action and a
+**claim to authority**, and those warrant opposite treatment.
+
+| Field | Origin | Why |
+|---|---|---|
+| `tenantId` | **Server-bound** | `authorize()` rejects any mismatch with the authenticated principal; a caller cannot act for another tenant |
+| `liability.mandate` | **Server-derived only** | A claim to *authority*. Resolved from `mandateId` via `mandates.getActive`; supplying it inline is refused with `mandate_not_assertable` |
+| `action.type`, `action.payload` | Caller-supplied | The thing being governed. Judge input is harvested from it, so it is treated as hostile by construction |
+| `action.agentId`, `sessionId` | Caller-supplied | Labels within an already-authenticated tenant. Binding them to the API key would break legitimate multi-agent use of one credential |
+| `blastRadius`, `oversightMode` | Caller-**asserted** | Sealed as evidence of *what the caller declared*, not as an attestation that it was true |
+
+**Why `mandate` had to move.** The cascade stands mandate-gated controls down when a
+mandate is present (`requireNoMandate`). An inline mandate therefore let a caller switch
+off the control that catches unmandated funds movement — measured on the pre-fix code, an
+unmandated transfer went from `escalate [finra-3110-funds-movement]` to `allow` with no
+citations — and sealed the invented grant into the record as though a grantor had issued
+it. Authority that the system acts on cannot be self-asserted by the party it constrains.
+
+**What is still asserted, and what that means.** Blast radius and oversight mode remain
+caller-declared. Pharos does not claim to verify them; it claims to **record what was
+declared, bind it to an authenticated principal, and seal it immutably**. A caller who
+under-declares blast radius gets a verdict computed from their own declaration — and a
+signed, non-repudiable record of having made it. That is the honest boundary of the
+control, and it is why the deployment guidance is that `liability` should be populated by
+trusted middleware or from a stored mandate, not by the raw agent. The permissive
+middleware default (`autonomous` / `reversible` / `$0`) is a convenience default for
+low-stakes tools and should be overridden wherever the tool can move money or data.
 
 ---
 
@@ -280,7 +310,7 @@ consistency check for `schemaVersion ≥ 1.1`. Tracked in **[#67](https://github
 | [#115](https://github.com/Bobcatsfan33/Pharos/issues/115) | LocalKms plaintext keys | KMS | Dev-only residual; production refusal implemented **and regression-gated** ([#78](https://github.com/Bobcatsfan33/Pharos/issues/78) closed) |
 | [#79](https://github.com/Bobcatsfan33/Pharos/issues/79) | ~~Console: no CSP/headers~~, unauthenticated, demo-tenant | Console | **Security headers done.** Residual: auth gate + per-user tenant scoping + nonce CSP, required before multi-tenant console GA |
 | ~~[#80](https://github.com/Bobcatsfan33/Pharos/issues/80)~~ | ~~SDKs do no runtime input validation~~ | SDK | **Resolved** — both SDKs reject before transmit with named errors; closes the unreachable-platform fail-mode hazard |
-| [#81](https://github.com/Bobcatsfan33/Pharos/issues/81) | Caller-controlled liability & judge input | Cascade | Accepted pending attestation model |
+| [#81](https://github.com/Bobcatsfan33/Pharos/issues/81) | ~~Caller-**asserted mandate authority**~~; caller-declared blast radius & judge input | Cascade | **Mandate forgery fixed** (server-derived, refused inline). Residual: declarative liability is asserted, not attested — contract documented |
 | ~~[#82](https://github.com/Bobcatsfan33/Pharos/issues/82)~~ | ~~Fault-injection hooks on prod cascade class~~ | Cascade | **Resolved** — seam moved to a test-only subclass off the package index; regression-tested |
 
 ## External / human gates (not claimed here)

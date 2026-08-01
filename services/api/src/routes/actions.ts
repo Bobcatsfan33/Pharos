@@ -11,7 +11,7 @@ import {
 import { fingerprintVerdict } from "@pharos/cascade";
 import { routeEscalation } from "@pharos/review";
 import { IdempotencyConflictError, IdempotencyReplayError } from "@pharos/storage";
-import type { ActionRecord } from "@pharos/core";
+import type { ActionRecord, LiabilityContext } from "@pharos/core";
 import type { Platform } from "../platform.js";
 import { requireAuth } from "../auth.js";
 
@@ -150,7 +150,30 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
     };
 
     // Resolve a stored mandate, if referenced, and seal it into the record.
-    let liability = body.liability;
+    // Mandate authority is derived server-side, never asserted by the caller (#81).
+    //
+    // The rest of `liability` is a caller *declaration* about the action — blast radius,
+    // oversight mode — which Pharos seals as evidence of what was asserted. `mandate` is
+    // different in kind: it is a claim to authority, and the cascade acts on it by
+    // standing down mandate-gated controls (`requireNoMandate`). An inline mandate
+    // therefore let a caller switch off the very control that catches unmandated funds
+    // movement, and sealed the invented grant into the record as if a grantor had issued
+    // it. Refused rather than silently stripped: dropping it would leave the caller
+    // believing the action was mandated and hide the attempt from the operator.
+    if (body.liability.mandate != null) {
+      return reply.status(400).send({
+        success: false,
+        data: null,
+        error: {
+          code: "mandate_not_assertable",
+          message:
+            "liability.mandate is resolved server-side and cannot be supplied by the caller; " +
+            "reference a stored mandate with mandateId instead",
+        },
+      });
+    }
+
+    let liability: LiabilityContext = { ...body.liability, mandate: null };
     if (body.mandateId) {
       const mandate = await platform.mandates.getActive(body.tenantId, body.mandateId);
       if (!mandate) {

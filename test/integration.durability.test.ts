@@ -73,22 +73,28 @@ describe("durable round trip + restart + chain verification", () => {
     const { buildApp } = await import("../services/api/src/app.js");
     const app = await buildApp(firstPlatform);
 
+    // Mandate authority is server-resolved (#81): store the grant, then reference it by
+    // id. Exercising the real path also proves the Tier-1 mandate-limit block still
+    // fires on a server-resolved mandate, not just a caller-declared one.
+    await firstPlatform.mandates.create({
+      tenantId: TENANT,
+      mandateId: "m1",
+      scope: "payments",
+      limits: { maxAmount: 25000 },
+      grantor: "cfo",
+      expiresAt: null,
+    });
+
     const res = await app.inject({
       method: "POST",
       url: "/v1/actions",
       headers: { "x-api-key": apiKey },
       payload: {
         tenantId: TENANT,
+        mandateId: "m1",
         action: { type: "payment.transfer", agentId: "agent-it", payload: { amount: 30000 } },
         liability: {
-          mandate: {
-            id: "m1",
-            scope: "payments",
-            limits: { maxAmount: 25000 },
-            grantor: "cfo",
-            expiresAt: null,
-            version: "1",
-          },
+          mandate: null,
           oversightMode: "human_in_loop",
           blastRadius: { financialAmount: 30000, currency: "USD", reversibility: "irreversible" },
           modelMetadata: { provider: "anthropic", model: "claude-opus-4-8" },
