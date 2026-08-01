@@ -1,6 +1,6 @@
 [project]
 name = "getpharos"
-version = "0.1.1"
+version = "0.2.0"
 description = "Pharos SDK — submit agent actions for a real-time policy verdict and sealed evidence."
 readme = "README.md"
 license = { text = "Apache-2.0" }
