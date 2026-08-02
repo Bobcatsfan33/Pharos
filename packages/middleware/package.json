@@ -1,6 +1,6 @@
 {
   "name": "@getpharos/middleware",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Pharos framework middlewares — govern agent tool calls across LangChain/LangGraph, OpenAI Agents, and the Anthropic SDK.",
   "license": "Apache-2.0",
   "type": "module",

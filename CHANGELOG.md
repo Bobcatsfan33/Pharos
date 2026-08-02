@@ -8,6 +8,80 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pharos is
 pre-1.0: minor versions may include breaking changes until 1.0.
 
+## [0.2.0] — unreleased
+
+The hardening release. Where 0.1.x built the platform, 0.2.0 spent its time trying to break
+it — a threat-model reconciliation that turned every accepted risk into either a fix with a
+regression test, or a documented decision with a named owner. Several of the findings were
+real defects that only appeared when a claim was executed rather than read.
+
+This release also re-points the project at open-source adoption. The readiness manifest,
+gates, and `not-approved` decision are unchanged — they are published as engineering
+honesty, not removed as inconvenient.
+
+### Security & correctness
+
+- **Rate limiter fails closed** (#73). It returned `true` from its `catch` block, so anything
+  that made the counter store unreachable also removed the ingest rate limit. Now
+  `503 rate_limiter_unavailable`, distinct from `429`, with a per-tenant aggregate budget so
+  minting extra API keys cannot multiply a tenant's quota.
+- **Mandate authority is server-derived** (#81). A caller could supply an inline
+  `liability.mandate`, which stood mandate-gated controls down — an unmandated transfer went
+  from `escalate` (citing FINRA 3110) to `allow` with no citations, and the invented grant
+  was sealed into evidence. Inline mandates are now refused; authority comes from a stored
+  mandate referenced by id.
+- **SDK input validation at the trust boundary** (#80). Both SDKs now reject malformed
+  submissions before transmit. This is a safety fix, not ergonomics: when the platform is
+  unreachable the SDK picks its local fail-mode from `liability.blastRadius.reversibility`,
+  so a misspelled field previously let an **irreversible** action fail *open*.
+- **WORM verify-on-read, `reconcile()`, and a fail-closed Object Lock assertion** (#77). The
+  copy kept specifically to detect tampering was being read without checking it.
+- **Constant-time admin-token comparison** (#75, fix-now half).
+- **Ingest replay guard** (#74). An optional `idempotencyKey` makes ingest exactly-once; the
+  claim commits in the same transaction as the append.
+- **`seal.algorithm` states the real signing algorithm** (#67), via schema **v1.1.0**.
+  `aws-kms` records previously claimed `ed25519`. Records sealed under 1.0.0 are never
+  rewritten and still verify; verification still dispatches on the published keyset, never
+  on the self-declared field.
+- **Fault-injection hooks removed from the production cascade** (#82).
+- **Console authentication, per-user tenant scoping, and a nonce CSP** (#79). The console
+  required no session and was hardwired to `demo-tenant`. Its CSP now carries no
+  `'unsafe-*'` token at all.
+- **A render-gated TLS termination contract** (#76). Production refuses to render unless a
+  terminator is declared.
+
+### Added
+
+- `pnpm demo` — the funds-transfer walkthrough: an unmandated transfer escalates with the
+  FINRA clause cited, a mandated one passes, and the evidence bundle verifies offline with
+  chain **PASS** and anchor **PASS**. Hermetic: local KMS and local TSA.
+- Live external-gate transcripts for AWS KMS and a real RFC 3161 authority
+  (`docs/evidence/`), closing the last clauses of #34 and #35.
+- Explicit, documented AWS KMS key identifiers (#34 follow-up).
+
+### Fixed
+
+- `verify:external <tenant>` silently ignored its tenant argument and always verified
+  `demo-tenant`; `indexOf` returning `-1` for an absent flag masked the first positional
+  argument.
+- `.gitignore` did not cover `.pharos-keystore-tsa/`, which `pnpm demo` creates — a
+  contributor could have committed a private key.
+
+### Changed
+
+- README rewritten for a first-time visitor: what/who/why in three paragraphs, an
+  architecture diagram, and a quickstart that was executed on a clean checkout rather than
+  assumed. Sprint history moved to `docs/status.md`.
+- `@getpharos/sdk` **0.1.1 → 0.2.0**; `getpharos` (Python) **0.2.0**.
+
+### Still true, and still published
+
+The Tier-3 judges on the default path are linear bag-of-words classifiers, defeated by
+paraphrase. The transformer judges remain **restricted pre-production**; no judge is
+promoted in this release. The p99 3.7 ms figure was measured with the linear judges and is
+not a transformer claim. `docs/enterprise-readiness.json` reads `not-approved` with 6 open
+blocking gates.
+
 ## [0.1.0] — 2026-07-21
 
 The initial tagged prototype. Ten build sprints (Bedrock → Signal) took Pharos from nothing
