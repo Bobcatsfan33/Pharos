@@ -49,7 +49,12 @@ if (tsaCertPins.some((value) => !/^[a-f0-9]{64}$/.test(value))) {
     "--tsa-cert-sha256 must contain comma-separated SHA-256 certificate fingerprints",
   );
 }
-const optionIndexes = new Set([bundleIndex, bundleIndex + 1, pinIndex, pinIndex + 1]);
+// Only mask flag indexes that are actually PRESENT. `indexOf` returns -1 when a flag is
+// absent, and -1 + 1 === 0 — which silently swallowed the first positional argument, so
+// `verify:external acme-treasury` verified "demo-tenant" instead.
+const optionIndexes = new Set<number>();
+if (bundleIndex >= 0) optionIndexes.add(bundleIndex).add(bundleIndex + 1);
+if (pinIndex >= 0) optionIndexes.add(pinIndex).add(pinIndex + 1);
 const positional = args.filter((_, index) => !optionIndexes.has(index));
 const tenantId = positional[0] ?? "demo-tenant";
 const base = positional[1] ?? "http://localhost:4000";
