@@ -103,8 +103,49 @@ MinIO images; the commands themselves take seconds.
 > records were signed by a keystore that no longer exists, so their signatures no longer
 > verify. Start from a clean database, or remove `.pharos-keystore` and re-run.
 
-Then verify a bundle with **no Pharos infrastructure at all** —
-see **[offline verification](docs/external-verification.md)**.
+### Then see the whole story
+
+```bash
+pnpm demo
+```
+
+An agent tries to wire $4,800 with no mandate. Pharos refuses and cites the rule:
+
+```
+── Act 1 ─ the agent acts without authority
+
+  Verdict:   ESCALATE   tier 3
+  Cited:     finra-3110-funds-movement  FINRA Rule 3110 (supervision) / 2150 (funds handling)
+             Movement of customer funds requires supervisory review. Unmandated
+             funds-movement intent is escalated to a registered principal.
+```
+
+Treasury grants a mandate. Same transfer, same agent, same amount — the verdict flips:
+
+```
+── Act 2 ─ treasury grants a mandate
+
+  Verdict:   ALLOW   tier 3
+```
+
+Both decisions are sealed, anchored in trusted time, and written to a bundle that anyone
+can check **offline, with no Pharos infrastructure**:
+
+```bash
+pnpm verify:bundle evidence-bundle.json
+```
+
+```
+Chain verification: PASS - admissible
+
+Trusted-time anchors (1):
+  OK  anchor [local] 8880a43f2d33… @ 2026-08-02T20:53:45.971Z  (head)
+
+Anchor verification: PASS - head existed before the stamped time
+```
+
+Full walkthrough, including how to **tamper with the bundle and watch it fail**:
+**[docs/demo.md](docs/demo.md)**.
 
 ## Use it from your agent
 
@@ -206,6 +247,7 @@ apps/console         Next.js console
 | | |
 |---|---|
 | [Architecture](docs/architecture.md) | How the pieces fit together |
+| [Demo walkthrough](docs/demo.md) | The funds-transfer story, end to end |
 | [Decision cascade](docs/decision-cascade.md) | Tiers, deadlines, fail-modes |
 | [Evidence & sealing](docs/evidence-seal.md) | Chain, anchoring, redaction, claims packs |
 | [Offline verification](docs/external-verification.md) | Verify a bundle with no Pharos infrastructure |
