@@ -49,6 +49,7 @@ beforeAll(async () => {
       region: "us-east-1",
       endpoint: ENDPOINT,
       aliasPrefix: `alg-${randomUUID().slice(0, 8)}`,
+      allowKeyCreation: true,
     });
     await awsKms.ensureKey("probe");
   } catch (err) {

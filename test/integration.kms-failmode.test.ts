@@ -24,6 +24,9 @@ process.env.PHAROS_ADMIN_TOKEN = "it-admin-token";
 process.env.PHAROS_KMS_PROVIDER = "aws-kms";
 process.env.PHAROS_KMS_AWS_REGION = "us-east-1";
 process.env.PHAROS_KMS_AWS_ENDPOINT = `http://localhost:${KMS_PORT}`;
+// The killable emulator starts empty and this suite is about signing availability, not key
+// provisioning: let the provider mint its tenant key rather than pre-seeding an alias.
+process.env.PHAROS_KMS_AWS_ALLOW_KEY_CREATION = "true";
 
 type Platform = import("../services/api/src/platform.js").Platform;
 type App = Awaited<ReturnType<typeof import("../services/api/src/app.js").buildApp>>;

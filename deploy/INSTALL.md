@@ -204,6 +204,53 @@ through the AWS SDK default chain; do not add `PHAROS_S3_ACCESS_KEY` or
 `PHAROS_S3_SECRET_KEY` when the production endpoint is AWS S3. Paired static credentials remain
 supported only outside the production posture.
 
+### Provisioning signing keys
+
+Pharos uses **one KMS key per tenant per key version**. It locates them by a derived alias, and
+that alias is the operator-facing identifier:
+
+```
+alias/<aliasPrefix>/<base64url(keyName)>/v<version>
+```
+
+- `aliasPrefix` is `pharos` for the evidence signing keyset and `pharos-tsa` for the simulated
+  (`local`) TSA keyset, so the two are isolated.
+- `keyName` is `tenant:<tenantId>` (`TenantStore.kmsKeyName`), base64url-encoded because KMS
+  alias names disallow `:`.
+- `version` starts at `1` and increments on rotation. Old versions keep their alias and stay
+  enabled for verification — records embed the keyId that signed them.
+
+So tenant `acme` resolves to `alias/pharos/dGVuYW50OmFjbWU/v1`. Derive it with:
+
+```bash
+printf 'alias/pharos/%s/v1\n' "$(printf 'tenant:acme' | basenc --base64url | tr -d '=')"
+```
+
+**Provision the key yourself.** Create a customer-managed CMK, attach a key policy you control,
+and alias it at the derived name:
+
+```bash
+KEY_ID=$(aws kms create-key \
+  --key-spec ECC_NIST_P256 --key-usage SIGN_VERIFY \
+  --description 'Pharos evidence signing — tenant acme' \
+  --policy file://pharos-key-policy.json \
+  --query KeyMetadata.KeyId --output text)
+
+aws kms create-alias --alias-name alias/pharos/dGVuYW50OmFjbWU/v1 --target-key-id "$KEY_ID"
+```
+
+The key policy should grant the Pharos workload identity exactly `kms:Sign` and
+`kms:GetPublicKey` — Pharos never needs `kms:Decrypt`, `kms:ScheduleKeyDeletion`, or
+`kms:PutKeyPolicy` — and should keep key administration with your own principals.
+
+**Implicit creation is off by default.** If no key exists at the derived alias, Pharos fails
+closed and the error names both the alias to provision and the opt-in flag. Setting
+`PHAROS_KMS_AWS_ALLOW_KEY_CREATION=true` lets Pharos mint the CMK itself, but that key is created
+under the **AWS default key policy**, which grants the account root full control and does not
+express your intended separation of duties. Enabling it is appropriate for development and
+evaluation; provision the key yourself for production. This flag gates only first-use creation —
+`rotate()` and the migration helper are explicit operator actions and are unaffected.
+
 `local-kms` is intended for development and stores Ed25519 signing keys as files under
 `PHAROS_KMS_KEYSTORE_DIR` (the TSA keystore is the sibling `<dir>-tsa`). If it is selected,
 the chart requires `config.localKms.existingClaim`; it will not place signing keys in an

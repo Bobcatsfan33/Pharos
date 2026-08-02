@@ -79,7 +79,11 @@ is an open question that task answers.
 [`packages/core/src/signing/awsKms.ts`](../packages/core/src/signing/awsKms.ts)) —
 `ECC_NIST_P256` / `ECDSA_SHA_256` (AWS KMS has no Ed25519), producing `ecdsa-p256` published
 keys that offline verification handles alongside Ed25519. Set `PHAROS_KMS_PROVIDER=aws-kms`
-plus `PHAROS_KMS_AWS_REGION` (credentials from the standard AWS chain). The provider passes
+plus `PHAROS_KMS_AWS_REGION` (credentials from the standard AWS chain), and pre-provision one
+customer-managed CMK per tenant at the derived alias documented in
+[`deploy/INSTALL.md`](../deploy/INSTALL.md) ("Provisioning signing keys"). Key binding is
+explicit: an absent key fails closed naming the alias to provision, rather than silently minting
+a CMK under the AWS default key policy. The provider passes
 the shared `SigningProvider` conformance suite and `pnpm demo:durability --verify` runs
 end-to-end under it; the "refuses to boot" placeholder is gone.
 

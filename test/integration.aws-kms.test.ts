@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { randomUUID } from "node:crypto";
 import {
   AwsKms,
+  awsKmsAliasName,
   sealRecord,
   verifyChain,
   GENESIS_HASH,
@@ -23,6 +24,8 @@ const kms = new AwsKms({
   region: "us-east-1",
   endpoint: ENDPOINT,
   aliasPrefix: `conf-${randomUUID().slice(0, 8)}`,
+  // The emulator starts empty; this suite exercises the creating paths deliberately.
+  allowKeyCreation: true,
 });
 
 runSigningConformance({
@@ -71,6 +74,7 @@ describe("AwsKms end-to-end seal + offline chain verification (ECDSA P-256)", ()
       region: "us-east-1",
       endpoint: ENDPOINT,
       aliasPrefix: `e2e-${randomUUID().slice(0, 8)}`,
+      allowKeyCreation: true,
     });
     keyId = await signer.ensureKey("aws-kms-tenant:signing");
   });
@@ -105,5 +109,65 @@ describe("AwsKms end-to-end seal + offline chain verification (ECDSA P-256)", ()
     const report = verifyChain(chain, keyset);
     expect(report.ok).toBe(false);
     expect(report.firstBrokenSequence).toBe(1);
+  });
+});
+
+// Implicit key creation is the operator-facing contract change: an unprovisioned key must fail
+// closed, and the refusal must be self-documenting (the alias to provision AND the opt-in flag),
+// because that message is the only place an operator learns the alias derivation at the moment
+// they need it.
+describe("AwsKms key provisioning is explicit", () => {
+  const strictPrefix = `strict-${randomUUID().slice(0, 8)}`;
+  const strict = new AwsKms({
+    region: "us-east-1",
+    endpoint: ENDPOINT,
+    aliasPrefix: strictPrefix,
+    // allowKeyCreation omitted — the default must be fail-closed.
+  });
+
+  it("refuses to mint a key on first use, naming the alias and the opt-in flag", async () => {
+    const keyName = "tenant:unprovisioned";
+    const expectedAlias = awsKmsAliasName(strictPrefix, keyName, 1);
+
+    await expect(strict.ensureKey(keyName)).rejects.toThrow(/implicit key creation is disabled/i);
+    // The message must carry the exact alias to provision and the flag that would permit
+    // creation — it is the operator's documentation at the point of failure.
+    await expect(strict.ensureKey(keyName)).rejects.toThrow(expectedAlias);
+    await expect(strict.ensureKey(keyName)).rejects.toThrow(
+      /PHAROS_KMS_AWS_ALLOW_KEY_CREATION=true/,
+    );
+    // And it really did not create anything.
+    expect(await strict.publishKeyset()).toEqual([]);
+  });
+
+  it("uses a pre-provisioned key at the derived alias without creating one", async () => {
+    const prefix = `preprov-${randomUUID().slice(0, 8)}`;
+    const keyName = "tenant:preprovisioned";
+    // Stand in for the operator: create the CMK and alias it at the documented identifier.
+    const creator = new AwsKms({
+      region: "us-east-1",
+      endpoint: ENDPOINT,
+      aliasPrefix: prefix,
+      allowKeyCreation: true,
+    });
+    const provisioned = await creator.ensureKey(keyName);
+
+    // A strict provider over the same namespace binds to it rather than refusing.
+    const bound = new AwsKms({ region: "us-east-1", endpoint: ENDPOINT, aliasPrefix: prefix });
+    expect(await bound.ensureKey(keyName)).toBe(provisioned);
+    const sig = await bound.sign(provisioned, Buffer.from("bound-to-operator-key"));
+    expect(sig.length).toBeGreaterThan(0);
+  });
+
+  it("throws on a version collision instead of minting a duplicate keyId", async () => {
+    const prefix = `collide-${randomUUID().slice(0, 8)}`;
+    const kms2 = new AwsKms({
+      region: "us-east-1",
+      endpoint: ENDPOINT,
+      aliasPrefix: prefix,
+      allowKeyCreation: true,
+    });
+    await kms2.ensureKey("tenant:collide");
+    await expect(kms2.provisionVersion("tenant:collide", 1)).rejects.toThrow(/already exists/i);
   });
 });

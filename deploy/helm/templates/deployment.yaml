@@ -80,6 +80,8 @@ spec:
               value: {{ .Values.config.kmsProvider | quote }}
             - name: PHAROS_KMS_AWS_REGION
               value: {{ .Values.config.kmsAwsRegion | quote }}
+            - name: PHAROS_KMS_AWS_ALLOW_KEY_CREATION
+              value: {{ .Values.config.kmsAllowKeyCreation | default false | quote }}
             - name: PHAROS_TSA_PROVIDER
               value: {{ .Values.config.tsaProvider | quote }}
             {{- with .Values.config.tsaUrl }}

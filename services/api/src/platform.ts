@@ -146,6 +146,7 @@ export function buildSigner(config: PharosConfig): SigningProvider {
       region: config.kms.awsRegion,
       endpoint: config.kms.awsEndpoint,
       aliasPrefix: "pharos",
+      allowKeyCreation: config.kms.awsAllowKeyCreation,
     });
   }
   return new LocalKms(new FileKeystore(config.kms.keystoreDir));
@@ -160,6 +161,7 @@ export function buildTsaSigner(config: PharosConfig): SigningProvider {
       region: config.kms.awsRegion,
       endpoint: config.kms.awsEndpoint,
       aliasPrefix: "pharos-tsa",
+      allowKeyCreation: config.kms.awsAllowKeyCreation,
     });
   }
   return new LocalKms(new FileKeystore(`${config.kms.keystoreDir}-tsa`));

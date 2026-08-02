@@ -60,6 +60,13 @@ const ConfigSchema = z
       awsRegion: z.string().default("us-east-1"),
       /** Optional endpoint override for a KMS emulator (dev/CI); omit for real AWS. */
       awsEndpoint: z.string().optional(),
+      /**
+       * Permit aws-kms to mint a CMK on first use for a tenant that has no signing key yet.
+       * Defaults to **false**: an implicitly created key carries the AWS default key policy,
+       * so Pharos binds to an operator-provisioned key unless this is explicitly enabled.
+       * The refusal names the exact alias to provision.
+       */
+      awsAllowKeyCreation: boolish.default(false),
     }),
     tsa: z.object({
       /** Trusted-time authority: `local` (simulated, hermetic) or `rfc3161` (a real TSA). */
@@ -350,6 +357,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
       keystoreDir: env.PHAROS_KMS_KEYSTORE_DIR,
       awsRegion: env.PHAROS_KMS_AWS_REGION,
       awsEndpoint: env.PHAROS_KMS_AWS_ENDPOINT,
+      awsAllowKeyCreation: env.PHAROS_KMS_AWS_ALLOW_KEY_CREATION,
     },
     tsa: {
       provider: env.PHAROS_TSA_PROVIDER,
