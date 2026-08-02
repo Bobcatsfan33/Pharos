@@ -73,7 +73,7 @@ the local quickstart. (The integration tests also self-provide these same defaul
 pnpm test
 ```
 
-Expected output (157 tests, **0 skipped** — the CI gate fails the build if any integration
+Expected output (472 tests across 68 files, **0 skipped** — the CI gate fails the build if any integration
 test skips):
 
 ```
@@ -82,7 +82,7 @@ test skips):
  ... (29 files)
 
  Test Files  29 passed (29)
-      Tests  157 passed (157)
+      Tests  472 passed (472)
    Duration  ~11s
 ```
 

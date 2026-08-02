@@ -41,6 +41,51 @@ clean-machine transcript.
 7. **Secrets never in the repo.** `.env` files are local; CI uses GitHub secrets. Anything
    that looks like a credential in a PR fails review.
 
+## How this repo is run
+
+Pharos's product claim is *evidence*, so the repo is run the way an evidence system has to
+be. Five habits explain almost every review comment you are likely to get. None of them are
+bureaucratic — each exists because skipping it has already produced a real defect here.
+
+**1. Claims are executed, not asserted.** If a doc says a command produces some output, that
+output was captured by running it. Writing the README quickstart caught a chain-verification
+failure; writing the demo caught `verify:external` silently ignoring its tenant argument and
+a private-key directory missing from `.gitignore`. A PR that says "this works" without having
+run it will be asked to run it.
+
+**2. Configuration is behaviour — render it, don't read it.** Helm templates, CSP headers,
+and compose files are code. Reviews expect the *rendered* manifest or the *actual* response
+header. Reading a template and reasoning about it has produced shipped bugs here: an Ingress
+pointing at a Service that only existed under one release name, and an HSTS max-age emitted
+as `6.3072e+07`, which nginx rejects.
+
+**3. A test that cannot fail proves nothing.** When you add a regression test, show it
+**red** first. If the behaviour was already correct and the test passes immediately, verify
+it is load-bearing by breaking the implementation and confirming the test catches it — then
+revert. Several PRs here did exactly that, and one of them found a test that would have
+passed against a genuinely broken store.
+
+**4. Integration tests run; they never skip.** CI fails the build if any test is skipped
+rather than executed, because the suite runs against **real** Postgres, Redis and MinIO and
+a skipped integration test looks identical to a passing one in a summary. Do not
+conditionalize, skip-list, or weaken that gate to get a PR green.
+
+**5. Honesty beats a clean result.** Overclaiming in docs is a P1 bug in this product. If a
+limitation survives your change, name it, assert it in a test so it cannot be quietly
+forgotten, and record it in [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) — that file is
+expected to *shrink* as the code catches up, so delete entries you genuinely resolve. The
+readiness manifest reads `not-approved` on purpose; do not "fix" it.
+
+### Mechanics
+
+- **DCO sign-off** on every commit (`git commit -s`). CI rejects PRs without it.
+- **A changeset** for any change to a publishable package (`@getpharos/sdk`,
+  `@getpharos/middleware`): `pnpm changeset`. Docs-only or internal PRs take the
+  `no-changeset` label instead.
+- **Formatting**: `pnpm format:write` before you push; `pnpm format:check` is a CI gate.
+- **One concern per PR.** If you find a second bug while fixing the first, file it and say so
+  in the PR rather than folding it in.
+
 ## Commit sign-off (DCO)
 
 All commits **must** be signed off under the
