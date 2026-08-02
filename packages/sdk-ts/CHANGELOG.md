@@ -1,5 +1,41 @@
 # @getpharos/sdk
 
+## 0.2.0
+
+### Minor Changes
+
+- 9ea1527: Local fail-mode is now reversibility-aware. When the platform is unreachable (including a
+  `503 kms_unavailable` when the signing KMS is down), the SDK mirrors the server cascade:
+  **reversible** actions fail **open** (allow, with a locally-logged stub) and **irreversible**
+  actions fail **closed** (escalate), regardless of the configured `localFailMode` default
+  (which still applies when an action's reversibility is unknown). Previously the single
+  configured default was applied to all actions.
+- 5856ed3: Validate submissions at the SDK trust boundary before transmit (#80).
+
+  `submit()` now rejects a malformed submission with `PharosError` / `code: "invalid_input"`
+  naming the offending field, instead of serializing it to the wire.
+
+  This is a safety fix, not only faster feedback. When the platform is unreachable the SDK
+  chooses a local fail-mode by reading `liability.blastRadius.reversibility` out of the
+  caller's object. Previously a misspelled or mistyped field read as absent and fell through
+  to the configured default, so under `localFailMode: "fail_open"` an **irreversible** action
+  was locally allowed — and the server never saw it, because the server was unreachable.
+
+  Required fields, types and enums are checked; unknown keys are still permitted so the
+  server can add fields without breaking clients. No values are coerced — a numeric
+  `tenantId` is an error rather than something to stringify, because silently repairing input
+  would mean the sealed record is not what the caller asked to govern.
+
+  `validateSubmitInput` is exported for callers who build a submission incrementally and want
+  the same check ahead of time. The local fail-mode contract is unchanged for valid input.
+
+### Patch Changes
+
+- 181c293: Document escalation claims as atomic at-most-once authorization and align
+  middleware errors with that protocol boundary. Gateway continuations are now
+  durably encrypted and leased through Postgres, with a stable upstream
+  idempotency key for crash recovery.
+
 ## 0.1.1
 
 ### Patch Changes
