@@ -54,6 +54,13 @@ If a signing key (or the keystore/KMS credential) is suspected compromised:
 
 Migrating a live tenant chain from local-kms (Ed25519) to aws-kms (ECDSA P-256):
 
+Under `aws-kms` each version is a distinct CMK located by a derived alias
+(`alias/<prefix>/<base64url(keyName)>/v<n>`); see
+[`deploy/INSTALL.md`](../../deploy/INSTALL.md) § "Provisioning signing keys" for the derivation
+and the key policy to attach. Provision the new version's key yourself — `provisionVersion` and
+`rotate` create it only when you invoke them, and `createVersion` throws rather than minting a
+key that would collide with an existing version.
+
 **The critical rule — continue the version sequence.** keyIds must stay globally unique, so the
 new aws-kms key for a keyName must take the **next** version, not restart at v1. Both providers
 independently default a fresh keyName to `#v1`, so a naive switch would create two different keys

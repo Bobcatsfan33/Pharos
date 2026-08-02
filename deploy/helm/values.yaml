@@ -90,6 +90,12 @@ config:
   #    needed — key material never leaves KMS.
   kmsProvider: aws-kms
   kmsAwsRegion: us-east-1
+  # Pharos binds to one customer-managed CMK per tenant, located by a derived alias
+  # (alias/pharos/<base64url(tenant:<id>)>/v<n> — see deploy/INSTALL.md "Provisioning signing
+  # keys"). If the key is absent it fails closed and names the alias to provision. Setting this
+  # true lets Pharos mint the CMK itself under the AWS *default* key policy rather than one you
+  # control; appropriate for dev/evaluation, not for production.
+  kmsAllowKeyCreation: false
   # A real TSA is the production default. Set the endpoint and independently obtained leaf
   # certificate SHA-256 pin(s); use a comma-separated overlap set during certificate rotation.
   tsaProvider: rfc3161

@@ -28,6 +28,12 @@ import { type SigningProvider, type PublicKeyEntry, makeKeyId, parseKeyId } from
  *
  * keyNames may contain characters KMS alias names disallow (e.g. `:`), so the name is
  * base64url-encoded into the alias and decoded back in `publishKeyset()`.
+ *
+ * **Key provisioning is explicit.** The alias above is the operator-facing identifier: a key
+ * must already exist at it, or {@link AwsKmsConfig.allowKeyCreation} must be set. `ensureKey()`
+ * does not silently mint CMKs by default — see that option for why. The derivation is documented
+ * for operators in `deploy/INSTALL.md` ("Provisioning signing keys") and pinned to this code by
+ * `test/docs.kms-key-identifier.test.ts`.
  */
 export interface AwsKmsConfig {
   region: string;
@@ -38,6 +44,19 @@ export interface AwsKmsConfig {
    * The TSA uses a separate prefix so its keyset is isolated from the signing keyset.
    */
   aliasPrefix?: string;
+  /**
+   * Permit {@link AwsKms.ensureKey} to mint a CMK when a keyName has no key yet.
+   *
+   * **Defaults to `false` — first use fails closed.** A CMK created implicitly carries the AWS
+   * *default key policy*, which is a materially weaker control than a key whose policy, grants,
+   * tags, and region/replication the operator chose; and until an operator knows the alias this
+   * provider derives, they cannot pre-provision one. Refusing by default makes the binding
+   * explicit: either the key exists at the derived alias, or the operator has opted in here.
+   *
+   * This gates only the implicit first-use path. `rotate()` and `provisionVersion()` are
+   * explicit operator actions by definition and remain available.
+   */
+  allowKeyCreation?: boolean;
 }
 
 function encodeName(keyName: string): string {
@@ -47,15 +66,29 @@ function decodeName(encoded: string): string {
   return Buffer.from(encoded, "base64url").toString("utf8");
 }
 
+/**
+ * The operator-facing identifier for a signing key: `alias/<prefix>/<base64url(keyName)>/v<n>`.
+ *
+ * Exported because operators must be able to pre-provision a customer-managed CMK at exactly
+ * this name, so the derivation is a documented contract rather than an implementation detail.
+ * `deploy/INSTALL.md` ("Provisioning signing keys") documents it and
+ * `test/docs.kms-key-identifier.test.ts` pins the documentation to this function.
+ */
+export function awsKmsAliasName(aliasPrefix: string, keyName: string, version: number): string {
+  return `alias/${aliasPrefix}/${encodeName(keyName)}/v${version}`;
+}
+
 export class AwsKms implements SigningProvider {
   readonly providerId = "aws-kms";
   private readonly client: KMSClient;
   private readonly aliasPrefix: string;
+  private readonly allowKeyCreation: boolean;
   /** Public keys are immutable per keyId; cache to avoid repeat GetPublicKey calls. */
   private readonly publicKeyCache = new Map<string, PublicKeyEntry>();
 
   constructor(cfg: AwsKmsConfig) {
     this.aliasPrefix = cfg.aliasPrefix ?? "pharos";
+    this.allowKeyCreation = cfg.allowKeyCreation ?? false;
     this.client = new KMSClient({
       region: cfg.region,
       // With an endpoint set we are talking to a KMS emulator (dev/CI): supply dummy static
@@ -74,7 +107,7 @@ export class AwsKms implements SigningProvider {
     return `alias/${this.aliasPrefix}/`;
   }
   private aliasName(keyName: string, version: number): string {
-    return `${this.aliasPrefixPath()}${encodeName(keyName)}/v${version}`;
+    return awsKmsAliasName(this.aliasPrefix, keyName, version);
   }
 
   /** All existing versions for a keyName, ascending, discovered from KMS aliases. */
@@ -102,6 +135,16 @@ export class AwsKms implements SigningProvider {
   }
 
   private async createVersion(keyName: string, version: number): Promise<string> {
+    // Collision guard on every creating path (ensureKey, rotate, provisionVersion). keyIds must
+    // be globally unique — two different keys answering to one `<name>#v<n>` would silently break
+    // the merged keyset a provider migration depends on. Checked before CreateKey so a refusal
+    // does not strand an unaliased CMK in the operator's account.
+    if ((await this.versionsOf(keyName)).includes(version)) {
+      throw new Error(
+        `aws-kms: version ${version} already exists for ${keyName} ` +
+          `(${this.aliasName(keyName, version)}); refusing to mint a colliding key`,
+      );
+    }
     const key = await this.client.send(
       new CreateKeyCommand({
         KeySpec: "ECC_NIST_P256",
@@ -124,6 +167,18 @@ export class AwsKms implements SigningProvider {
   async ensureKey(keyName: string): Promise<string> {
     const versions = await this.versionsOf(keyName);
     if (versions.length > 0) return makeKeyId(keyName, versions[versions.length - 1]!);
+    if (!this.allowKeyCreation) {
+      // The message is the missing documentation: it names the exact alias to pre-provision and
+      // the flag that would permit implicit creation, so an operator can resolve this without
+      // reverse-engineering the alias derivation from source.
+      throw new Error(
+        `aws-kms: no signing key for "${keyName}" and implicit key creation is disabled. ` +
+          `Pre-provision a customer-managed CMK (KeySpec ECC_NIST_P256, KeyUsage SIGN_VERIFY) ` +
+          `and alias it "${this.aliasName(keyName, 1)}", granting this principal kms:Sign and ` +
+          `kms:GetPublicKey — or set PHAROS_KMS_AWS_ALLOW_KEY_CREATION=true to let Pharos mint ` +
+          `it under the AWS default key policy. See deploy/INSTALL.md "Provisioning signing keys".`,
+      );
+    }
     return this.createVersion(keyName, 1);
   }
 
@@ -143,9 +198,6 @@ export class AwsKms implements SigningProvider {
    * version already exists.
    */
   async provisionVersion(keyName: string, version: number): Promise<string> {
-    if ((await this.versionsOf(keyName)).includes(version)) {
-      throw new Error(`aws-kms: version ${version} already exists for ${keyName}`);
-    }
     return this.createVersion(keyName, version);
   }
 

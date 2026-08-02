@@ -98,6 +98,7 @@ describe("key migration: local-kms (Ed25519) → aws-kms (ECDSA P-256), no data 
       region: "us-east-1",
       endpoint: ENDPOINT,
       aliasPrefix: `migrate-${randomUUID().slice(0, 8)}`,
+      allowKeyCreation: true,
     });
 
     // Phase 1: seal N records under local-kms.

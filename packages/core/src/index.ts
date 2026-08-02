@@ -29,7 +29,7 @@ export {
 } from "./signing/provider.js";
 export { type KeystoreBackend, type StoredKey, FileKeystore } from "./signing/keystore.js";
 export { LocalKms } from "./signing/localKms.js";
-export { AwsKms, type AwsKmsConfig } from "./signing/awsKms.js";
+export { AwsKms, awsKmsAliasName, type AwsKmsConfig } from "./signing/awsKms.js";
 export {
   KmsUnavailableError,
   isKmsConnectivityError,
