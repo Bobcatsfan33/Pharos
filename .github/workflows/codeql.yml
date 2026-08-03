@@ -19,9 +19,9 @@ jobs:
       matrix:
         language: ["javascript-typescript", "python"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7.0.1
       - name: initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           # Query suite + query-level triage (persistent-false-positive exclusions) live in
@@ -29,6 +29,6 @@ jobs:
           config-file: ./.github/codeql/codeql-config.yml
       # JS/TS and Python are interpreted — no build step is needed.
       - name: analyze
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
