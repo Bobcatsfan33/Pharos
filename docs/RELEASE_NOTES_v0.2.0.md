@@ -1,11 +1,4 @@
-# Release notes — v0.2.0 (draft)
-
-> **Draft.** This is the body to paste into the GitHub Release when the tag is cut. It lives
-> in the repo so the wording can be reviewed in a PR rather than typed into a web form.
->
-> **Cutting the tag publishes to npm and PyPI.** `.github/workflows/release.yml` triggers on
-> `v*` and publishes `@getpharos/sdk` (npm, OIDC trusted publishing + provenance) and
-> `getpharos` (PyPI). That is irreversible. See "Cutting this release" at the bottom.
+# Release notes — v0.2.0
 
 ---
 

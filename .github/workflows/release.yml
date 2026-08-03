@@ -68,3 +68,9 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: sdks/python/dist
+          # A release must be re-runnable. Without this, re-running a failed release --
+          # or tagging when the Python SDK version is already on PyPI, which is exactly
+          # the v0.2.0 case -- fails the job on "file already exists" even though the
+          # published artifact is correct. PyPI versions are immutable, so skipping an
+          # existing one cannot overwrite anything.
+          skip-existing: true

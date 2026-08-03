@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pharos is
 pre-1.0: minor versions may include breaking changes until 1.0.
 
-## [0.2.0] — unreleased
+## [0.2.0] — 2026-08-02
 
 The hardening release. Where 0.1.x built the platform, 0.2.0 spent its time trying to break
 it — a threat-model reconciliation that turned every accepted risk into either a fix with a
