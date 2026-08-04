@@ -21,14 +21,14 @@ jobs:
       contents: read
       id-token: write # required for npm provenance
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7.0.1
       # v6, matching ci.yml. action-setup v4 refuses to run when a `version` input and
       # package.json's `packageManager` field both specify pnpm -- which is exactly this
       # repo's layout, so the v0.2.0 release failed here before publishing anything to npm.
       - uses: pnpm/action-setup@v6
         with:
           version: 10.32.1
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           registry-url: "https://registry.npmjs.org"
@@ -53,8 +53,8 @@ jobs:
     permissions:
       id-token: write # required for PyPI trusted publishing
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: hermetic SDK tests
