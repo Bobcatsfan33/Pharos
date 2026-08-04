@@ -22,6 +22,6 @@
     "pg": "^8.22.0"
   },
   "devDependencies": {
-    "@types/pg": "^8.11.10"
+    "@types/pg": "^8.20.3"
   }
 }
