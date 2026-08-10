@@ -11,5 +11,7 @@
 /Dockerfile           @Bobcatsfan33
 /docs/enterprise-readiness.json @Bobcatsfan33
 /docs/security/readiness-evidence.md @Bobcatsfan33
+/docs/external-readiness/ @Bobcatsfan33
 /scripts/verify-enterprise-readiness.mjs @Bobcatsfan33
+/scripts/verify-external-gate-trackers.mjs @Bobcatsfan33
 /scripts/sync-enterprise-evidence.mjs @Bobcatsfan33

@@ -16,6 +16,11 @@ Independent penetration testing, TSA/KMS/legal
 onboarding, customer-topology recovery, organizational assurance, and production validation
 also remain required.
 
+Each external owner now has a scoped [handoff packet](external-readiness/README.md) and accountable
+GitHub tracker. CI verifies those trackers still exist and remain open while their gate is open.
+Confidential reports stay in the approved external evidence system; the repository retains only a
+schema-validated, signed receipt with immutable artifact digests and durable locators.
+
 The evidence index maps to [NIST SSDF 1.1](https://csrc.nist.gov/pubs/sp/800/218/final),
 [SLSA 1.2](https://slsa.dev/spec/v1.2/),
 [OWASP ASVS 5.0.0](https://owasp.org/www-project-application-security-verification-standard/),
