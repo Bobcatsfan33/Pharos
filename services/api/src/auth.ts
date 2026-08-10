@@ -114,7 +114,7 @@ export async function requireAuth(
   platform: Platform,
   request: FastifyRequest,
   reply: FastifyReply,
-  permission: Permission,
+  permission: Permission | readonly Permission[],
   tenantId: string,
 ): Promise<Principal | null> {
   let principal: Principal;
@@ -145,7 +145,8 @@ export async function requireAuth(
   }
 
   try {
-    authorize(principal, tenantId, permission);
+    const required = Array.isArray(permission) ? permission : [permission];
+    for (const item of required) authorize(principal, tenantId, item);
   } catch (err) {
     if (err instanceof AuthorizationError) {
       const status = err.code === "tenant_mismatch" ? 403 : 403;

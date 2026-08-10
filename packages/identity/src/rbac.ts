@@ -18,6 +18,7 @@ export type Role = (typeof ROLES)[number];
 
 export const PERMISSIONS = [
   "actions:write", // submit agent actions for a verdict (ingestion)
+  "liability:assert", // attest blast-radius/reversibility context for a submitted action
   "records:read", // read sealed evidence
   "records:export", // export evidence (claims packs, downloads)
   "chain:verify", // run chain verification

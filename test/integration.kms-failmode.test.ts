@@ -100,7 +100,12 @@ beforeAll(async () => {
     platform = await buildPlatform();
     await platform.tenants.createTenant({ tenantId: TENANT, displayName: "KMS failmode" });
     apiKey = (
-      await platform.apiKeys.create(TENANT, "it", ["actions:write", "records:read", "chain:verify"])
+      await platform.apiKeys.create(TENANT, "it", [
+        "actions:write",
+        "liability:assert",
+        "records:read",
+        "chain:verify",
+      ])
     ).plaintext;
     app = await buildApp(platform);
   } catch (err) {

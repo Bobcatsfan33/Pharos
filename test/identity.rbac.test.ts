@@ -51,6 +51,7 @@ describe("RBAC + deny-by-default", () => {
     };
     // Even though roles lists tenant_admin, an api_key resolves to scopes only.
     expect(can(key, "actions:write")).toBe(true);
+    expect(can(key, "liability:assert")).toBe(false);
     expect(can(key, "keys:manage")).toBe(false);
   });
 

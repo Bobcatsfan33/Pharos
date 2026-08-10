@@ -28,6 +28,7 @@ const CreateKeySchema = z.object({
 
 const ALL_PERMS: Permission[] = [
   "actions:write",
+  "liability:assert",
   "records:read",
   "records:export",
   "chain:verify",

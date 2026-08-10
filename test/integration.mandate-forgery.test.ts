@@ -54,7 +54,11 @@ beforeAll(async () => {
     app = await buildApp(platform);
     await platform.tenants.createTenant({ tenantId: TENANT, displayName: "Mandate" });
     auth["x-api-key"] = (
-      await platform.apiKeys.create(TENANT, "m", ["actions:write", "records:read"])
+      await platform.apiKeys.create(TENANT, "m", [
+        "actions:write",
+        "liability:assert",
+        "records:read",
+      ])
     ).plaintext;
   } catch (err) {
     console.warn("[mandate] infrastructure unavailable, skipping:", (err as Error).message);
@@ -125,6 +129,19 @@ describe("mandate authority is server-derived, never caller-asserted", () => {
 
     // Refused, not silently stripped: silently dropping it would let the caller believe
     // the action was mandated, and would hide the attempt from the operator.
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe("mandate_not_assertable");
+  });
+
+  it("also refuses caller-supplied mandate authority on the open PDP endpoint", async (ctx) => {
+    if (!available) return ctx.skip();
+    const body = fundsMovement(FORGED_MANDATE);
+    const res = await app!.inject({
+      method: "POST",
+      url: "/v1/pdp",
+      headers: auth,
+      payload: { action: body.action, liability: body.liability },
+    });
     expect(res.statusCode).toBe(400);
     expect(res.json().error.code).toBe("mandate_not_assertable");
   });

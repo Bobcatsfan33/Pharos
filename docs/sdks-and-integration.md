@@ -16,6 +16,8 @@ POST /v1/actions  { tenantId, action, liability, mandateId?, idempotencyKey? }
 
 `mandateId` binds a stored mandate (resolved server-side, sealed into the record).
 `escalation` is non-null when the verdict is `escalate` — the handle for continuation.
+The calling machine identity needs both `actions:write` and `liability:assert`; reserve the
+latter for operator-controlled gateway/middleware credentials, not raw agent credentials.
 
 ### `idempotencyKey` — exactly-once ingest
 
