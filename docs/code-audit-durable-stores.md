@@ -16,10 +16,11 @@ The write path commits operational state and evidence together or not at all —
 
 ## What is intentionally NOT platform state
 
-- **KMS keystore** (`.pharos-keystore/`, gitignored): this is the HSM boundary of the
-  simulated local KMS, not platform or evidence state. In production it is replaced by a
-  real KMS (AWS KMS / CloudHSM) and Pharos persists no key material at all. It is a
-  separate subsystem with a separate persistence concern by design
+- **KMS keystore** (`$XDG_DATA_HOME/pharos/keystore` by default): this is the encrypted
+  development key boundary of the simulated local KMS, not platform or evidence state. Entries
+  are AES-256-GCM encrypted and permission-gated; it is deliberately not described as an HSM. In
+  production it is replaced by a real KMS (AWS KMS / CloudHSM) and Pharos persists no key
+  material at all. It is a separate subsystem with a separate persistence concern by design
   ([`packages/core/src/signing/`](../packages/core/src/signing/)).
 - **Redis cache**: a *cache*, not a store of record — it is deadline-bound and
   reconstructible. The authoritative chain is Postgres + WORM; losing Redis loses no

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 /**
  * Validated platform configuration, loaded from the environment at startup.
@@ -55,7 +57,9 @@ const ConfigSchema = z
     }),
     kms: z.object({
       provider: z.enum(["local-kms", "aws-kms"]).default("local-kms"),
-      keystoreDir: z.string().default(".pharos-keystore"),
+      keystoreDir: z.string().min(1),
+      /** Development-only secret used to encrypt the local Ed25519 keystore. */
+      keystorePassphrase: z.string().min(16).optional(),
       /** AWS region for aws-kms. Credentials come from the standard AWS provider chain. */
       awsRegion: z.string().default("us-east-1"),
       /** Optional endpoint override for a KMS emulator (dev/CI); omit for real AWS. */
@@ -139,6 +143,14 @@ const ConfigSchema = z
         code: "custom",
         path: ["admin", "previousToken"],
         message: "previous administrative token and its expiry must be configured together",
+      });
+    }
+    if (config.kms.provider === "local-kms" && !config.kms.keystorePassphrase) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["kms", "keystorePassphrase"],
+        message:
+          "local-kms requires PHAROS_KMS_KEYSTORE_PASSPHRASE (at least 16 characters) to encrypt private keys",
       });
     }
     if (config.env !== "prod") return;
@@ -374,6 +386,11 @@ function safeJsonArray(value: string): unknown[] {
   }
 }
 
+function defaultLocalKeystoreDir(env: NodeJS.ProcessEnv): string {
+  const dataHome = env.XDG_DATA_HOME?.trim() || join(homedir(), ".local", "share");
+  return join(dataHome, "pharos", "keystore");
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
   const parsed = ConfigSchema.safeParse({
     env: env.PHAROS_ENV,
@@ -390,7 +407,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
     },
     kms: {
       provider: env.PHAROS_KMS_PROVIDER,
-      keystoreDir: env.PHAROS_KMS_KEYSTORE_DIR,
+      keystoreDir: env.PHAROS_KMS_KEYSTORE_DIR ?? defaultLocalKeystoreDir(env),
+      keystorePassphrase: env.PHAROS_KMS_KEYSTORE_PASSPHRASE,
       awsRegion: env.PHAROS_KMS_AWS_REGION,
       awsEndpoint: env.PHAROS_KMS_AWS_ENDPOINT,
       awsAllowKeyCreation: env.PHAROS_KMS_AWS_ALLOW_KEY_CREATION,

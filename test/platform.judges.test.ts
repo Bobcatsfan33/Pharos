@@ -10,6 +10,7 @@ import {
 function config(provider: "linear" | "onnx") {
   return loadConfig({
     PHAROS_ENV: "local",
+    PHAROS_KMS_KEYSTORE_PASSPHRASE: "pharos-test-keystore-passphrase",
     PHAROS_PG_URL: "postgres://localhost/pharos",
     PHAROS_REDIS_URL: "redis://localhost:6379",
     PHAROS_S3_ENDPOINT: "http://localhost:9000",

@@ -83,8 +83,8 @@ async function sealWithDisclosure(
 describe("evidence — selective-disclosure redaction", () => {
   beforeAll(async () => {
     const dir = await mkdtemp(join(tmpdir(), "pharos-ev-"));
-    kms = new LocalKms(new FileKeystore(dir));
-    tsa = new LocalKms(new FileKeystore(`${dir}-tsa`));
+    kms = new LocalKms(new FileKeystore(dir, "pharos-test-keystore-passphrase"));
+    tsa = new LocalKms(new FileKeystore(`${dir}-tsa`, "pharos-test-keystore-passphrase"));
     keyId = await kms.ensureKey("t1");
   });
 

@@ -252,12 +252,18 @@ express your intended separation of duties. Enabling it is appropriate for devel
 evaluation; provision the key yourself for production. This flag gates only first-use creation —
 `rotate()` and the migration helper are explicit operator actions and are unaffected.
 
-`local-kms` is intended for development and stores Ed25519 signing keys as files under
-`PHAROS_KMS_KEYSTORE_DIR` (the TSA keystore is the sibling `<dir>-tsa`). If it is selected,
-the chart requires `config.localKms.existingClaim`; it will not place signing keys in an
-ephemeral volume. Those keys sign every evidence record, so development and migration
-environments must persist, back up, and restrict the keystore. The production Compose file does
-not mount local key storage.
+`local-kms` is intended for development and stores Ed25519 signing keys as AES-256-GCM encrypted
+files under `PHAROS_KMS_KEYSTORE_DIR` (the TSA keystore is the sibling `<dir>-tsa`). Supply a
+unique `PHAROS_KMS_KEYSTORE_PASSPHRASE` of at least 16 characters from an OS keychain or local
+secret manager. The default directory is `$XDG_DATA_HOME/pharos/keystore` or
+`~/.local/share/pharos/keystore`, outside the source checkout; its mode is enforced as `0700` and
+key envelopes as `0600`. Existing plaintext keystore entries are authenticated-encrypted on first
+successful read. Back up the encrypted files and passphrase separately: loss of either makes the
+private keys unavailable, while exposure of both permits signing.
+
+If local-kms is selected in the chart, `config.localKms.existingClaim` is required; the chart will
+not place signing keys in an ephemeral volume. The production Compose file does not mount local
+key storage.
 
 Do not describe a local filesystem keystore as an HSM boundary.
 

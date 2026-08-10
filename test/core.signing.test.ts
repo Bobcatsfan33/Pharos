@@ -10,7 +10,7 @@ describe("LocalKms signing + rotation", () => {
 
   beforeAll(async () => {
     dir = await mkdtemp(join(tmpdir(), "pharos-kms-"));
-    kms = new LocalKms(new FileKeystore(dir));
+    kms = new LocalKms(new FileKeystore(dir, "pharos-test-keystore-passphrase"));
   });
   afterAll(async () => {
     await rm(dir, { recursive: true, force: true });
@@ -68,7 +68,7 @@ describe("LocalKms signing + rotation", () => {
   });
 
   it("persists across keystore reopen (durable)", async () => {
-    const reopened = new LocalKms(new FileKeystore(dir));
+    const reopened = new LocalKms(new FileKeystore(dir, "pharos-test-keystore-passphrase"));
     const keyId = await reopened.activeKeyId("env:test");
     expect(keyId).toBe("env:test#v2");
     expect(await reopened.getPublicKey("env:test#v1")).not.toBeNull();

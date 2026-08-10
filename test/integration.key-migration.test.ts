@@ -93,7 +93,7 @@ describe("key migration: local-kms (Ed25519) → aws-kms (ECDSA P-256), no data 
 
   beforeAll(async () => {
     const dir = await mkdtemp(join(tmpdir(), "pharos-migrate-"));
-    local = new LocalKms(new FileKeystore(dir));
+    local = new LocalKms(new FileKeystore(dir, "pharos-test-keystore-passphrase"));
     aws = new AwsKms({
       region: "us-east-1",
       endpoint: ENDPOINT,
@@ -162,7 +162,7 @@ describe("key rollback: aws-kms → local-kms continues the global version seque
     const tenantId = `rollback-${randomUUID().slice(0, 8)}`;
     const keyName = `tenant:${tenantId}`;
     const dir = await mkdtemp(join(tmpdir(), "pharos-rollback-"));
-    const local = new LocalKms(new FileKeystore(dir));
+    const local = new LocalKms(new FileKeystore(dir, "pharos-test-keystore-passphrase"));
     const aws = new AwsKms({
       region: "us-east-1",
       endpoint: ENDPOINT,
