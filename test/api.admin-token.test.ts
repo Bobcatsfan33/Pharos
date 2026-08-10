@@ -35,8 +35,15 @@ function fakeReply(): { reply: FastifyReply; captured: { status: number | null }
   return { reply: reply as unknown as FastifyReply, captured };
 }
 
-function platformWith(token: string | undefined): Platform {
-  return { config: { admin: { token } } } as unknown as Platform;
+function platformWith(
+  token: string | undefined,
+  options: {
+    tokenExpiresAt?: string;
+    previousToken?: string;
+    previousTokenExpiresAt?: string;
+  } = {},
+): Platform {
+  return { config: { admin: { token, ...options } } } as unknown as Platform;
 }
 
 function requestWith(header: unknown): FastifyRequest {
@@ -98,6 +105,34 @@ describe("platform admin token guard", () => {
     const long = randomBytes(4096).toString("hex");
     expect(requireAdminToken(platformWith(TOKEN), requestWith(long), reply)).toBe(false);
     expect(captured.status).toBe(401);
+  });
+
+  it("accepts both credentials only during a bounded rotation overlap", () => {
+    const previous = "previous-platform-admin-token-value";
+    const overlap = platformWith(TOKEN, {
+      tokenExpiresAt: "2099-01-01T00:00:00Z",
+      previousToken: previous,
+      previousTokenExpiresAt: "2099-01-01T00:00:00Z",
+    });
+    for (const candidate of [TOKEN, previous]) {
+      const { reply, captured } = fakeReply();
+      expect(requireAdminToken(overlap, requestWith(candidate), reply)).toBe(true);
+      expect(captured.status).toBeNull();
+    }
+  });
+
+  it("rejects expired current and previous credentials", () => {
+    const previous = "previous-platform-admin-token-value";
+    const expired = platformWith(TOKEN, {
+      tokenExpiresAt: "2020-01-01T00:00:00Z",
+      previousToken: previous,
+      previousTokenExpiresAt: "2020-01-01T00:00:00Z",
+    });
+    for (const candidate of [TOKEN, previous]) {
+      const { reply, captured } = fakeReply();
+      expect(requireAdminToken(expired, requestWith(candidate), reply)).toBe(false);
+      expect(captured.status).toBe(401);
+    }
   });
 });
 
