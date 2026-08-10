@@ -195,6 +195,7 @@ export function verifyChain(
     if (out.tenantId && record.content.tenantId !== out.tenantId) {
       out.ok = false;
       out.errors.push(`tenant mismatch at sequence ${record.content.sequence}`);
+      out.firstBrokenSequence ??= record.content.sequence;
     }
     const rv = verifyRecord(record, expectedPrev, keyMap);
     out.records.push(rv);
@@ -202,6 +203,11 @@ export function verifyChain(
     if (!rv.ok) {
       out.ok = false;
       out.firstBrokenSequence ??= record.content.sequence;
+      // Preserve the detailed record-level diagnosis in the chain summary. Operators and
+      // offline verifiers commonly consume only `ChainVerification.errors`; returning an
+      // empty array while `ok === false` makes the most important failure path unactionable.
+      // Prefix every detail with its sequence so repeated hashes/key ids remain attributable.
+      out.errors.push(...rv.errors.map((error) => `sequence ${record.content.sequence}: ${error}`));
     }
     expectedPrev = record.seal.contentHash;
     expectedSeq = record.content.sequence + 1;
