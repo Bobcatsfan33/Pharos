@@ -165,21 +165,31 @@ export class PostgresHeldRequestStore implements HeldRequestStore {
         `UPDATE gateway_held_requests
             SET state = 'delivering',
                 lease_token = $3,
-                lease_expires_at = now() + ($4 * interval '1 millisecond'),
+                lease_expires_at = clock_timestamp() + ($4 * interval '1 millisecond'),
                 attempts = attempts + 1,
                 updated_at = now()
           WHERE tenant_id = $1
             AND escalation_id = $2
-            AND (state = 'pending' OR lease_expires_at <= now())
+            AND (state = 'pending' OR lease_expires_at <= clock_timestamp())
           RETURNING escalation_id, key_id, ciphertext, nonce, auth_tag`,
         [tenantId, escalationId, leaseToken, this.leaseMs],
       );
       const row = acquired.rows[0];
       if (row) {
+        const request = await this.decrypt(tenantId, row);
+        // PostgreSQL now() is pinned to transaction start. Refresh with wall-clock time after
+        // decryption so the caller receives the full configured lease window rather than a
+        // lease partially (or entirely) consumed inside acquire().
+        await client.query(
+          `UPDATE gateway_held_requests
+              SET lease_expires_at = clock_timestamp() + ($4 * interval '1 millisecond')
+            WHERE tenant_id = $1 AND escalation_id = $2 AND lease_token = $3`,
+          [tenantId, escalationId, leaseToken, this.leaseMs],
+        );
         return {
           status: "acquired",
           leaseToken,
-          request: await this.decrypt(tenantId, row),
+          request,
         };
       }
       const exists = await client.query(
