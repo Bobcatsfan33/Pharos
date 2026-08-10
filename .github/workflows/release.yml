@@ -1,9 +1,11 @@
 name: release
-# Publishes the SDKs from signed, versioned artifacts.
+# Publishes the SDKs from signed, stable-version artifacts.
 #   @getpharos/sdk -> npm  (with provenance)
 #   getpharos  -> PyPI (with trusted publishing / OIDC)
 #
-# Triggers on a version tag (v*), or manually via workflow_dispatch for the first publish.
+# Stable vMAJOR.MINOR.PATCH tags publish SDKs. Semver prerelease tags intentionally skip these
+# irreversible registry jobs; image.yml uses those tags to publish assessment images instead.
+# workflow_dispatch remains an explicit maintainer-controlled SDK release path.
 # Requires (set up by a maintainer — see docs/PUBLISHING.md):
 #   - npm org "getpharos"; trusted publisher on @getpharos/sdk -> this repo + release.yml (no secret).
 #     (First 0.1.0 publish is done manually by the maintainer; this workflow covers all later tags.)
@@ -15,7 +17,25 @@ on:
   workflow_dispatch:
 
 jobs:
+  release-channel:
+    runs-on: ubuntu-latest
+    outputs:
+      publish_sdks: ${{ steps.classify.outputs.publish_sdks }}
+      channel: ${{ steps.classify.outputs.channel }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.0.2
+      - id: classify
+        name: classify stable, prerelease, or manual release
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLASSIFICATION="$(node scripts/classify-release-ref.mjs "${GITHUB_EVENT_NAME}" "${GITHUB_REF}")"
+          echo "channel=$(jq -r '.channel' <<<"${CLASSIFICATION}")" >> "${GITHUB_OUTPUT}"
+          echo "publish_sdks=$(jq -r '.publishSdks' <<<"${CLASSIFICATION}")" >> "${GITHUB_OUTPUT}"
+
   npm-publish:
+    needs: release-channel
+    if: needs.release-channel.outputs.publish_sdks == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,6 +68,8 @@ jobs:
         run: npm publish --access public
 
   pypi-publish:
+    needs: release-channel
+    if: needs.release-channel.outputs.publish_sdks == 'true'
     runs-on: ubuntu-latest
     environment: pharos # MUST match the environment on the PyPI trusted publisher
     permissions:
