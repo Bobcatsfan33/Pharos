@@ -3,8 +3,8 @@
   "note": "Served transformer-judge artifacts. Blobs are GitHub Release assets, fetched and sha256-verified against this manifest at load time (never committed to git). modelVersion pins each identity.",
   "release": {
     "repo": "Bobcatsfan33/Pharos",
-    "tag": "judge-models-v1",
-    "baseUrl": "https://github.com/Bobcatsfan33/Pharos/releases/download/judge-models-v1"
+    "tag": "judge-models-v2",
+    "baseUrl": "https://github.com/Bobcatsfan33/Pharos/releases/download/judge-models-v2"
   },
   "qualifiedRuntimes": ["onnxruntime-node@1.20.1/linux-x64"],
   "models": {
@@ -28,17 +28,17 @@
       }
     },
     "funds-movement-intent": {
-      "modelVersion": "funds-movement-intent@00b6163b8dd7",
+      "modelVersion": "funds-movement-intent@f3fc84a6dbbf",
       "kind": "onnx-transformer",
       "baseModel": "distilbert-base-multilingual-cased",
       "maxLen": 128,
-      "temperature": 0.6218407154083252,
+      "temperature": 0.6559091806411743,
       "threshold": 0.5,
       "served": "model.int8.onnx",
       "assets": {
         "model": {
           "asset": "funds-movement-intent.model.int8.onnx",
-          "sha256": "270daec08b83c94beae761c3a3669068295c059ee79eadb57e80178cea9f2dba"
+          "sha256": "fe4fa002c35db2193598253d834c6a20cd3808361ccfdf4ec70f3ba4c3c81b5e"
         },
         "tokenizer": {
           "asset": "funds-movement-intent.tokenizer.json",

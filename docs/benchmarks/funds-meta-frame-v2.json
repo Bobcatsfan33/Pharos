@@ -1,0 +1,139 @@
+{
+  "candidate": {
+    "hyperparams": {
+      "batch": 16,
+      "epochs": 5,
+      "lr": 2e-5,
+      "seed": 42
+    },
+    "modelSha256": "fe4fa002c35db2193598253d834c6a20cd3808361ccfdf4ec70f3ba4c3c81b5e",
+    "modelVersion": "funds-movement-intent@f3fc84a6dbbf",
+    "recipeFrozenAtCommit": "93fff3d5735b896704875968be520442cb424f05",
+    "recipeVersion": "speech-act-meta-frame-v2",
+    "served": "model.int8.onnx",
+    "temperature": 0.6559091806411743,
+    "threshold": 0.5,
+    "tokenizerSha256": "672146ee6867dc02a01c474090e237789f8a066ee7247bb2cb6c8688a27536a8",
+    "trainingDatasetSha256": "6532b46a9676e39540aa054a45e41e15607005d78134a9c8b025a929a99af1cf"
+  },
+  "concern": "funds-movement-intent",
+  "datasets": {
+    "developmentDatasetHash": "b7c38f45933839499f4de54ec86deb3a3f36ec7ee47a8dd427c0a04f4238bdbe",
+    "developmentManifestSha256": "c5eed1bd6f93526e838027ea9b0f9a14cd35ead60ebcc487485d1b76ccb8a15c",
+    "lockboxGeneratedAfterRecipeFreeze": true,
+    "lockboxSeed": 3925452171,
+    "lockboxSha256": "6e29a255fa5dfac3419460e6fa359ad9afa861c1e3dbd032a49e1c777c9ff2d3"
+  },
+  "gate": {
+    "cleanRecallBeatsBaseline": true,
+    "hardNegativeFprBeatsBaseline": true,
+    "passed": true,
+    "quantizationWithinTolerance": true,
+    "semanticSuitesBeatBaseline": {
+      "german": true,
+      "leetspeak": true,
+      "paraphrase": true,
+      "prompt-injection": true,
+      "sentence-split": true,
+      "spanish": true,
+      "synonym": true
+    }
+  },
+  "method": {
+    "encodingSuitesExcludedFromModelGate": ["base64", "rot13"],
+    "inferenceBatchSize": 1,
+    "maxQuantizationRecallRegression": 0.03,
+    "semanticSuites": [
+      "paraphrase",
+      "synonym",
+      "leetspeak",
+      "sentence-split",
+      "prompt-injection",
+      "spanish",
+      "german"
+    ]
+  },
+  "results": {
+    "fp32_lock": {
+      "clean_recall": 1.0,
+      "hard_fpr": 0.17465753424657535,
+      "precision": 0.8522727272727273,
+      "suites": {
+        "base64": 0.95,
+        "german": 1.0,
+        "leetspeak": 1.0,
+        "paraphrase": 1.0,
+        "prompt-injection": 1.0,
+        "rot13": 1.0,
+        "sentence-split": 1.0,
+        "spanish": 1.0,
+        "synonym": 1.0
+      }
+    },
+    "int8_dev": {
+      "clean_recall": 1.0,
+      "hard_fpr": 0.07534246575342465,
+      "precision": 0.9316770186335404,
+      "suites": {
+        "base64": 1.0,
+        "german": 1.0,
+        "leetspeak": 1.0,
+        "paraphrase": 0.9875,
+        "prompt-injection": 1.0,
+        "rot13": 1.0,
+        "sentence-split": 1.0,
+        "spanish": 1.0,
+        "synonym": 1.0
+      }
+    },
+    "int8_lock": {
+      "clean_recall": 1.0,
+      "hard_fpr": 0.08904109589041095,
+      "precision": 0.9202453987730062,
+      "suites": {
+        "base64": 0.8625,
+        "german": 1.0,
+        "leetspeak": 1.0,
+        "paraphrase": 0.9875,
+        "prompt-injection": 1.0,
+        "rot13": 1.0,
+        "sentence-split": 1.0,
+        "spanish": 1.0,
+        "synonym": 1.0
+      }
+    },
+    "log_dev": {
+      "clean_recall": 0.9933333333333333,
+      "hard_fpr": 0.8321917808219178,
+      "precision": 0.5498154981549815,
+      "suites": {
+        "base64": 0.0,
+        "german": 0.9166666666666666,
+        "leetspeak": 0.025,
+        "paraphrase": 0.9625,
+        "prompt-injection": 0.9625,
+        "rot13": 0.0,
+        "sentence-split": 0.9125,
+        "spanish": 0.5833333333333334,
+        "synonym": 0.9125
+      }
+    },
+    "log_lock": {
+      "clean_recall": 0.9666666666666667,
+      "hard_fpr": 0.8424657534246576,
+      "precision": 0.5400372439478585,
+      "suites": {
+        "base64": 0.0,
+        "german": 0.8888888888888888,
+        "leetspeak": 0.075,
+        "paraphrase": 0.9375,
+        "prompt-injection": 0.9375,
+        "rot13": 0.0,
+        "sentence-split": 0.925,
+        "spanish": 0.8108108108108109,
+        "synonym": 0.925
+      }
+    }
+  },
+  "schemaVersion": "1.0.0"
+}

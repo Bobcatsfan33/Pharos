@@ -26,8 +26,10 @@ run **blinded** (metrics only; eval text is never printed or trained on).
 `distilbert-base-multilingual-cased` (135M) — multilingual because the "translation" semantic suite
 (native es/de) cannot be beaten by an English-only encoder. Binary sequence classifier, 5 epochs,
 lr 2e-5, batch 16, seed 42; temperature-scaling calibration on a held-out split; prompt-injection
-augmentation with *varied* frames (a known threat class, not eval-specific). **Locked** — a recipe
-revision is its own follow-up task (dev + fresh lockbox), not a mid-checkpoint patch.
+augmentation with *varied* frames (a known threat class, not eval-specific). The funds concern uses
+the frozen `speech-act-meta-frame-v2` revision: balanced positive/negative discourse wrappers force
+classification of the embedded speech act instead of the wrapper. Its recipe was frozen in commit
+`93fff3d5735b896704875968be520442cb424f05` before the new lockbox seed was drawn.
 
 Determinism: seeds fixed; CPU BLAS/threading may still cause last-bit logit drift across machines —
 the committed `model.onnx` + its content hash are authoritative (same contract as the eval data).
@@ -50,7 +52,7 @@ uv run python eval_final.py --concern finra-promissory   # numbers of record (de
 |---|---|---|---|---|
 | finra-promissory | int8 (129MB) | 57.7% → **97.7%** | 15.2% → **11.1%** | **7/7** |
 | phi-in-context | fp32 (516MB) | 73.0% → **100%** | 41.0% → **16.0%** | 7/7 |
-| funds-movement-intent | int8 (129MB) | 98.7% → **100%** | 82.5% → **33.2%** | 6/7 |
+| funds-movement-intent v2 | int8 (129MB) | 96.7% → **100%** | 84.2% → **8.9%** | **7/7** |
 
 - **Batch-1 (serving-faithful) numbers of record** — dynamic int8 ONNX is **batch-sensitive** (the
   per-tensor activation scale spans the whole batch), so only single-inference matches the
@@ -61,10 +63,11 @@ uv run python eval_final.py --concern finra-promissory   # numbers of record (de
 - Optimism (dev→lockbox) ≤ 2.7 pt — the lockbox held.
 - **phi ships fp32:** int8 dev-recalibration (threshold 0.74) left lockbox hard-neg FPR at 20.5% vs
   fp32 16% (+4.5% > +3% tolerance); recall was never the limiter. CPU-latency cost measured in S7-T1.
-- **funds paraphrase is a known limitation** (recall regresses vs the keyword-matching logistic
-  because meta-framing — *"what this really means is that … the bottom line"* — fools the intent
-  detector; the instructions are genuine, adjudicated valid → tracked as a recipe-revision follow-up,
-  issue #91). Documented in the model card + threat model + `judge-evals.md`.
+- **funds meta-frame remediation:** the one-shot v2 lockbox records paraphrase recall **98.8%**
+  versus logistic **93.8%**, while clean recall is 100%, hard-negative FPR falls to 8.9%, and all
+  seven semantic suites win. The machine-readable evidence is
+  `docs/benchmarks/funds-meta-frame-v2.json`. Independent dataset and promotion review remain part
+  of ENG-JUDGES; this engineering result does not self-approve production use.
 - **base64/rot13 are a SYSTEM win, never a model win.** The bare model's floor is ~0-to-unreliable
   (by anomaly, not decoding); the cascade normalizer (ADR 0004) decodes and the judge scores the
   content. Measured through the normalizer in the system eval.

@@ -34,7 +34,7 @@
     "judges:gate": "tsx scripts/eval-gate.ts",
     "judges:system-eval": "tsx scripts/system-eval.ts",
     "judges:drift-profile": "tsx scripts/build-judge-drift-profile.ts",
-    "bench:latency": "tsx --env-file=.env scripts/bench-latency.ts"
+    "bench:latency": "tsx scripts/bench-latency.ts"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1103.0",

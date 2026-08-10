@@ -60,14 +60,22 @@ customer-topology latency evidence still require approval.
 | Field | Value |
 |---|---|
 | Concern / pack | `funds-movement-intent` |
-| Model version | `funds-movement-intent@00b6163b8dd7` |
+| Model version | `funds-movement-intent@f3fc84a6dbbf` |
 | Base model | `distilbert-base-multilingual-cased` |
-| Served artifact | int8 ONNX, SHA-256 `270daec08b83c94beae761c3a3669068295c059ee79eadb57e80178cea9f2dba` |
+| Served artifact | int8 ONNX, SHA-256 `fe4fa002c35db2193598253d834c6a20cd3808361ccfdf4ec70f3ba4c3c81b5e` |
 | Tokenizer SHA-256 | `672146ee6867dc02a01c474090e237789f8a066ee7247bb2cb6c8688a27536a8` |
 | Maximum tokens | 128 |
-| Temperature / threshold | `0.6218407154083252` / `0.5` |
+| Temperature / threshold | `0.6559091806411743` / `0.5` |
 | Intended control | Detect proposed funds-movement intent when mandate controls are evaluated. |
 | Default flagged action | Escalate when no mandate is present. |
+
+Engineering qualification for the `speech-act-meta-frame-v2` recipe is recorded in
+[`funds-meta-frame-v2.json`](../benchmarks/funds-meta-frame-v2.json). The recipe was frozen before
+the replacement lockbox seed was drawn. On that lockbox, the served int8 model reached 98.8%
+paraphrase recall versus 93.8% for the frozen logistic baseline, won all seven semantic suites,
+retained 100% clean recall, and reduced hard-negative FPR from 84.2% to 8.9%. This resolves the
+specific issue-#91 engineering regression; it does not replace independent representative-data,
+threshold, OOD, or promotion approval.
 
 ## Promotion evidence required
 

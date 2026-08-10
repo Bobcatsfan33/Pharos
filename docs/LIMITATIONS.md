@@ -64,19 +64,20 @@ decision remains not approved.
 
 Related: [decision-cascade.md](decision-cascade.md), [benchmarks/latency.md](benchmarks/latency.md).
 
-## 2. The latency benchmark was measured with the linear judges
+## 2. The ONNX latency benchmark has not passed the production throughput gate
 
 > **Tracking issue:** [#37](https://github.com/Bobcatsfan33/Pharos/issues/37)
 
-**Today:** the headline **p99 3.7ms at ~5,400 verdicts/sec** in
-[`docs/benchmarks/latency.md`](benchmarks/latency.md) was measured with the linear judges of
-item 1. It is a real measurement of the current stack, but it **must not be quoted as the
-production figure** — a transformer judge on CPU raises Tier-3 latency by orders of magnitude.
+**Today:** the benchmark loads all three hash-verified ONNX judges by default, and the old p99
+3.7ms / approximately 5,400 verdicts/sec linear-model headline has been retired. The committed
+Apple-M2 engineering reference stayed within 800ms p99 at concurrency 2 but produced only about
+8 verdicts/sec. A saturation diagnostic at concurrency 16 exceeded the deadline and exercised the
+fail-mode path. This is honest per-host capacity evidence, not a production topology claim.
 
-**Production:** re-run and rewrite the benchmark with the real transformer judges at
-realistic concurrency on a documented reference box, deleting the 3.7ms headline everywhere
-it appears — roadmap task **S7-T1**. Whether the 800ms envelope holds at target concurrency
-is an open question that task answers.
+**Production:** select and load-test the real Linux CPU/memory/replica topology, including cold and
+warm behavior, back-pressure, a sustained aggregate 1,000 verdicts/sec run, and an observed
+deadline/rollback exercise — roadmap task **S7-T1**. The required horizontal capacity must be
+measured rather than extrapolated from a developer laptop.
 
 ## 3. KMS: production requires AWS KMS; local KMS remains a development default
 

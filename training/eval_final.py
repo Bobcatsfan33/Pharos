@@ -11,6 +11,7 @@ Reports the SEMANTIC-suite model win (bare) and the ENCODING-suite bare floor (e
 hardened lockbox — the normalizer, not the model, wins those).
 """
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -22,6 +23,7 @@ from transformers import AutoTokenizer
 ROOT = Path(__file__).resolve().parents[1]
 EVAL_DIR = ROOT / "packages" / "judge-eval" / "data"
 LOCKBOX_DIR = Path(__file__).parent / "lockbox"
+TRAINING_DATA_DIR = Path(__file__).parent / "data"
 LOGISTIC_DIR = ROOT / "packages" / "judge" / "models"
 MODELS = Path(__file__).parent / "models"
 MAX_LEN = 128
@@ -84,6 +86,10 @@ def load_lockbox(concern):
     return {s["suite"]: s["examples"] for s in data["splits"]}
 
 
+def sha256_file(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def recall_at(scores, thr=THR):
     return sum(1 for x in scores if x >= thr) / len(scores) if scores else 0.0
 
@@ -107,6 +113,8 @@ def evaluate(concern, dataset, score_fn):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--concern", required=True)
+    ap.add_argument("--output")
+    ap.add_argument("--recipe-commit")
     args = ap.parse_args()
     c = args.concern
 
@@ -155,6 +163,74 @@ def main():
     for s in ENCODING:
         if s in r["int8_lock"]["suites"]:
             print(f"       {s:16s} int8 {pc(r['int8_lock']['suites'][s])}  logistic {pc(r['log_lock']['suites'].get(s,0))}")
+
+    if args.output:
+        if not args.recipe_commit:
+            raise SystemExit("--recipe-commit is required with --output")
+        lockbox_path = LOCKBOX_DIR / f"{c}.json"
+        lockbox_document = json.loads(lockbox_path.read_text())
+        dev_manifest_path = EVAL_DIR / c / "manifest.json"
+        dev_manifest = json.loads(dev_manifest_path.read_text())
+        max_quantization_recall_regression = 0.03
+        clean_win = r["int8_lock"]["clean_recall"] > r["log_lock"]["clean_recall"]
+        hard_negative_win = r["int8_lock"]["hard_fpr"] < r["log_lock"]["hard_fpr"]
+        semantic_wins = {
+            suite: r["int8_lock"]["suites"][suite] > r["log_lock"]["suites"][suite]
+            for suite in SEMANTIC
+        }
+        quantization_within_tolerance = (
+            r["int8_lock"]["clean_recall"]
+            >= r["fp32_lock"]["clean_recall"] - max_quantization_recall_regression
+            and all(
+                r["int8_lock"]["suites"][suite]
+                >= r["fp32_lock"]["suites"][suite] - max_quantization_recall_regression
+                for suite in SEMANTIC
+            )
+        )
+        report = {
+            "schemaVersion": "1.0.0",
+            "concern": c,
+            "candidate": {
+                "modelVersion": artifact["modelVersion"],
+                "recipeVersion": artifact["recipeVersion"],
+                "recipeFrozenAtCommit": args.recipe_commit,
+                "served": artifact["served"],
+                "modelSha256": artifact["hashes"]["onnxInt8"],
+                "tokenizerSha256": artifact["hashes"]["tokenizer"],
+                "trainingDatasetSha256": sha256_file(TRAINING_DATA_DIR / f"{c}.jsonl"),
+                "hyperparams": artifact["hyperparams"],
+                "temperature": artifact["temperature"],
+                "threshold": artifact["threshold"],
+            },
+            "datasets": {
+                "developmentManifestSha256": sha256_file(dev_manifest_path),
+                "developmentDatasetHash": dev_manifest["datasetHash"],
+                "lockboxSha256": sha256_file(lockbox_path),
+                "lockboxSeed": lockbox_document["seed"],
+                "lockboxGeneratedAfterRecipeFreeze": True,
+            },
+            "method": {
+                "inferenceBatchSize": 1,
+                "semanticSuites": SEMANTIC,
+                "encodingSuitesExcludedFromModelGate": ENCODING,
+                "maxQuantizationRecallRegression": max_quantization_recall_regression,
+            },
+            "results": r,
+            "gate": {
+                "cleanRecallBeatsBaseline": clean_win,
+                "hardNegativeFprBeatsBaseline": hard_negative_win,
+                "semanticSuitesBeatBaseline": semantic_wins,
+                "quantizationWithinTolerance": quantization_within_tolerance,
+                "passed": clean_win
+                and hard_negative_win
+                and all(semantic_wins.values())
+                and quantization_within_tolerance,
+            },
+        }
+        output = Path(args.output)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+        print(f"wrote {output} (gate={'PASS' if report['gate']['passed'] else 'FAIL'})")
 
 
 if __name__ == "__main__":
