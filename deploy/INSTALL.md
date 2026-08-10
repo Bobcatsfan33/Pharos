@@ -127,6 +127,7 @@ kubectl create secret generic pharos-secrets \
   --from-literal=PHAROS_REDIS_URL=rediss://... \
   --from-literal=PHAROS_S3_ENDPOINT=https://s3.amazonaws.com \
   --from-literal=PHAROS_ADMIN_TOKEN=...
+  --from-literal=PHAROS_ADMIN_TOKEN_EXPIRES_AT=2030-01-01T00:00:00Z
 
 # 2. Create the independently approved, version-pinned drift ConfigMap.
 kubectl -n pharos create configmap pharos-judge-drift \

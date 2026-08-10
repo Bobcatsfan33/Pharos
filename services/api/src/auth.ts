@@ -185,14 +185,35 @@ export function requireAdminToken(
   reply: FastifyReply,
 ): boolean {
   const token = request.headers["x-pharos-admin"];
-  const expected = platform.config.admin.token;
-  if (!expected) {
+  const admin = platform.config.admin;
+  if (!admin.token) {
     // Unconfigured is refused, never treated as "no token required".
     reply.status(503).send(errorBody("admin_disabled", "platform admin token not configured"));
     return false;
   }
-  if (typeof token !== "string" || !secretsMatch(token, expected)) {
+  if (typeof token !== "string") {
     reply.status(401).send(errorBody("unauthenticated", "invalid platform admin token"));
+    return false;
+  }
+
+  const now = Date.now();
+  const credentials = [
+    { token: admin.token, expiresAt: admin.tokenExpiresAt },
+    ...(admin.previousToken
+      ? [{ token: admin.previousToken, expiresAt: admin.previousTokenExpiresAt }]
+      : []),
+  ];
+  // Evaluate every configured credential even after a match. This preserves the
+  // constant-time comparison guarantee during the overlap window and avoids revealing
+  // whether the caller presented the current or previous credential.
+  let accepted = false;
+  for (const credential of credentials) {
+    const matches = secretsMatch(token, credential.token);
+    const unexpired = !credential.expiresAt || Date.parse(credential.expiresAt) > now;
+    accepted = (matches && unexpired) || accepted;
+  }
+  if (!accepted) {
+    reply.status(401).send(errorBody("unauthenticated", "invalid or expired platform admin token"));
     return false;
   }
   return true;

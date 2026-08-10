@@ -114,8 +114,17 @@ const ConfigSchema = z
     }),
     /** Trusted OIDC issuers (Okta, Entra, ...). Optional; empty disables SSO bearer auth. */
     oidc: z.array(OidcIssuerSchema).default([]),
-    /** Platform-operator bootstrap token for tenant provisioning. */
-    admin: z.object({ token: z.string().optional() }),
+    /**
+     * Platform-operator bootstrap credentials for tenant provisioning. The previous
+     * credential permits a bounded overlap during rotation; both expiries are checked
+     * on every request rather than only at process startup.
+     */
+    admin: z.object({
+      token: z.string().optional(),
+      tokenExpiresAt: z.string().datetime({ offset: true }).optional(),
+      previousToken: z.string().optional(),
+      previousTokenExpiresAt: z.string().datetime({ offset: true }).optional(),
+    }),
   })
   .superRefine((config, ctx) => {
     if (Boolean(config.s3.accessKey) !== Boolean(config.s3.secretKey)) {
@@ -123,6 +132,13 @@ const ConfigSchema = z
         code: "custom",
         path: ["s3"],
         message: "S3 static credentials must provide both access key and secret key",
+      });
+    }
+    if (Boolean(config.admin.previousToken) !== Boolean(config.admin.previousTokenExpiresAt)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["admin", "previousToken"],
+        message: "previous administrative token and its expiry must be configured together",
       });
     }
     if (config.env !== "prod") return;
@@ -273,6 +289,26 @@ const ConfigSchema = z
         message: "production requires an administrative token of at least 32 characters",
       });
     }
+    if (!config.admin.tokenExpiresAt) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["admin", "tokenExpiresAt"],
+        message: "production administrative credentials require an explicit RFC 3339 expiry",
+      });
+    } else if (Date.parse(config.admin.tokenExpiresAt) <= Date.now()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["admin", "tokenExpiresAt"],
+        message: "production administrative credential is already expired",
+      });
+    }
+    if (config.admin.previousToken && config.admin.previousToken.trim().length < 32) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["admin", "previousToken"],
+        message: "previous administrative token must be at least 32 characters",
+      });
+    }
   });
 
 export type PharosConfig = z.infer<typeof ConfigSchema>;
@@ -379,7 +415,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
       rateLimitFailMode: env.PHAROS_RATE_LIMIT_FAIL_MODE,
     },
     oidc: env.PHAROS_OIDC_ISSUERS ? safeJsonArray(env.PHAROS_OIDC_ISSUERS) : [],
-    admin: { token: env.PHAROS_ADMIN_TOKEN },
+    admin: {
+      token: env.PHAROS_ADMIN_TOKEN,
+      tokenExpiresAt: env.PHAROS_ADMIN_TOKEN_EXPIRES_AT,
+      previousToken: env.PHAROS_ADMIN_PREVIOUS_TOKEN,
+      previousTokenExpiresAt: env.PHAROS_ADMIN_PREVIOUS_TOKEN_EXPIRES_AT,
+    },
   });
   if (!parsed.success) {
     const detail = parsed.error.issues
