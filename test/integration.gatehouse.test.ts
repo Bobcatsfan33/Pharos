@@ -148,6 +148,17 @@ describe("Gatehouse — tenant isolation attack suite", () => {
     expect(keyMgmt.statusCode).toBe(403);
   });
 
+  it("separates action submission from authority to assert liability", async (ctx) => {
+    if (!available) return ctx.skip();
+    const rawAgent = await platform!.apiKeys.create(TA, "raw-agent", ["actions:write"]);
+    const before = await platform!.store.count(TA);
+    const attempt = await submit(TA, rawAgent.plaintext);
+
+    expect(attempt.statusCode).toBe(403);
+    expect(attempt.json().error.code).toBe("forbidden");
+    expect(await platform!.store.count(TA)).toBe(before);
+  });
+
   it("RLS backstops at the database: tenant-A context cannot see tenant-B rows", async (ctx) => {
     if (!available) return ctx.skip();
     const client = await platform!.pool.connect();
@@ -171,7 +182,10 @@ describe("Gatehouse — tenant isolation attack suite", () => {
 describe("Gatehouse — API key rotation mid-stream", () => {
   it("rotates a key while submitting and drops no records", async (ctx) => {
     if (!available) return ctx.skip();
-    const ingest = await platform!.apiKeys.create(TA, "ingest", ["actions:write"]);
+    const ingest = await platform!.apiKeys.create(TA, "ingest", [
+      "actions:write",
+      "liability:assert",
+    ]);
     const before = (await platform!.store.count(TA)) ?? 0;
 
     // Submit with the original key.

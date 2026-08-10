@@ -73,6 +73,7 @@ beforeAll(async () => {
     auth["x-api-key"] = (
       await platform.apiKeys.create(TENANT, "cx", [
         "actions:write",
+        "liability:assert",
         "records:read",
         "policies:read",
         "policies:write",

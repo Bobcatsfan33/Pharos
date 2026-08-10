@@ -45,6 +45,7 @@ beforeAll(async () => {
     await platform.tenants.createTenant({ tenantId: TENANT, displayName: "Lantern" });
     const created = await platform.apiKeys.create(TENANT, "ln", [
       "actions:write",
+      "liability:assert",
       "records:read",
       "chain:verify",
     ]);
@@ -194,7 +195,9 @@ describe("Lantern — served cascade over the API", () => {
     // Fresh platform we can safely break by ending its pool.
     const victim = await buildPlatform();
     await victim.tenants.createTenant({ tenantId: TENANT + "-x", displayName: "x" });
-    const vkey = (await victim.apiKeys.create(TENANT + "-x", "x", ["actions:write"])).plaintext;
+    const vkey = (
+      await victim.apiKeys.create(TENANT + "-x", "x", ["actions:write", "liability:assert"])
+    ).plaintext;
     const app = await buildApp(victim);
     await victim.pool.end(); // kill Postgres connectivity mid-flight
 

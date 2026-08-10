@@ -13,8 +13,10 @@ class FakeGovernor:
         self.decision = decision
         self.resolution_status = resolution_status
         self._claimed = set()
+        self.last_input = None
 
     def submit(self, **kwargs):
+        self.last_input = kwargs
         return {
             "verdict": {"decision": self.decision, "ruleCitations": [{"ruleId": "t", "pack": "t"}]},
             "record": {"content": {"id": "r1", "sequence": 0}},
@@ -47,9 +49,12 @@ def test_allow_runs_tool(framework):
     def tool(args):
         runs["n"] += 1
         return "done"
-    invoke = _invoker(framework, FakeGovernor("allow"), tool)
+    governor = FakeGovernor("allow")
+    invoke = _invoker(framework, governor, tool)
     assert invoke({"amount": 1}) == "done"
     assert runs["n"] == 1
+    assert governor.last_input["liability"]["blastRadius"]["reversibility"] == "irreversible"
+    assert governor.last_input["liability"]["oversightMode"] == "human_in_loop"
 
 
 @pytest.mark.parametrize("framework", ["crewai", "ms_agent"])

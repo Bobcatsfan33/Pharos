@@ -19,12 +19,14 @@ import type { ClaimResult, Escalation, SubmitInput, SubmitResult } from "@getpha
  */
 class FakeGovernor implements Governor {
   private claimed = new Set<string>();
+  lastInput: SubmitInput | null = null;
   constructor(
     private readonly decision: SubmitResult["verdict"]["decision"],
     private readonly resolutionStatus: Escalation["status"] = "approved",
   ) {}
 
-  async submit(_input: SubmitInput): Promise<SubmitResult> {
+  async submit(input: SubmitInput): Promise<SubmitResult> {
+    this.lastInput = input;
     const verdict: SubmitResult["verdict"] = {
       decision: this.decision,
       tierReached: 1,
@@ -100,12 +102,15 @@ for (const fw of FRAMEWORKS) {
   describe(`middleware conformance — ${fw.name}`, () => {
     it("allow → runs the tool and returns its result", async () => {
       let runs = 0;
-      const invoke = fw.make(new FakeGovernor("allow"), () => {
+      const governor = new FakeGovernor("allow");
+      const invoke = fw.make(governor, () => {
         runs++;
         return "done";
       });
       await expect(invoke({ amount: 1 })).resolves.toBe("done");
       expect(runs).toBe(1);
+      expect(governor.lastInput?.liability.blastRadius.reversibility).toBe("irreversible");
+      expect(governor.lastInput?.liability.oversightMode).toBe("human_in_loop");
     });
 
     it("block → throws and never runs the tool", async () => {

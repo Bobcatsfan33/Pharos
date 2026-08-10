@@ -31,7 +31,7 @@ def _build_input(opts: Dict[str, Any], args: Dict[str, Any]) -> Dict[str, Any]:
         },
         "liability": mapped.get(
             "liability",
-            {"mandate": None, "oversightMode": "autonomous", "blastRadius": {"financialAmount": 0, "currency": "USD", "reversibility": "reversible"}, "modelMetadata": None},
+            {"mandate": None, "oversightMode": "human_in_loop", "blastRadius": {"financialAmount": 0, "currency": "USD", "reversibility": "irreversible"}, "modelMetadata": None},
         ),
         "mandateId": mapped.get("mandate_id"),
     }

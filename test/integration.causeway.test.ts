@@ -37,6 +37,7 @@ let apiKey = "";
 
 const REVIEW_SCOPES = [
   "actions:write",
+  "liability:assert",
   "records:read",
   "chain:verify",
   "policies:write",

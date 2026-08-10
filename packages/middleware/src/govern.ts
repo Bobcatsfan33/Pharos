@@ -43,7 +43,7 @@ export interface GovernOptions<Args> {
   tenantId: string;
   agentId: string;
   toolName: string;
-  /** Map tool args to the action + liability. Defaults to a reversible, autonomous action. */
+  /** Map tool args to the action + liability. Defaults fail closed when risk is unknown. */
   mapAction?: (args: Args) => {
     action?: Partial<ActionInput>;
     liability?: LiabilityInput;
@@ -54,8 +54,8 @@ export interface GovernOptions<Args> {
 
 const DEFAULT_LIABILITY: LiabilityInput = {
   mandate: null,
-  oversightMode: "autonomous",
-  blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" },
+  oversightMode: "human_in_loop",
+  blastRadius: { financialAmount: 0, currency: "USD", reversibility: "irreversible" },
   modelMetadata: null,
 };
 

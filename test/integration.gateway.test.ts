@@ -95,6 +95,7 @@ beforeAll(async () => {
     apiKey = (
       await platform.apiKeys.create(TENANT, "gw", [
         "actions:write",
+        "liability:assert",
         "records:read",
         "reviews:read",
         "reviews:act",
