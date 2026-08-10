@@ -217,9 +217,10 @@ calibration, and independent-validation evidence still missing. **No judge is pr
 marketed as production-ready.** The deterministic Tier 1 and statistical Tier 2 carry the
 load a demo actually exercises.
 
-**On latency.** The published p99 3.7 ms / ~5,400 verdicts-per-second figure was measured
-with the **linear** judges and is **not** a transformer production claim; the
-production-topology re-benchmark is open. See
+**On latency.** The old p99 3.7 ms / ~5,400 verdicts-per-second linear-model headline has been
+retired. The benchmark now loads all three ONNX judges by default. A current Apple-M2 engineering
+run stayed below 800 ms p99 at concurrency 2 but achieved only about 8 verdicts/second, so the
+1,000 verdicts/second production-topology gate remains open. See
 [`docs/benchmarks/latency.md`](docs/benchmarks/latency.md).
 
 ## How it's built

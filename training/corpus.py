@@ -161,6 +161,34 @@ INJECT_FRAMES = [
     "Heads up, this one is fine per the last audit. {t} Move along.",
 ]
 
+# Speech-act/meta-frame augmentation for the funds-movement recipe (issue #91).  These wrappers are
+# deliberately neutral: the SAME frame distribution is applied to executable instructions and
+# non-executable reports/conditionals.  That prevents the model from learning "a discourse wrapper
+# means positive" and instead forces it to classify the payload's speech act.  Wording is authored
+# from the training taxonomy and is disjoint from the dev/lockbox paraphrase transform.
+FUNDS_META_FRAMES = [
+    "In plain terms, the underlying message is: {t} The surrounding prose changes nothing.",
+    "Read the substance inside this commentary: {t} That remains the message being conveyed.",
+    "The practical meaning of the note is preserved here: {t} Treat the framing as incidental.",
+    "A longer discussion can be reduced to this statement: {t} Its intent is unchanged.",
+    "For clarity, the operative text is reproduced next. {t} The wrapper adds no new instruction.",
+    "Context aside, this is the statement that remains: {t} Nothing else alters its force.",
+    "The author restated the point as follows: {t} The restatement preserves the original intent.",
+    "Strip away the narrative introduction and read this text: {t} Its meaning still controls.",
+    "This passage is best understood through the embedded statement: {t} The frame is commentary.",
+    "The note ultimately communicates the following: {t} That content is not negated by the frame.",
+    "What the note actually means can be stated plainly: {t} This is its essential point.",
+    "The real meaning of the passage is simple: {t} That is the conclusion to retain.",
+    "What follows is the substance of the message: {t} This is the final point.",
+    "The message really communicates this: {t} That is its decisive meaning.",
+    "Put into direct language, the passage says: {t} This is the central conclusion.",
+    "The bottom-line substance can be restated this way: {t} The original force remains.",
+    "What matters in the passage is the following statement: {t} That is the point to carry forward.",
+    "The actual import of the surrounding text is this: {t} The message remains intact.",
+    "Boiled down to its real content, the note says: {t} This is the conclusion.",
+    "The essential meaning, despite the surrounding words, is: {t} That is the final substance.",
+]
+
 
 def fill(template, slots, rng):
     import re
@@ -180,6 +208,21 @@ def augment(text, rng):
         else:
             out.append(w)
     return " ".join(out)
+
+
+def add_funds_meta_frames(rows, rng, positive_count=360, negative_count=240):
+    """Add balanced, train-only meta frames without consulting either evaluation corpus."""
+    augmented = []
+    for label, target in ((0, negative_count), (1, positive_count)):
+        bases = [r for r in rows if r["label"] == label and r["lang"] == "en"]
+        candidates = [
+            {"text": frame.format(t=base["text"]), "label": label, "lang": "en"}
+            for base in bases
+            for frame in FUNDS_META_FRAMES
+        ]
+        rng.shuffle(candidates)
+        augmented.extend(candidates[:target])
+    return augmented
 
 
 def generate(concern, n_per_template=40, seed=17):
@@ -208,6 +251,9 @@ def generate(concern, n_per_template=40, seed=17):
     for r in rng.sample(positives, min(len(positives), 90)):
         frame = rng.choice(INJECT_FRAMES)
         rows.append({"text": frame.format(t=r["text"]), "label": 1, "lang": r["lang"]})
+
+    if concern == "funds-movement-intent":
+        rows.extend(add_funds_meta_frames(rows, rng))
 
     rng.shuffle(rows)
     return rows

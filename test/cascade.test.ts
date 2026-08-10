@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { VerdictEngine, type VerdictRequest, type LiabilityContext } from "@pharos/core";
-import { loadDefaultRegistry } from "@pharos/judge";
+import { loadDefaultRegistry, ModelRegistry, type AsyncJudge } from "@pharos/judge";
 import { VerdictCascade, DEFAULT_PACK_BINDINGS, fingerprintVerdict } from "@pharos/cascade";
 // Fault injection lives outside the shipped class (#82) and is reached only by this
 // explicit deep import, never from the package index.
@@ -158,6 +158,43 @@ describe("verdict cascade", () => {
     );
     expect(v.failMode).not.toBeNull();
     expect(v.latency.deadlineBreached).toBe(true);
+  });
+
+  it("enforces the deadline after CPU-bound inference starves the timer", async () => {
+    const blockingRegistry = new ModelRegistry();
+    for (const binding of DEFAULT_PACK_BINDINGS) {
+      const judge: AsyncJudge = {
+        packId: binding.packId,
+        concern: binding.packId,
+        version: () => `${binding.packId}@blocking`,
+        scoreBatch: async (texts) => {
+          const until = performance.now() + 10;
+          while (performance.now() < until) {
+            // Deliberately occupy the event loop, modeling a saturated native inference return.
+          }
+          return texts.map(() => ({
+            packId: binding.packId,
+            concern: binding.packId,
+            judgeVersion: `${binding.packId}@blocking`,
+            probability: 0,
+            flagged: false,
+            threshold: 0.5,
+          }));
+        },
+      };
+      blockingRegistry.registerServed(judge);
+    }
+    const c = new VerdictCascade({
+      engine: new VerdictEngine({ deadlineMs: 5 }),
+      registry: blockingRegistry,
+      deadlineMs: 5,
+      packs: DEFAULT_PACK_BINDINGS,
+    });
+
+    const v = await c.evaluate(req({ payload: { body: "hello" } }), now);
+    expect(v.failMode).toBe("fail_open");
+    expect(v.latency.deadlineBreached).toBe(true);
+    expect(v.latency.totalMs).toBeGreaterThan(5);
   });
 
   it("is reproducible: identical inputs yield bit-identical verdicts (latency excluded)", async () => {

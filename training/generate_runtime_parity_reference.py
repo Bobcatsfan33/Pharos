@@ -14,15 +14,19 @@ import onnxruntime as ort
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "packages" / "judge" / "models" / "manifest.json"
-FIXTURE = ROOT / "test" / "fixtures" / "onnx-parity.json"
-
-
 def main() -> None:
-    if len(sys.argv) != 2:
-        raise SystemExit("usage: generate_runtime_parity_reference.py OUTPUT.json")
+    if len(sys.argv) not in (2, 3):
+        raise SystemExit(
+            "usage: generate_runtime_parity_reference.py OUTPUT.json [STATIC_FIXTURE.json]"
+        )
     output = Path(sys.argv[1])
+    fixture_path = (
+        Path(sys.argv[2])
+        if len(sys.argv) == 3
+        else ROOT / "test" / "fixtures" / "onnx-parity.json"
+    )
     manifest = json.loads(MANIFEST.read_text())
-    fixture = json.loads(FIXTURE.read_text())
+    fixture = json.loads(fixture_path.read_text())
     entry = manifest["models"][fixture["concern"]]
     model = entry["assets"]["model"]
     url = (

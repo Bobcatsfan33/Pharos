@@ -71,12 +71,24 @@ export class VerdictCascade {
     policyOverride?: PolicyArtifact[],
   ): Promise<VerdictContext> {
     const perTier: Record<string, number> = {};
+    const wallStart = process.hrtime.bigint();
     const artifacts = policyOverride ?? this.deps.policyArtifacts;
     try {
-      return await withDeadline(this.deps.deadlineMs, this.run(req, now, perTier, artifacts));
+      const verdict = await withDeadline(
+        this.deps.deadlineMs,
+        this.run(req, now, perTier, artifacts),
+      );
+      const wallMs = elapsedMs(wallStart);
+      // Native inference can occupy the event loop long enough that the timer callback cannot run
+      // at the nominal deadline. Re-check monotonic wall time after control returns so an expired
+      // verdict is never released as a normal allow/block decision merely because its timer starved.
+      if (wallMs > this.deps.deadlineMs || verdict.latency.deadlineBreached) {
+        return this.failMode(req, perTier, new DeadlineExceeded(this.deps.deadlineMs), wallMs);
+      }
+      return verdict;
     } catch (err) {
       if (err instanceof DeadlineExceeded || isJudgeFault(err)) {
-        return this.failMode(req, perTier, err as Error);
+        return this.failMode(req, perTier, err as Error, elapsedMs(wallStart));
       }
       throw err;
     }
@@ -199,18 +211,21 @@ export class VerdictCascade {
     // (unicode-canonicalized + reversibly-decoded), and take the MORE-SEVERE verdict per pack.
     // Obfuscation can only ADD detections — it can never mask a plaintext signal. Models stay bare.
     const texts = [...new Set([raw, ...normalizedVariants(raw)])];
-    const results: JudgeResult[] = [];
-    for (const binding of this.deps.packs) {
-      if (!this.deps.registry.has(binding.packId)) continue;
-      let worst: JudgeResult | null = null;
-      for (const t of texts) {
-        // judgeAsync dispatches on kind: logistic (sync, resolved) or served ONNX (async).
-        const r = await this.deps.registry.judgeAsync(binding.packId, t);
-        if (!worst || r.probability > worst.probability) worst = r;
-      }
-      if (worst) results.push(worst);
-    }
-    return results;
+    const results = await Promise.all(
+      this.deps.packs.map(async (binding) => {
+        if (!this.deps.registry.has(binding.packId)) return null;
+        let worst: JudgeResult | null = null;
+        for (const t of texts) {
+          // judgeAsync dispatches on kind: logistic (sync, resolved) or served ONNX (async).
+          const r = await this.deps.registry.judgeAsync(binding.packId, t);
+          if (!worst || r.probability > worst.probability) worst = r;
+        }
+        return worst;
+      }),
+    );
+    // Promise.all preserves pack order, so evidence and tie-breaking remain deterministic while
+    // independent concern models execute concurrently.
+    return results.filter((result): result is JudgeResult => result !== null);
   }
 
   private compose(
@@ -248,11 +263,15 @@ export class VerdictCascade {
     req: VerdictRequest,
     perTier: Record<string, number>,
     err: Error,
+    wallMs?: number,
   ): VerdictContext {
     const reversible = req.liability.blastRadius.reversibility === "reversible";
     const failMode = reversible ? "fail_open" : "fail_closed";
     const decision: VerdictDecision = reversible ? "allow" : "escalate";
-    const totalMs = Object.values(perTier).reduce((a, b) => a + b, 0);
+    const totalMs = Math.max(
+      wallMs ?? 0,
+      Object.values(perTier).reduce((a, b) => a + b, 0),
+    );
     return {
       decision,
       tierReached: perTier["3"] !== undefined ? 3 : perTier["2"] !== undefined ? 2 : 1,

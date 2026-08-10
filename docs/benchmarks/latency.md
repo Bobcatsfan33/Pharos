@@ -1,76 +1,60 @@
-# Verdict latency benchmark (Sprint 2 — Lantern)
+# Verdict latency benchmark
 
-**Claim:** deterministic, citation-backed verdicts in under 800 milliseconds.
+**Production objective:** p99 end-to-end verdict latency below 800 ms at a sustained aggregate
+1,000 verdicts/second. A deployment may satisfy the aggregate rate with horizontally scaled
+replicas, but the target topology must be load-tested and accepted as a whole.
 
-**Exit criterion:** p99 end-to-end verdict latency < 800ms at a sustained 1,000
-verdicts/sec, with a per-tier breakdown.
-
-Reproduce with `pnpm bench:latency [requests] [concurrency]`
-([`scripts/bench-latency.ts`](../../scripts/bench-latency.ts)). The harness drives the real
-cascade (Tier 1 deterministic rules → Tier 2 statistical risk → Tier 3 served distilled
-judges) over a representative mix of action shapes (benign comms, FINRA promissory language,
-PHI exposure, funds movement, mandate-limit blocks).
-
-## Result (reference run)
-
-> **Caveat — read first.** These numbers were measured with the **current Tier-3 judges,
-> which are linear bag-of-words logistic-regression classifiers**, not transformer judges
-> (see [docs/LIMITATIONS.md](../LIMITATIONS.md)). A transformer judge on CPU will raise
-> Tier-3 latency by orders of magnitude. This benchmark **will be re-run and rewritten with
-> the real transformer judges** (roadmap task **S7-T1**); the p99 3.7ms / ~5,400 verdicts/sec
-> headline below describes the linear stand-in only and must not be quoted as the production
-> figure.
-
-| Metric | Value | Budget |
-|--------|-------|--------|
-| Throughput | **5,415 verdicts/sec** | ≥ 1,000 |
-| p50 | 2.91 ms | — |
-| p95 | 3.40 ms | — |
-| p99 | **3.74 ms** | < 800 ms |
-| max | 7.13 ms | — |
-
-Per-tier average latency:
-
-| Tier | Avg latency | Notes |
-|------|-------------|-------|
-| Tier 1 (deterministic rules) | 0.0002 ms | runs on every verdict; short-circuits on a block |
-| Tier 2 (statistical risk) | 0.0002 ms | runs when Tier 1 is non-terminal; short-circuits on extreme risk |
-| Tier 3 (served judge) | 0.64 ms | runs for semantic evaluation; the dominant cost |
-
-p99 is ~210× inside the 800ms budget, and the achieved rate is ~5× the 1,000/sec target,
-on a single process on a developer laptop (Apple Silicon).
-
-## Honest scope of this measurement
-
-- **What is measured:** end-to-end *verdict* computation latency (the cascade), which is the
-  latency the 800ms claim refers to. The transactional seal (WORM + Postgres) is a separate
-  durable write, not part of the verdict budget.
-- **Duration:** the reference run above is a multi-second sustained burst (30k–60k verdicts).
-  The roadmap's full exit bar is a **one-hour** sustained run at 1,000/sec; this harness runs
-  that unchanged by passing a larger request count (e.g. `pnpm bench:latency 3600000`). The
-  one-hour soak is part of the GA hardening run (Sprint 8), not re-run on every CI.
-- **Served judge:** Tier 3 here is a CPU-cheap linear bag-of-words classifier, not a
-  transformer (see [docs/LIMITATIONS.md](../LIMITATIONS.md)). The cascade interface is
-  identical for a transformer judge, which would raise Tier-3 latency by orders of magnitude;
-  whether the 800ms envelope still holds at target concurrency is an **open question measured
-  in roadmap task S7-T1**, not something this run establishes. The deadline manager and
-  fail-mode paths exist precisely for that case.
-
-## Semantic evaluation is model-scored, not pattern-matched
-
-Semantic evaluation (Tier 3) is scored by a **learned model** (today a bag-of-words
-logistic-regression classifier — see [docs/LIMITATIONS.md](../LIMITATIONS.md)), not by
-hand-written rules. This is a statement about *how the decision is made*, not a claim of
-sophistication: a linear model over word counts is easily defeated by paraphrase, which is
-exactly why transformer judges are roadmap Phase 2. The only regular expression in the judge
-path is a character-class tokenizer split
-(`/[^a-z0-9]+/` in [`featurize.ts`](../../packages/judge/src/featurize.ts)) that segments
-text into tokens; the *decision* about meaning is made by the model's learned weights, not by
-matching patterns. A code audit for pattern-matching in semantic evaluation:
+Run the production-faithful benchmark with:
 
 ```bash
-grep -rn "test(\|\.match(\|RegExp" packages/judge/src packages/cascade/src
+PHAROS_JUDGE_MODEL_DIR=/approved/model-cache pnpm bench:latency [requests] [concurrency]
 ```
 
-returns no semantic pattern matching — only the tokenizer split. Every Tier-3 verdict cites
-the exact `judgeVersion` (a content hash of the model artifact) that produced it.
+The default provider is `onnx`. The harness preloads and warms all three hash-pinned models, then
+drives the real cascade over benign communications, promissory language, PHI, funds movement, and
+mandate-limit blocks. Set `PHAROS_BENCH_OUTPUT=report.json` for the machine-readable result. The
+linear development baseline is available only through the explicit
+`PHAROS_BENCH_JUDGE_PROVIDER=linear` override.
+
+## Current engineering reference
+
+The committed [machine-readable run](onnx-local-reference.json) used:
+
+- Apple M2, 8 GiB RAM, Darwin arm64, Node 25.9.0;
+- `onnxruntime-node@1.20.1` with the three models in `packages/judge/models/manifest.json`;
+- 120 mixed verdicts at concurrency 2 after preload and warm-up.
+
+| Metric | Measured | Objective | Result |
+|---|---:|---:|---|
+| p50 | 376.4 ms | — | informational |
+| p95 | 435.7 ms | — | informational |
+| p99 | 597.2 ms | < 800 ms | pass on this run |
+| throughput | 8.1 verdicts/sec | ≥ 1,000 verdicts/sec | **fail** |
+| deadline breaches | 0 / 120 | 0 | pass on this run |
+
+This is evidence about one developer host, not a production capacity claim. It demonstrates that
+the three-model cascade can remain inside the per-request envelope at low concurrency, while also
+showing that a single CPU process is nowhere near the aggregate throughput objective. A
+concurrency-16 diagnostic saturated the same host (approximately 8 verdicts/sec, p99 approximately
+3.55 seconds) and exercised the deadline path. The cascade now both races a timer and re-checks
+monotonic wall time after native inference returns, preventing event-loop starvation from releasing
+an expired normal verdict.
+
+## Status of S7-T1
+
+The old p99 3.7 ms / approximately 5,400 verdicts/sec result came from linear bag-of-words judges
+and has been retired as a product headline. The benchmark now loads ONNX by default and fails its
+process when either the latency or throughput objective is missed.
+
+S7-T1 remains open because the required production Linux CPU/memory/replica topology has not been
+selected or load-tested. Its acceptance evidence must include cold and warm startup, saturation and
+back-pressure, a sustained run at the aggregate target, zero unaccounted deadline breaches, and an
+observed fail-mode/rollback exercise. Extrapolating the developer-host rate into a replica count is
+capacity-planning input, not approval evidence.
+
+## Scope
+
+The benchmark measures verdict computation through Tiers 1–3. Transactional sealing to Postgres
+and WORM storage is a separate durability path and is not included in the 800 ms verdict budget.
+Every Tier-3 verdict identifies the exact model and ONNX runtime used; model startup is measured
+separately and excluded from request latency.

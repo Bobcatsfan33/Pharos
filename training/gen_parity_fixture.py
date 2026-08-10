@@ -1,12 +1,13 @@
 """
 Generate the tokenizer/serving parity ground truth (Sprint 6, S6-T2).
 
-    uv run python gen_parity_fixture.py
+    uv run python gen_parity_fixture.py [--concern funds-movement-intent] [--output FILE]
 
 Dumps, for a curated set of edge-case texts (NOT eval examples — accents, punctuation, CJK, numbers,
 mixed scripts), the HF input_ids and the finra model's positive-class probability. The JS serving
 path must reproduce input_ids EXACTLY and the probability within 1e-4 (test/fixtures/onnx-parity.json).
 """
+import argparse
 import json
 from pathlib import Path
 
@@ -15,9 +16,6 @@ import onnxruntime as ort
 from transformers import AutoTokenizer
 
 HERE = Path(__file__).parent
-CONCERN = "finra-promissory"  # representative; the tokenizer is shared across concerns
-MODEL = HERE / "models" / CONCERN
-OUT = HERE.parent / "test" / "fixtures" / "onnx-parity.json"
 MAX_LEN = 128
 
 TEXTS = [
@@ -39,11 +37,22 @@ TEXTS = [
 
 
 def main():
-    tok = AutoTokenizer.from_pretrained(str(MODEL))
-    art = json.loads((MODEL / "artifact.json").read_text())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--concern", default="finra-promissory")
+    parser.add_argument("--output")
+    args = parser.parse_args()
+    concern = args.concern
+    model = HERE / "models" / concern
+    out = (
+        Path(args.output)
+        if args.output
+        else HERE.parent / "test" / "fixtures" / f"onnx-parity-{concern}.json"
+    )
+    tok = AutoTokenizer.from_pretrained(str(model))
+    art = json.loads((model / "artifact.json").read_text())
     T = art["temperature"]
     served = art["served"]
-    sess = ort.InferenceSession(str(MODEL / served), providers=["CPUExecutionProvider"])
+    sess = ort.InferenceSession(str(model / served), providers=["CPUExecutionProvider"])
 
     records = []
     for text in TEXTS:
@@ -61,11 +70,11 @@ def main():
         prob = float((e / e.sum(axis=-1, keepdims=True))[0, 1])
         records.append({"text": text, "inputIds": ids, "probability": round(prob, 8)})
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(
         json.dumps(
             {
-                "concern": CONCERN,
+                "concern": concern,
                 "served": served,
                 "modelVersion": art["modelVersion"],
                 "temperature": T,
@@ -78,7 +87,7 @@ def main():
         )
         + "\n"
     )
-    print(f"wrote {OUT} with {len(records)} parity records (served {served})")
+    print(f"wrote {out} with {len(records)} parity records (served {served})")
     for r in records[:4]:
         print(f"  ids[:8]={r['inputIds'][:8]} p={r['probability']:.4f} :: {r['text'][:40]}")
 

@@ -24,4 +24,7 @@ regexes = [
   '''<key>''',
   '''<token>''',
   '''<admin-token>''',
+  # Public tokenizer artifact digest recorded for supply-chain verification.
+  # This exact SHA-256 value is not a credential or authentication token.
+  '''672146ee6867dc02a01c474090e237789f8a066ee7247bb2cb6c8688a27536a8''',
 ]

@@ -35,6 +35,11 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 BASE_MODEL = "distilbert-base-multilingual-cased"
 MAX_LEN = 128
 THRESHOLD = 0.5  # frozen operating point (§7-10(e)); never tuned on the eval set
+RECIPE_VERSIONS = {
+    "finra-promissory": "transformer-v1",
+    "funds-movement-intent": "speech-act-meta-frame-v2",
+    "phi-in-context": "transformer-v1",
+}
 HERE = Path(__file__).parent
 DATA = HERE / "data"
 OUT = HERE / "models"
@@ -167,6 +172,7 @@ def main():
         "maxLen": MAX_LEN,
         "threshold": THRESHOLD,
         "temperature": temperature,
+        "recipeVersion": RECIPE_VERSIONS[args.concern],
         "hyperparams": {"seed": args.seed, "epochs": args.epochs, "lr": args.lr, "batch": args.batch},
         "trainedOn": {"examples": len(rows), "positives": sum(r["label"] for r in rows), "datasetHash": dataset_hash[:16]},
         "hashes": {
@@ -180,6 +186,7 @@ def main():
     version_hash = sha256_obj({
         "packId": artifact["packId"], "concern": artifact["concern"], "kind": artifact["kind"],
         "onnx": artifact["hashes"]["onnx"], "tokenizer": artifact["hashes"]["tokenizer"],
+        "recipeVersion": artifact["recipeVersion"],
         "temperature": round(temperature, 6), "threshold": THRESHOLD,
     })
     artifact["modelVersion"] = f"{artifact['packId']}@{version_hash[:12]}"

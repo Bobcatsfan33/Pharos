@@ -1,5 +1,6 @@
 """
-Prove the training corpus does NOT leak the eval set (prime directive / amendment 10(d)).
+Prove the training corpus does NOT leak either the development eval set or final lockbox
+(prime directive / amendment 10(d)).
 
 Mirrors packages/judge-eval/src/dedup.ts: a training example is a leak if its token-bigram
 containment in some eval example is >= 0.80 OR its token-trigram Jaccard is >= 0.50, or it matches
@@ -14,6 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EVAL_DIR = ROOT / "packages" / "judge-eval" / "data"
 TRAIN_DIR = Path(__file__).parent / "data"
+LOCKBOX_DIR = Path(__file__).parent / "lockbox"
 BIGRAM_BLOCK = 0.80
 TRIGRAM_BLOCK = 0.50
 
@@ -40,6 +42,9 @@ def eval_texts(concern):
     manifest = json.loads((cdir / "manifest.json").read_text())
     for entry in manifest["splits"]:
         split = json.loads((cdir / entry["file"]).read_text())
+        out.extend(e["text"] for e in split["examples"])
+    lockbox = json.loads((LOCKBOX_DIR / f"{concern}.json").read_text())
+    for split in lockbox["splits"]:
         out.extend(e["text"] for e in split["examples"])
     return out
 

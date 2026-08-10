@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "1.0.0",
+  "provider": "onnx",
+  "models": [
+    {
+      "packId": "finra-promissory",
+      "concern": "finra-promissory",
+      "version": "finra-promissory@4cef02698045"
+    },
+    {
+      "packId": "phi-in-context",
+      "concern": "phi-in-context",
+      "version": "phi-in-context@f307c3117aad"
+    },
+    {
+      "packId": "funds-movement-intent",
+      "concern": "funds-movement-intent",
+      "version": "funds-movement-intent@f3fc84a6dbbf"
+    }
+  ],
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M2",
+    "logicalCpus": 8,
+    "memoryBytes": 8589934592,
+    "node": "v25.9.0"
+  },
+  "workload": {
+    "requests": 120,
+    "concurrency": 2,
+    "deadlineMs": 800
+  },
+  "result": {
+    "preloadMs": 2276.863375,
+    "wallMs": 14796.420208,
+    "throughputVerdictsPerSecond": 8.11006975424498,
+    "p50Ms": 376.412792,
+    "p95Ms": 435.719,
+    "p99Ms": 597.210416,
+    "maxMs": 601.686125,
+    "deadlineBreaches": 0,
+    "failOpen": 0,
+    "failClosed": 0,
+    "perTierAverageMs": {
+      "1": 0.007485408333333327,
+      "2": 0.004790379999999996,
+      "3": 368.97763906249986
+    }
+  },
+  "gate": {
+    "latencyPassed": true,
+    "throughputPassed": false,
+    "passed": false
+  }
+}
