@@ -6,6 +6,7 @@
     "tag": "judge-models-v1",
     "baseUrl": "https://github.com/Bobcatsfan33/Pharos/releases/download/judge-models-v1"
   },
+  "qualifiedRuntimes": ["onnxruntime-node@1.20.1/linux-x64"],
   "models": {
     "finra-promissory": {
       "modelVersion": "finra-promissory@4cef02698045",

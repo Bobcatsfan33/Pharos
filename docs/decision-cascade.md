@@ -24,7 +24,12 @@ drove the decision.
 Tier 3 is a model registry of versioned, per-pack binary classifiers. Local development
 defaults to the deterministic bag-of-words logistic baseline. Production configuration
 requires and preloads all three content-hashed ONNX transformers, refusing startup rather
-than silently serving a missing model or falling back to the linear baseline. Independent
+than silently serving a missing model or falling back to the linear baseline. Artifact
+verification and inference-session creation run concurrently, but registration remains atomic
+after all three identities validate. A weekly and judge-path-triggered workflow generates a
+same-host Python ONNX reference from the hash-verified release artifact, then requires Node parity
+at `1e-4`. Production is qualified only for `onnxruntime-node@1.20.1/linux-x64`; both model version
+and native runtime identity are sealed so replay cannot silently cross architectures. Independent
 efficacy, OOD calibration, drift, model-card, and production-latency promotion evidence is
 still open. See [docs/LIMITATIONS.md](LIMITATIONS.md).
 

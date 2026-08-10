@@ -34,6 +34,8 @@ export interface ModelManifestEntry {
 export interface ModelManifest {
   schemaVersion: string;
   release: { repo: string; tag: string; baseUrl: string };
+  /** Runtime/platform combinations that completed production parity qualification. */
+  qualifiedRuntimes: string[];
   models: Record<string, ModelManifestEntry>;
 }
 

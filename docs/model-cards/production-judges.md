@@ -20,6 +20,8 @@ customer-topology latency evidence still require approval.
   flagged actions to a designated reviewer.
 - Monitoring: score distributions are retained only as bounded bins, never raw action text.
   Production startup requires an approved reference profile for every exact model version.
+- Runtime qualification: `onnxruntime-node@1.20.1/linux-x64` only. Dynamic-int8 scores are not
+  assumed portable across CPU architectures; `judgeRuntime` is sealed alongside `judgeVersion`.
 - Known systemic limitations: production prevalence is not yet established; the committed
   balanced logistic-baseline evaluation is not evidence for these ONNX artifacts. Encoded/OOD
   text can be conservatively over-flagged. Native-speaker review and independent validation remain

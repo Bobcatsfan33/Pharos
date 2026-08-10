@@ -65,6 +65,50 @@ describe("production judge composition", () => {
     await expect(buildJudgeRegistry(config("onnx"), loader)).rejects.toThrow("digest mismatch");
   });
 
+  it("loads all required judges concurrently without exposing a partial registry", async () => {
+    const releases: Array<() => void> = [];
+    let active = 0;
+    let peak = 0;
+    const loader = vi.fn<JudgeLoader>(async ({ concern }) => {
+      active += 1;
+      peak = Math.max(peak, active);
+      await new Promise<void>((resolve) => releases.push(resolve));
+      active -= 1;
+      return fakeJudge(concern);
+    });
+
+    const building = buildJudgeRegistry(config("onnx"), loader);
+    await vi.waitFor(() => expect(loader).toHaveBeenCalledTimes(PRODUCTION_JUDGE_CONCERNS.length));
+    expect(peak).toBe(PRODUCTION_JUDGE_CONCERNS.length);
+    for (const release of releases) release();
+
+    const registry = await building;
+    for (const concern of PRODUCTION_JUDGE_CONCERNS) {
+      expect(registry.activeVersion(concern)).toBe(`${concern}@verified`);
+    }
+  });
+
+  it("warms every inference session before returning the registry", async () => {
+    const warm = vi.fn(async (texts: string[]): Promise<JudgeResult[]> =>
+      texts.map(() => ({
+        packId: "warm",
+        concern: "warm",
+        judgeVersion: "warm@verified",
+        probability: 0,
+        flagged: false,
+        threshold: 0.5,
+      })),
+    );
+    const loader: JudgeLoader = async ({ concern }) => ({
+      ...fakeJudge(concern),
+      scoreBatch: warm,
+    });
+
+    await buildJudgeRegistry(config("onnx"), loader);
+    expect(warm).toHaveBeenCalledTimes(PRODUCTION_JUDGE_CONCERNS.length);
+    expect(warm).toHaveBeenCalledWith([""]);
+  });
+
   it("rejects a loader that returns the wrong concern identity", async () => {
     const loader: JudgeLoader = async () => fakeJudge("wrong-concern");
     await expect(buildJudgeRegistry(config("onnx"), loader)).rejects.toThrow(

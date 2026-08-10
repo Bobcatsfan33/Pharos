@@ -33,6 +33,8 @@ import { OidcVerifier, type OidcIssuerConfig } from "@pharos/identity";
 import {
   loadDefaultRegistry,
   loadOnnxJudge,
+  loadManifest,
+  assertQualifiedOnnxRuntime,
   ModelRegistry,
   type AsyncJudge,
   type LoadOnnxOptions,
@@ -122,14 +124,26 @@ export async function buildJudgeRegistry(
   loadJudge: JudgeLoader = loadOnnxJudge,
 ): Promise<ModelRegistry> {
   if (config.judge.provider === "linear") return loadDefaultRegistry();
+  if (config.env === "prod") assertQualifiedOnnxRuntime(loadManifest());
 
+  // Fetch, digest-verify, create the inference sessions, and warm all required packs
+  // concurrently. Startup remains all-or-nothing: nothing is registered until every
+  // load has succeeded and every returned identity has been validated.
+  const judges = await Promise.all(
+    PRODUCTION_JUDGE_CONCERNS.map(async (concern) => {
+      const judge = await loadJudge({
+        concern,
+        packId: concern,
+        cacheDir: config.judge.modelDir,
+      });
+      // Exercise the actual inference path before the readiness listener can open.
+      await judge.scoreBatch([""]);
+      return judge;
+    }),
+  );
   const registry = new ModelRegistry();
-  for (const concern of PRODUCTION_JUDGE_CONCERNS) {
-    const judge = await loadJudge({
-      concern,
-      packId: concern,
-      cacheDir: config.judge.modelDir,
-    });
+  for (const [index, concern] of PRODUCTION_JUDGE_CONCERNS.entries()) {
+    const judge = judges[index]!;
     if (judge.packId !== concern || judge.concern !== concern) {
       throw new Error(
         `judge loader returned ${judge.packId}/${judge.concern} for required concern ${concern}`,

@@ -27,6 +27,8 @@ export interface JudgeResult {
   packId: string;
   concern: string;
   judgeVersion: string;
+  /** Native runtime/platform identity needed to reproduce transformer output. */
+  judgeRuntime?: string;
   probability: number;
   flagged: boolean;
   threshold: number;
