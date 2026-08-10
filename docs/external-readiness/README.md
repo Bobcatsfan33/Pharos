@@ -10,6 +10,9 @@ owner must return before its blocking gate can close.
 1. Pin the assessment to `assessment.assessedCommit` from the readiness manifest and, where
    applicable, an immutable image digest. A receipt for any other commit is rejected.
 2. Give the owner the matching packet, repository evidence snapshot, and relevant deployment facts.
+   When the engagement requires a runnable image, an authorized release maintainer creates a
+   semver prerelease tag (`vMAJOR.MINOR.PATCH-rc.N`) from the assessed commit. The image workflow
+   returns the signed digest and receipt; prerelease tags do not publish the npm or PyPI SDKs.
 3. Execute the assessment outside the implementation team. Findings remain open until remediated,
    retested, or explicitly accepted by the authority named in the packet.
 4. Retain confidential source artifacts in the approved GRC, legal, customer, or evidence vault.

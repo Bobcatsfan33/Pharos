@@ -7,8 +7,10 @@ Pharos ships two SDKs from signed, versioned artifacts:
   [Trusted Publishing](https://docs.pypi.org/trusted-publishers/) (OIDC).
 
 Both are **live**. Publishing is automated by
-[`.github/workflows/release.yml`](../.github/workflows/release.yml), which runs on a version
-tag (`v*`) or a manual `workflow_dispatch`.
+[`.github/workflows/release.yml`](../.github/workflows/release.yml). An exact stable tag
+(`vMAJOR.MINOR.PATCH`) or an explicit manual `workflow_dispatch` publishes the SDKs. A semver
+prerelease tag such as `v0.3.0-rc.1` deliberately skips both irreversible registry jobs and is
+reserved for publishing the signed API assessment image through `image.yml`.
 
 > The `pharos` npm scope and PyPI name were taken, so the packages use the `getpharos` scope /
 > distribution name. The Python module you import is unchanged: `import pharos_sdk`.
@@ -69,7 +71,7 @@ typechecking resolves imports through `exports` — which means **`dist` must ex
 
 1. Bump the versions: `packages/sdk-ts/package.json` (+ its `CHANGELOG.md`) and
    `sdks/python/pyproject.toml`. Prefer a Changeset for the npm package.
-2. Tag and push:
+2. Create and push an exact stable tag:
 
    ```bash
    git tag -a vX.Y.Z -m "SDKs vX.Y.Z"
@@ -77,6 +79,10 @@ typechecking resolves imports through `exports` — which means **`dist` must ex
    ```
 
    Or run `release.yml` from the Actions tab (`workflow_dispatch`).
+
+Do not use a prerelease tag to publish SDKs. `vX.Y.Z-rc.N` is an image-only release-candidate
+channel used by independent assessors and production-topology exercises. The release workflow
+classifies it and exits successfully with both SDK publication jobs skipped.
 
 > ⚠️ **Publishing is irreversible** — npm/PyPI names and versions cannot be reused. Every
 > release check MUST include **installing the packed tarball and importing it**, not just

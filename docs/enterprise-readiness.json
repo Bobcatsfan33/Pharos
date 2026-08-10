@@ -360,7 +360,7 @@
       },
       {
         "path": ".github/workflows/release.yml",
-        "sha256": "731977caaf1dfceac4f7ea8c68d7a209ef63b0afc075a22378bc28cdbddc32c7"
+        "sha256": "04d5dfc862c87b4f32cf31c9769eb129a7ef19adb11ddf63710d7593d2d1ff7c"
       },
       {
         "path": "SECURITY.md",
@@ -424,7 +424,7 @@
       },
       {
         "path": "docs/external-readiness/README.md",
-        "sha256": "6327f0d737e1f47e241959b1042c24096b944b6f12a706ccd045655ca481b44b"
+        "sha256": "8f2ffe10ccf9ab6110d1aeaf60285036d3015f0c6c98a85fa20ab58a6edd5615"
       },
       {
         "path": "docs/external-readiness/eng-judges.md",
@@ -516,7 +516,7 @@
       },
       {
         "path": "docs/security/release-assurance.md",
-        "sha256": "47fb4b2836441e8f8e0374878c3b6040296e3f57d422e4e70fdd286d8ac21a4c"
+        "sha256": "6018485d27ba83eace1c6dda66182ba95db920cd5f23f3a2a02e81789abcef62"
       },
       {
         "path": "packages/judge/models/manifest.json",

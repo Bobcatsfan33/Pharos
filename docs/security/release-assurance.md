@@ -40,6 +40,18 @@ rejects drift between them. The Corepack package-manager declaration also
 binds pnpm 10.32.1 to its registry SHA-512 rather than trusting the version
 string alone.
 
+### External-assessment candidate
+
+Use a semver prerelease tag such as `v0.3.0-rc.1` when an independent assessor or SRE campaign
+needs a registry-pinned candidate. The tag runs this image workflow, including the
+`production-release` approval boundary, and produces a signed, attested digest plus release
+receipt. The SDK release workflow classifies prerelease tags and skips npm and PyPI publication;
+only an exact stable `vMAJOR.MINOR.PATCH` tag or an explicit manual dispatch can publish SDKs.
+
+Creating the prerelease tag is a release-management action, not a CI workaround. Record the
+approved source commit and intended engagement before pushing it, then use the resulting image
+digest—not the mutable tag—in pentest, operations, and customer evidence.
+
 ## Admission
 
 Signature verification establishes origin, not production approval. Cluster
