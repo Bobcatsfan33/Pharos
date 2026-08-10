@@ -9,9 +9,28 @@ const manifestPath = path.resolve(
 );
 const repository = "Bobcatsfan33/Pharos";
 const issuePattern = /^https:\/\/github\.com\/Bobcatsfan33\/Pharos\/issues\/([1-9]\d*)$/;
+const issuesApi = `https://api.github.com/repos/${repository}/issues`;
+const maxIssuePages = 10;
 
 function fail(message) {
   throw new Error(message);
+}
+
+async function loadRepositoryIssues(headers) {
+  const issues = new Map();
+  for (let page = 1; page <= maxIssuePages; page += 1) {
+    // The outbound destination is fixed by the verifier, never read from the
+    // manifest. Tracker URLs are used only as keys into this trusted response.
+    const response = await fetch(`${issuesApi}?state=all&per_page=100&page=${page}`, { headers });
+    if (!response.ok) {
+      fail(`repository issue inventory returned GitHub API status ${response.status}`);
+    }
+    const batch = await response.json();
+    if (!Array.isArray(batch)) fail("repository issue inventory response must be an array");
+    for (const issue of batch) issues.set(issue.number, issue);
+    if (batch.length < 100) return issues;
+  }
+  fail(`repository issue inventory exceeded the ${maxIssuePages * 100}-issue verifier limit`);
 }
 
 async function verify() {
@@ -26,6 +45,7 @@ async function verify() {
     "X-GitHub-Api-Version": "2022-11-28",
   };
   if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  const issues = await loadRepositoryIssues(headers);
 
   let trackers = 0;
   for (const gate of gates) {
@@ -36,16 +56,8 @@ async function verify() {
     for (const tracker of gate.trackingIssues) {
       const match = issuePattern.exec(tracker);
       if (!match) fail(`gate ${gate.id} has an invalid tracker URL: ${tracker}`);
-      const response = await fetch(
-        `https://api.github.com/repos/${repository}/issues/${match[1]}`,
-        {
-          headers,
-        },
-      );
-      if (!response.ok) {
-        fail(`gate ${gate.id} tracker ${tracker} returned GitHub API status ${response.status}`);
-      }
-      const issue = await response.json();
+      const issue = issues.get(Number(match[1]));
+      if (!issue) fail(`gate ${gate.id} tracker ${tracker} was not found in the repository`);
       if (issue.pull_request)
         fail(`gate ${gate.id} tracker ${tracker} is a pull request, not an issue`);
       if (issue.html_url !== tracker)

@@ -539,7 +539,7 @@
       },
       {
         "path": "scripts/verify-external-gate-trackers.mjs",
-        "sha256": "583cc4a6bc4f6637aefa2fac0497e734809fb1daba6b4030c9e49f833b4ef678"
+        "sha256": "ab5fe75e4fcccebb32bfd9b7488ae64f144d0870bc594856eaa045b7272a4dac"
       },
       {
         "path": "services/api/src/platform.ts",
