@@ -43,6 +43,7 @@ def main():
     version_hash = sha256_obj({
         "packId": artifact["packId"], "concern": artifact["concern"], "kind": artifact["kind"],
         "onnxInt8": artifact["hashes"]["onnxInt8"], "tokenizer": artifact["hashes"]["tokenizer"],
+        "recipeVersion": artifact["recipeVersion"],
         "temperature": round(artifact["temperature"], 6), "threshold": artifact["threshold"],
     })
     artifact["modelVersion"] = f"{artifact['packId']}@{version_hash[:12]}"
