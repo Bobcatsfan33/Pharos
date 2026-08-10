@@ -6,6 +6,9 @@ import {
   type OnnxSession,
   type TensorCtor,
   type TokenizerConfig,
+  onnxRuntimeIdentity,
+  assertQualifiedOnnxRuntime,
+  loadManifest,
 } from "@pharos/judge";
 
 /**
@@ -75,6 +78,7 @@ describe("OnnxJudge serving contract", () => {
     expect(b!.probability).toBeCloseTo(0.1, 3);
     expect(b!.flagged).toBe(false);
     expect(a!.judgeVersion).toBe("demo@abc123def456");
+    expect(a!.judgeRuntime).toBe(onnxRuntimeIdentity());
     expect(a!.packId).toBe("demo");
   });
 
@@ -94,6 +98,21 @@ describe("OnnxJudge serving contract", () => {
     ]);
     const r = await judge.scoreBatch(["a", "b", "c"]);
     expect(r.map((x) => x.flagged)).toEqual([false, true, false]);
+  });
+});
+
+describe("ONNX production runtime qualification", () => {
+  it("accepts the pinned Linux x64 runtime and refuses unqualified variants", () => {
+    const manifest = loadManifest();
+    expect(() =>
+      assertQualifiedOnnxRuntime(manifest, "onnxruntime-node@1.20.1/linux-x64"),
+    ).not.toThrow();
+    expect(() => assertQualifiedOnnxRuntime(manifest, "onnxruntime-node@1.27.0/linux-x64")).toThrow(
+      /not production-qualified/,
+    );
+    expect(() =>
+      assertQualifiedOnnxRuntime(manifest, "onnxruntime-node@1.20.1/darwin-arm64"),
+    ).toThrow(/not production-qualified/);
   });
 });
 

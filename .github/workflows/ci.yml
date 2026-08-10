@@ -59,6 +59,8 @@ jobs:
           grep -q 'value: "onnx"' rendered-api.yaml
           grep -q 'name: judge-models' rendered-api.yaml
           grep -q 'sizeLimit: 2Gi' rendered-api.yaml
+          grep -q 'kubernetes.io/arch: amd64' rendered-api.yaml
+          grep -q 'kubernetes.io/os: linux' rendered-api.yaml
           grep -q 'name: PHAROS_JUDGE_DRIFT_PROFILE_PATH' rendered-api.yaml
           grep -q 'name: "pharos-judge-drift"' rendered-api.yaml
           # The signing boundary must be a real HSM, never the on-disk dev keystore (#78).

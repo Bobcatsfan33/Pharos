@@ -36,7 +36,8 @@ content
 **`VerdictContext`** (Beam): `decision` (`allow|block|modify|escalate`), `tierReached`
 (`1|2|3|"human"`), `ruleCitations[]` (each naming `ruleId`, `pack`, `clause`,
 `description`), `riskScore` (0–1), `failMode` (`fail_open|fail_closed|null`),
-`judgeVersion`, `latency` (`totalMs`, `perTier`, `deadlineMs`, `deadlineBreached`).
+`judgeVersion`, optional `judgeRuntime` (native runtime/platform identity for exact transformer
+replay), `latency` (`totalMs`, `perTier`, `deadlineMs`, `deadlineBreached`).
 
 **`LiabilityContext`** (Ledger): `mandate` (id, scope, limits, grantor, expiry,
 version), `oversightMode` (`autonomous|human_in_loop|human_on_loop`), `blastRadius`

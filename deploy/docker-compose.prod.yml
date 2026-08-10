@@ -5,6 +5,7 @@
 # Supply an image by immutable, verified digest in PHAROS_IMAGE.
 services:
   api:
+    platform: linux/amd64
     image: ${PHAROS_IMAGE:?set PHAROS_IMAGE to a verified image digest}
     restart: unless-stopped
     environment:

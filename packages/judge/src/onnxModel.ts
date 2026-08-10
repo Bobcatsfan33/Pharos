@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { type JudgeResult } from "./model.js";
 import { BertTokenizer, type Encoding } from "./tokenizer.js";
 import { ensureArtifact, type EnsureOptions } from "./artifactStore.js";
+import { onnxRuntimeIdentity } from "./runtime.js";
 
 /**
  * Served transformer judge (Sprint 6, S6-T2): an ONNX distilbert classifier run on CPU via
@@ -93,6 +94,7 @@ export class OnnxJudge implements AsyncJudge {
         packId: this.packId,
         concern: this.concern,
         judgeVersion: modelVersion,
+        judgeRuntime: onnxRuntimeIdentity(),
         probability,
         flagged: probability >= threshold,
         threshold,

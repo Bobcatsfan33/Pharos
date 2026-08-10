@@ -198,6 +198,8 @@
         "docs/benchmarks/judge-evals.json",
         "docs/benchmarks/system-encoding-eval.md",
         "packages/judge/models/manifest.json",
+        ".github/workflows/judge-parity.yml",
+        "docs/evidence/2026-08-10-onnx-runtime-qualification.md",
         "packages/judge/src/onnxModel.ts",
         "packages/observability/src/judgeDrift.ts",
         "services/api/src/platform.ts",

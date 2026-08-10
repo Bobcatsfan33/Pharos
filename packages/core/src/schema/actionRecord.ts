@@ -70,6 +70,8 @@ export const VerdictContextSchema = z.object({
   failMode: FailMode.default(null),
   /** Registry id of the Tier-3 judge that produced the verdict, when reached. */
   judgeVersion: z.string().nullable().default(null),
+  /** Native inference runtime/platform identity needed for exact transformer replay. */
+  judgeRuntime: z.string().nullable().optional(),
   /** Latency budget accounting, milliseconds. */
   latency: z.object({
     totalMs: z.number().nonnegative(),

@@ -34,3 +34,4 @@ export {
   type FetchedArtifact,
   type EnsureOptions,
 } from "./artifactStore.js";
+export { onnxRuntimeIdentity, assertQualifiedOnnxRuntime } from "./runtime.js";

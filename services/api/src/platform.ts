@@ -33,6 +33,8 @@ import { OidcVerifier, type OidcIssuerConfig } from "@pharos/identity";
 import {
   loadDefaultRegistry,
   loadOnnxJudge,
+  loadManifest,
+  assertQualifiedOnnxRuntime,
   ModelRegistry,
   type AsyncJudge,
   type LoadOnnxOptions,
@@ -122,6 +124,7 @@ export async function buildJudgeRegistry(
   loadJudge: JudgeLoader = loadOnnxJudge,
 ): Promise<ModelRegistry> {
   if (config.judge.provider === "linear") return loadDefaultRegistry();
+  if (config.env === "prod") assertQualifiedOnnxRuntime(loadManifest());
 
   // Fetch, digest-verify, create the inference sessions, and warm all required packs
   // concurrently. Startup remains all-or-nothing: nothing is registered until every

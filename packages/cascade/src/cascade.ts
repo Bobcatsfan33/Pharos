@@ -93,6 +93,7 @@ export class VerdictCascade {
     let riskScore = 0;
     let tierReached: VerdictContext["tierReached"] = 1;
     let judgeVersion: string | null = null;
+    let judgeRuntime: string | null = null;
 
     // --- Tier 1: deterministic rules ---
     const t1Start = process.hrtime.bigint();
@@ -103,7 +104,7 @@ export class VerdictCascade {
     riskScore = Math.max(riskScore, t1.riskScore);
     if (t1.decision === "block") {
       // Short-circuit: a deterministic block skips later tiers.
-      return this.compose(decision, 1, citations, riskScore, null, perTier);
+      return this.compose(decision, 1, citations, riskScore, null, null, perTier);
     }
 
     // --- Tier 2: statistical risk ---
@@ -120,7 +121,7 @@ export class VerdictCascade {
         clause: "tier2.score",
         description: `Statistical risk score ${risk.score.toFixed(2)} exceeded the escalation threshold; escalated without semantic evaluation.`,
       });
-      return this.compose(decision, 2, citations, riskScore, null, perTier);
+      return this.compose(decision, 2, citations, riskScore, null, null, perTier);
     }
 
     // --- Tier 3: served distilled judge models (semantic evaluation) ---
@@ -136,6 +137,7 @@ export class VerdictCascade {
       if (r.probability > topProb) {
         topProb = r.probability;
         judgeVersion = r.judgeVersion;
+        judgeRuntime = r.judgeRuntime ?? null;
       }
     }
     if (policyArtifacts && policyArtifacts.length > 0) {
@@ -174,11 +176,20 @@ export class VerdictCascade {
           decidingSeverity = sev;
           decidingProb = result.probability;
           judgeVersion = result.judgeVersion;
+          judgeRuntime = result.judgeRuntime ?? null;
         }
       }
     }
 
-    return this.compose(decision, tierReached, citations, riskScore, judgeVersion, perTier);
+    return this.compose(
+      decision,
+      tierReached,
+      citations,
+      riskScore,
+      judgeVersion,
+      judgeRuntime,
+      perTier,
+    );
   }
 
   /** Protected so the test-only subclass in ./testing.js can wrap it; never faulted here. */
@@ -208,6 +219,7 @@ export class VerdictCascade {
     citations: RuleCitation[],
     riskScore: number,
     judgeVersion: string | null,
+    judgeRuntime: string | null,
     perTier: Record<string, number>,
   ): VerdictContext {
     const totalMs = Object.values(perTier).reduce((a, b) => a + b, 0);
@@ -218,6 +230,7 @@ export class VerdictCascade {
       riskScore: Math.max(0, Math.min(1, riskScore)),
       failMode: null,
       judgeVersion,
+      judgeRuntime,
       latency: {
         totalMs,
         perTier,
@@ -258,6 +271,7 @@ export class VerdictCascade {
       riskScore: 0.5,
       failMode,
       judgeVersion: null,
+      judgeRuntime: null,
       latency: { totalMs, perTier, deadlineMs: this.deps.deadlineMs, deadlineBreached: true },
     };
   }

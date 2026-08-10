@@ -15,8 +15,9 @@ import { loadOnnxJudge, ModelRegistry } from "@pharos/judge";
  *   3. Latency — cold load (fetch-cached + sha256 re-verify + session create + first inference)
  *      reported SEPARATELY from warm p50/p99 (the fp32-phi cold re-hash is the 800ms-envelope risk).
  */
+const staticFixturePath = fileURLToPath(new URL("./fixtures/onnx-parity.json", import.meta.url));
 const fixture = JSON.parse(
-  readFileSync(fileURLToPath(new URL("./fixtures/onnx-parity.json", import.meta.url)), "utf8"),
+  readFileSync(process.env.PHAROS_ONNX_PARITY_REFERENCE ?? staticFixturePath, "utf8"),
 ) as {
   concern: string;
   temperature: number;
@@ -37,10 +38,13 @@ describe("ONNX serving — live parity + latency", () => {
     }
     const results = await judge.scoreBatch(fixture.records.map((r) => r.text));
     results.forEach((res, i) => {
+      const expected = fixture.records[i]!.probability;
+      const delta = Math.abs(res.probability - expected);
       expect(
-        Math.abs(res.probability - fixture.records[i]!.probability),
-        fixture.records[i]!.text,
+        delta,
+        `${fixture.records[i]!.text}: node=${res.probability} python=${expected} delta=${delta}`,
       ).toBeLessThan(1e-4);
+      expect(res.judgeRuntime).toMatch(/^onnxruntime-node@\d+\.\d+\.\d+\/[a-z0-9_-]+$/);
     });
   }, 120_000);
 
@@ -50,6 +54,7 @@ describe("ONNX serving — live parity + latency", () => {
     registry.registerServed(judge);
     const r = await registry.judgeAsync(fixture.concern, fixture.records[0]!.text);
     expect(r.judgeVersion).toBe(judge.version());
+    expect(r.judgeRuntime).toBeDefined();
     expect(r.probability).toBeCloseTo(fixture.records[0]!.probability, 4);
   }, 120_000);
 

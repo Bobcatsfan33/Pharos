@@ -45,6 +45,13 @@ The ONNX system evaluation proves serving/parity and exposes a serious known lim
 encoded/OOD input is conservatively over-flagged at the current threshold. One live
 encoding evaluation is not a production efficacy approval.
 
+Dynamic-int8 output is not cross-architecture deterministic: the same FINRA artifact produced
+`0.7469` on macOS ARM and approximately `0.2287` on Linux x64 for one Spanish parity case. Pharos
+therefore refuses production outside the explicitly qualified `onnxruntime-node@1.20.1/linux-x64`
+target and seals `judgeRuntime` with every Tier-3 verdict. A weekly/path-triggered CI job proves
+same-host Python/Node parity at `1e-4`. Cross-architecture promotion requires a separate model
+qualification; it is not inferred from the content hash.
+
 **Remaining production promotion:** independent representative and adversarial evaluation
 for all three concerns, approved prevalence-adjusted operating points, OOD calibration,
 independent approval of the restricted-preproduction model cards and version-pinned reference
