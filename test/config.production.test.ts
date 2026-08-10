@@ -20,6 +20,7 @@ function productionEnv(overrides: Partial<NodeJS.ProcessEnv> = {}): NodeJS.Proce
     PHAROS_JUDGE_MODEL_DIR: "/var/lib/pharos/judges",
     PHAROS_JUDGE_DRIFT_PROFILE_PATH: "/etc/pharos/judge-drift/profile.json",
     PHAROS_ADMIN_TOKEN: "a-secure-random-token-with-32-characters",
+    PHAROS_TLS_TERMINATOR: "nginx-ingress/pharos",
     PHAROS_ADMIN_TOKEN_EXPIRES_AT: "2099-12-31T23:59:59Z",
     ...overrides,
   };
@@ -112,6 +113,7 @@ describe("production configuration posture", () => {
       "admin.tokenExpiresAt",
     ],
     ["a fail-open rate limiter", { PHAROS_RATE_LIMIT_FAIL_MODE: "open" }, "api.rateLimitFailMode"],
+    ["an undeclared TLS terminator", { PHAROS_TLS_TERMINATOR: undefined }, "api.tlsTerminator"],
     [
       "a tenant budget below the per-principal budget",
       { PHAROS_RATE_LIMIT_PER_MIN: "600", PHAROS_RATE_LIMIT_TENANT_PER_MIN: "100" },

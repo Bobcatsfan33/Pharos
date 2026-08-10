@@ -202,11 +202,12 @@ optional mTLS that verifies client certificates before any request reaches Pharo
 `ingress.externalTerminator` names the component that terminates instead (mesh, cloud LB,
 external gateway). TLS 1.2 is permitted only with an annotation naming who accepted it.
 CI asserts the rendered manifest carries this posture and that an undeclared terminator
-fails the render.
+fails the render. The application independently requires `PHAROS_TLS_TERMINATOR` in production
+and warns at boot when any other environment binds a non-loopback listener without it.
 
 **What the host owns, and what that means.** Certificate issuance and rotation, the private
 key for the serving certificate, the client CA for mTLS, and the correctness of the network
-path between the terminator and the pod. **Pharos cannot verify at runtime that a
+path between the terminator and the pod. **Pharos cannot verify at runtime that the declared
 terminator is actually in front of it** — a cluster that deletes the Ingress after install,
 or routes around it, will serve cleartext and the application will not know. The chart makes
 the requirement explicit and unskippable at deploy time; it cannot make it self-enforcing at

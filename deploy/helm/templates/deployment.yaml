@@ -107,6 +107,8 @@ spec:
             {{- end }}
             - name: PHAROS_ALLOWED_ORIGINS
               value: {{ .Values.config.allowedOrigins | quote }}
+            - name: PHAROS_TLS_TERMINATOR
+              value: {{ if .Values.ingress.enabled }}{{ printf "helm-ingress/%s" .Values.ingress.className | quote }}{{ else }}{{ .Values.ingress.externalTerminator | quote }}{{ end }}
           startupProbe:
             httpGet:
               path: /healthz
