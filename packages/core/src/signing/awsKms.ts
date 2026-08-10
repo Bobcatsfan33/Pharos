@@ -23,8 +23,9 @@ import { type SigningProvider, type PublicKeyEntry, makeKeyId, parseKeyId } from
  *   - one KMS key per version; `rotate()` mints a new key + a new `.../v<n+1>` alias.
  *   - **old versions keep their own alias and stay enabled for verify** — chain continuity
  *     across rotations (each record embeds the keyId that signed it).
- *   - the provider is stateless: version discovery is `ListAliases`, so nothing is persisted
- *     by Pharos.
+ *   - KMS aliases remain the durable source of truth. Pharos persists no provider state; an
+ *     in-process version cache removes LIST calls from the seal path and is refreshed around
+ *     explicit mutations.
  *
  * keyNames may contain characters KMS alias names disallow (e.g. `:`), so the name is
  * base64url-encoded into the alias and decoded back in `publishKeyset()`.
@@ -85,6 +86,8 @@ export class AwsKms implements SigningProvider {
   private readonly allowKeyCreation: boolean;
   /** Public keys are immutable per keyId; cache to avoid repeat GetPublicKey calls. */
   private readonly publicKeyCache = new Map<string, PublicKeyEntry>();
+  /** Version discovery is on the seal path; cache per keyName and invalidate on every mutation. */
+  private readonly versionsCache = new Map<string, readonly number[]>();
 
   constructor(cfg: AwsKmsConfig) {
     this.aliasPrefix = cfg.aliasPrefix ?? "pharos";
@@ -112,6 +115,9 @@ export class AwsKms implements SigningProvider {
 
   /** All existing versions for a keyName, ascending, discovered from KMS aliases. */
   private async versionsOf(keyName: string): Promise<number[]> {
+    const cached = this.versionsCache.get(keyName);
+    if (cached) return [...cached];
+
     const prefix = `${this.aliasPrefixPath()}${encodeName(keyName)}/v`;
     const versions: number[] = [];
     for (const alias of await this.listAliasNames()) {
@@ -120,7 +126,13 @@ export class AwsKms implements SigningProvider {
         if (Number.isInteger(v)) versions.push(v);
       }
     }
-    return versions.sort((a, b) => a - b);
+    versions.sort((a, b) => a - b);
+    this.versionsCache.set(keyName, versions);
+    return [...versions];
+  }
+
+  private invalidateVersions(keyName: string): void {
+    this.versionsCache.delete(keyName);
   }
 
   private async listAliasNames(): Promise<string[]> {
@@ -161,6 +173,7 @@ export class AwsKms implements SigningProvider {
         TargetKeyId: kmsKeyId,
       }),
     );
+    this.invalidateVersions(keyName);
     return makeKeyId(keyName, version);
   }
 
@@ -183,6 +196,9 @@ export class AwsKms implements SigningProvider {
   }
 
   async rotate(keyName: string): Promise<string> {
+    // An operator or another replica may have rotated this alias namespace. Refresh before
+    // selecting the next global version, then createVersion invalidates again after mutation.
+    this.invalidateVersions(keyName);
     const versions = await this.versionsOf(keyName);
     const next = (versions[versions.length - 1] ?? 0) + 1;
     return this.createVersion(keyName, next);
@@ -198,6 +214,9 @@ export class AwsKms implements SigningProvider {
    * version already exists.
    */
   async provisionVersion(keyName: string, version: number): Promise<string> {
+    // Force a fresh collision check so an externally provisioned alias cannot be hidden by a
+    // seal-path cache hit (which would otherwise strand a newly created, unaliased CMK).
+    this.invalidateVersions(keyName);
     return this.createVersion(keyName, version);
   }
 
