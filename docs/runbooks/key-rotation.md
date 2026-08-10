@@ -97,7 +97,25 @@ stay in the published keyset.
 
 ## 4. Rollback
 
-A provider switch is reversible because it adds, never removes: to roll back, point
-`PHAROS_KMS_PROVIDER` back at local-kms. Records signed under aws-kms keep verifying (their ECDSA
-public keys remain in the published keyset); new records sign under local-kms again at the next
-version. Keep both providers' public keysets published.
+A provider switch is reversible because it adds, never removes, but **do not merely point
+`PHAROS_KMS_PROVIDER` back at local-kms**. The local keystore cannot discover versions that AWS
+KMS minted. Calling `rotate()` on a local keystore that contains `#v1` while AWS owns `#v2` would
+attempt to create a different local key with the colliding id `#v2`.
+
+Before switching traffic, explicitly provision the local rollback key at one more than the highest
+version published by either provider:
+
+```ts
+const localVersion = parseKeyId(await localKms.activeKeyId(keyName)).version;
+const awsVersion = parseKeyId(await awsKms.activeKeyId(keyName)).version;
+const rollbackKeyId = await localKms.provisionVersion(
+  keyName,
+  Math.max(localVersion, awsVersion) + 1,
+); // tenant:acme#v3 (Ed25519)
+```
+
+Then point `PHAROS_KMS_PROVIDER` back at local-kms and verify a canary record with the merged,
+additive keyset before resuming writes. Records signed under aws-kms keep verifying under their
+ECDSA public keys; new records sign under the explicitly provisioned Ed25519 rollback version.
+Keep every provider's historical public keys published permanently. `provisionVersion` refuses an
+existing version and never overwrites its key, so a bad rollback calculation fails before signing.
