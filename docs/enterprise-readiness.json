@@ -11,7 +11,7 @@
     },
     "asOf": "2026-08-10",
     "reviewBy": "2026-11-08",
-    "assessedCommit": "6b6ce5f5e6800387f4ae591a51bf9e413d8f8acc",
+    "assessedCommit": "ef11b3bdca94994fcea35f4f72028e985416b5b8",
     "softwareReleaseCandidate": false,
     "deploymentDecision": "not-approved",
     "decisionReason": "Production deployment engineering exists, but the judge, independent assurance, organizational, and deployment-specific trust gates remain open.",
