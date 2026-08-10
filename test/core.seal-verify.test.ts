@@ -52,7 +52,7 @@ describe("seal + chain verification", () => {
 
   beforeAll(async () => {
     const dir = await mkdtemp(join(tmpdir(), "pharos-seal-"));
-    kms = new LocalKms(new FileKeystore(dir));
+    kms = new LocalKms(new FileKeystore(dir, "pharos-test-keystore-passphrase"));
     keyId = await kms.ensureKey("env:test");
   });
 

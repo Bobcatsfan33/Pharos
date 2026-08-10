@@ -43,7 +43,9 @@ let localKms: LocalKms | null = null;
 let awsAvailable = true;
 
 beforeAll(async () => {
-  localKms = new LocalKms(new FileKeystore(mkdtempSync(join(tmpdir(), "pharos-alg-"))));
+  localKms = new LocalKms(
+    new FileKeystore(mkdtempSync(join(tmpdir(), "pharos-alg-")), "pharos-test-keystore-passphrase"),
+  );
   try {
     awsKms = new AwsKms({
       region: "us-east-1",

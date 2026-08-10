@@ -35,6 +35,9 @@ export default defineConfig({
   test: {
     include: ["test/**/*.test.ts"],
     environment: "node",
+    env: {
+      PHAROS_KMS_KEYSTORE_PASSPHRASE: "pharos-test-keystore-passphrase",
+    },
     testTimeout: 30_000,
     hookTimeout: 60_000,
     pool: "forks",
