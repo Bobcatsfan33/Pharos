@@ -42,20 +42,42 @@ export class LocalKms implements SigningProvider {
     };
   }
 
+  private async createVersion(keyName: string, version: number): Promise<string> {
+    if (!Number.isInteger(version) || version < 1) {
+      throw new Error(`local-kms: version must be a positive integer, got ${version}`);
+    }
+    const keyId = makeKeyId(keyName, version);
+    // A keyId is a permanent public identity. Never replace an existing entry: doing so would
+    // make historical signatures unverifiable under a different key claiming the same version.
+    if ((await this.versionsOf(keyName)).includes(version) || (await this.keystore.get(keyId))) {
+      throw new Error(
+        `local-kms: version ${version} already exists for ${keyName} (${keyId}); ` +
+          "refusing to overwrite a colliding key",
+      );
+    }
+    await this.keystore.put(this.generate(keyId));
+    return keyId;
+  }
+
   async ensureKey(keyName: string): Promise<string> {
     const versions = await this.versionsOf(keyName);
     if (versions.length > 0) return makeKeyId(keyName, versions[versions.length - 1]!);
-    const keyId = makeKeyId(keyName, 1);
-    await this.keystore.put(this.generate(keyId));
-    return keyId;
+    return this.createVersion(keyName, 1);
   }
 
   async rotate(keyName: string): Promise<string> {
     const versions = await this.versionsOf(keyName);
     const next = (versions[versions.length - 1] ?? 0) + 1;
-    const keyId = makeKeyId(keyName, next);
-    await this.keystore.put(this.generate(keyId));
-    return keyId;
+    return this.createVersion(keyName, next);
+  }
+
+  /**
+   * Migration helper: explicitly continue a keyName's global version sequence when rolling back
+   * from another provider. The caller must pass one more than the highest version published by
+   * every provider. Existing versions are permanent and are never overwritten.
+   */
+  async provisionVersion(keyName: string, version: number): Promise<string> {
+    return this.createVersion(keyName, version);
   }
 
   async activeKeyId(keyName: string): Promise<string> {

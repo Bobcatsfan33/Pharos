@@ -156,3 +156,42 @@ describe("key migration: local-kms (Ed25519) → aws-kms (ECDSA P-256), no data 
     expect(verify(r.seal.keyId, Buffer.from("not the sealed bytes"), r.seal.signature)).toBe(false);
   });
 });
+
+describe("key rollback: aws-kms → local-kms continues the global version sequence", () => {
+  it("avoids key-id collisions and verifies the chain across both provider boundaries", async () => {
+    const tenantId = `rollback-${randomUUID().slice(0, 8)}`;
+    const keyName = `tenant:${tenantId}`;
+    const dir = await mkdtemp(join(tmpdir(), "pharos-rollback-"));
+    const local = new LocalKms(new FileKeystore(dir));
+    const aws = new AwsKms({
+      region: "us-east-1",
+      endpoint: ENDPOINT,
+      aliasPrefix: `rollback-${randomUUID().slice(0, 8)}`,
+      allowKeyCreation: true,
+    });
+
+    const localV1 = await local.ensureKey(keyName);
+    const first = await seal(local, localV1, tenantId, 0, 2, GENESIS_HASH);
+
+    const awsV2 = await aws.provisionVersion(keyName, parseKeyId(localV1).version + 1);
+    const second = await seal(aws, awsV2, tenantId, 2, 2, first.at(-1)!.seal.contentHash);
+
+    // Rollback must explicitly continue after the highest AWS version. LocalKms.rotate() cannot
+    // infer versions held by another provider and would otherwise mint a colliding #v2.
+    const rollbackV3 = await local.provisionVersion(keyName, parseKeyId(awsV2).version + 1);
+    const third = await seal(local, rollbackV3, tenantId, 4, 2, second.at(-1)!.seal.contentHash);
+
+    expect([localV1, awsV2, rollbackV3]).toEqual([
+      `${keyName}#v1`,
+      `${keyName}#v2`,
+      `${keyName}#v3`,
+    ]);
+    expect(new Set([localV1, awsV2, rollbackV3]).size).toBe(3);
+
+    const mergedKeyset = [...(await local.publishKeyset()), ...(await aws.publishKeyset())];
+    const report = verifyChain([...first, ...second, ...third], mergedKeyset);
+    expect(report.ok).toBe(true);
+    expect(report.recordsChecked).toBe(6);
+    expect(report.firstBrokenSequence).toBeNull();
+  });
+});
