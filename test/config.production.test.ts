@@ -21,6 +21,7 @@ function productionEnv(overrides: Partial<NodeJS.ProcessEnv> = {}): NodeJS.Proce
     PHAROS_JUDGE_DRIFT_PROFILE_PATH: "/etc/pharos/judge-drift/profile.json",
     PHAROS_ADMIN_TOKEN: "a-secure-random-token-with-32-characters",
     PHAROS_TLS_TERMINATOR: "nginx-ingress/pharos",
+    PHAROS_ADMIN_TOKEN_EXPIRES_AT: "2099-12-31T23:59:59Z",
     ...overrides,
   };
 }
@@ -101,6 +102,16 @@ describe("production configuration posture", () => {
     ],
     ["plaintext Redis", { PHAROS_REDIS_URL: "redis://redis.internal:6379" }, "redis.url"],
     ["a short admin token", { PHAROS_ADMIN_TOKEN: "change-me" }, "admin.token"],
+    [
+      "a missing admin-token expiry",
+      { PHAROS_ADMIN_TOKEN_EXPIRES_AT: undefined },
+      "admin.tokenExpiresAt",
+    ],
+    [
+      "an expired admin token",
+      { PHAROS_ADMIN_TOKEN_EXPIRES_AT: "2020-01-01T00:00:00Z" },
+      "admin.tokenExpiresAt",
+    ],
     ["a fail-open rate limiter", { PHAROS_RATE_LIMIT_FAIL_MODE: "open" }, "api.rateLimitFailMode"],
     ["an undeclared TLS terminator", { PHAROS_TLS_TERMINATOR: undefined }, "api.tlsTerminator"],
     [
@@ -110,6 +121,26 @@ describe("production configuration posture", () => {
     ],
   ])("rejects %s", (_name, override, path) => {
     expect(() => loadConfig(productionEnv(override))).toThrow(path);
+  });
+
+  it("accepts a bounded previous-token overlap during rotation", () => {
+    const config = loadConfig(
+      productionEnv({
+        PHAROS_ADMIN_PREVIOUS_TOKEN: "previous-secure-admin-token-with-32-characters",
+        PHAROS_ADMIN_PREVIOUS_TOKEN_EXPIRES_AT: "2099-01-01T00:00:00Z",
+      }),
+    );
+    expect(config.admin.previousToken).toContain("previous-secure");
+  });
+
+  it("rejects an unbounded or orphaned previous token", () => {
+    expect(() =>
+      loadConfig(
+        productionEnv({
+          PHAROS_ADMIN_PREVIOUS_TOKEN: "previous-secure-admin-token-with-32-characters",
+        }),
+      ),
+    ).toThrow("admin.previousToken");
   });
 
   it("preserves hermetic local-development defaults", () => {
