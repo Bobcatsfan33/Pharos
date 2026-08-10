@@ -357,6 +357,7 @@ production default.**
 | ~~[#79](https://github.com/Bobcatsfan33/Pharos/issues/79)~~ | ~~Console: no CSP/headers, unauthenticated, demo-tenant~~ | Console | **Resolved** — auth gate, per-user tenant scoping, nonce `script-src`, and `style-src 'self'` with no inline allowance anywhere |
 | ~~[#80](https://github.com/Bobcatsfan33/Pharos/issues/80)~~ | ~~SDKs do no runtime input validation~~ | SDK | **Resolved** — both SDKs reject before transmit with named errors; closes the unreachable-platform fail-mode hazard |
 | [#81](https://github.com/Bobcatsfan33/Pharos/issues/81) | ~~Caller-**asserted mandate authority**~~; caller-declared blast radius & judge input | Cascade | **Mandate forgery fixed** (server-derived, refused inline). Residual: declarative liability is asserted, not attested — contract documented |
+| [#97](https://github.com/Bobcatsfan33/Pharos/issues/97) | Served-judge cold load and runtime drift | Judge | Parallel all-or-nothing preload and scheduled/path-triggered live parity CI delivered. Residual: static-QDQ and OOD calibration require clean calibration data and independent lockbox qualification |
 | ~~[#82](https://github.com/Bobcatsfan33/Pharos/issues/82)~~ | ~~Fault-injection hooks on prod cascade class~~ | Cascade | **Resolved** — seam moved to a test-only subclass off the package index; regression-tested |
 
 ## External / human gates (not claimed here)
