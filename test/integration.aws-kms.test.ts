@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import {
   AwsKms,
@@ -169,5 +169,51 @@ describe("AwsKms key provisioning is explicit", () => {
     });
     await kms2.ensureKey("tenant:collide");
     await expect(kms2.provisionVersion("tenant:collide", 1)).rejects.toThrow(/already exists/i);
+  });
+});
+
+describe("AwsKms version discovery cache", () => {
+  it("reuses discovery on the seal path and invalidates around explicit mutations", async () => {
+    const cached = new AwsKms({
+      region: "us-east-1",
+      endpoint: ENDPOINT,
+      aliasPrefix: `cache-${randomUUID().slice(0, 8)}`,
+      allowKeyCreation: true,
+    });
+    await cached.ensureKey("tenant:cache");
+
+    const client = (
+      cached as unknown as {
+        client: { send(command: unknown): Promise<unknown> };
+      }
+    ).client;
+    const send = vi.spyOn(client, "send");
+    const listCalls = () =>
+      send.mock.calls.filter(([command]) => command?.constructor.name === "ListAliasesCommand")
+        .length;
+
+    expect(await cached.activeKeyId("tenant:cache")).toBe("tenant:cache#v1");
+    const afterFirstRead = listCalls();
+    expect(afterFirstRead).toBeGreaterThan(0);
+    expect(await cached.activeKeyId("tenant:cache")).toBe("tenant:cache#v1");
+    expect(listCalls()).toBe(afterFirstRead);
+
+    expect(await cached.rotate("tenant:cache")).toBe("tenant:cache#v2");
+    const afterRotate = listCalls();
+    expect(afterRotate).toBeGreaterThan(afterFirstRead);
+    expect(await cached.activeKeyId("tenant:cache")).toBe("tenant:cache#v2");
+    const afterRotationRefresh = listCalls();
+    expect(afterRotationRefresh).toBeGreaterThan(afterRotate);
+    expect(await cached.activeKeyId("tenant:cache")).toBe("tenant:cache#v2");
+    expect(listCalls()).toBe(afterRotationRefresh);
+
+    expect(await cached.provisionVersion("tenant:cache", 3)).toBe("tenant:cache#v3");
+    const afterProvision = listCalls();
+    expect(afterProvision).toBeGreaterThan(afterRotationRefresh);
+    expect(await cached.activeKeyId("tenant:cache")).toBe("tenant:cache#v3");
+    const afterProvisionRefresh = listCalls();
+    expect(afterProvisionRefresh).toBeGreaterThan(afterProvision);
+    expect(await cached.activeKeyId("tenant:cache")).toBe("tenant:cache#v3");
+    expect(listCalls()).toBe(afterProvisionRefresh);
   });
 });
