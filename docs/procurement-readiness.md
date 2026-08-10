@@ -1,8 +1,10 @@
 # Enterprise procurement and deployment decision
 
 [`enterprise-readiness.json`](enterprise-readiness.json) is the authoritative, expiring index of
-Pharos product evidence and open deployment gates. CI checks every evidence path and refuses an
-approval claim while partial controls or blocking gates remain.
+Pharos product evidence and open deployment gates. CI checks every evidence path and its SHA-256
+snapshot, rejects self-approval, and refuses an approval claim while partial controls or blocking
+gates remain. The [evidence-governance contract](security/readiness-evidence.md) explains what this
+repository self-assessment proves—and what still requires an independent authority.
 
 The current decision is **not approved**, and Pharos is **not yet a software release candidate**.
 The repository has strong durability, tenancy, trusted-time, KMS, observability, deployment, and

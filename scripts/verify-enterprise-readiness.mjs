@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -67,11 +68,38 @@ function evidencePath(value, label) {
     fail(`${label} must be a repository-relative POSIX path without '..'`);
   }
   const candidate = path.join(root, relative);
-  const stat = fs.lstatSync(candidate);
-  if (!stat.isFile() || stat.isSymbolicLink()) {
-    fail(`${label} must name a regular, non-symlink repository file: ${relative}`);
+  const descriptor = fs.openSync(candidate, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+  try {
+    if (!fs.fstatSync(descriptor).isFile()) {
+      fail(`${label} must name a regular, non-symlink repository file: ${relative}`);
+    }
+  } finally {
+    fs.closeSync(descriptor);
   }
   return relative;
+}
+
+function sha256File(relative) {
+  const descriptor = fs.openSync(
+    path.join(root, relative),
+    fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW,
+  );
+  try {
+    if (!fs.fstatSync(descriptor).isFile()) {
+      fail(`evidence must be a regular, non-symlink repository file: ${relative}`);
+    }
+    return crypto.createHash("sha256").update(fs.readFileSync(descriptor)).digest("hex");
+  } finally {
+    fs.closeSync(descriptor);
+  }
+}
+
+function identity(value, label) {
+  const subject = objectValue(value, label);
+  textValue(subject.identity, `${label}.identity`);
+  textValue(subject.role, `${label}.role`);
+  textValue(subject.organization, `${label}.organization`);
+  return subject;
 }
 
 function isoDate(value, label) {
@@ -84,11 +112,15 @@ function isoDate(value, label) {
 
 function verify() {
   const document = objectValue(JSON.parse(fs.readFileSync(selected, "utf8")), "manifest");
-  if (document.schemaVersion !== 1) fail("schemaVersion must equal 1");
+  if (document.schemaVersion !== 2) fail("schemaVersion must equal 2");
   textValue(document.product, "product");
   textValue(document.repository, "repository");
 
   const assessment = objectValue(document.assessment, "assessment");
+  if (assessment.evidenceScope !== "repository-self-assessment") {
+    fail("assessment.evidenceScope must equal repository-self-assessment");
+  }
+  const preparer = identity(assessment.preparedBy, "assessment.preparedBy");
   const asOf = isoDate(assessment.asOf, "assessment.asOf");
   const reviewBy = isoDate(assessment.reviewBy, "assessment.reviewBy");
   if (reviewBy < asOf) fail("assessment.reviewBy must not precede assessment.asOf");
@@ -101,6 +133,22 @@ function verify() {
     fail("assessment.softwareReleaseCandidate must be boolean");
   }
   textValue(assessment.decisionReason, "assessment.decisionReason");
+  const approval = assessment.approval;
+  if (assessment.deploymentDecision === "not-approved" && approval !== null) {
+    fail("not-approved assessments must set assessment.approval to null");
+  }
+  if (assessment.deploymentDecision === "approved") {
+    const approved = objectValue(approval, "assessment.approval");
+    const approver = identity(approved.approvedBy, "assessment.approval.approvedBy");
+    if (approver.identity === preparer.identity) {
+      fail("assessment approver must be distinct from the preparer");
+    }
+    if (approved.independentOfPreparer !== true) {
+      fail("assessment.approval.independentOfPreparer must equal true");
+    }
+    isoDate(approved.approvedAt, "assessment.approval.approvedAt");
+    evidencePath(approved.decisionRecord, "assessment.approval.decisionRecord");
+  }
 
   const frameworks = arrayValue(document.frameworks, "frameworks").map((item, index) =>
     objectValue(item, `frameworks[${index}]`),
@@ -123,6 +171,7 @@ function verify() {
   unique(controlIds, "control ids");
   exactSet(controlIds, requiredControls, "control ids");
   let incompleteControls = 0;
+  const referencedEvidence = new Set();
   for (const control of controls) {
     textValue(control.title, `control ${control.id}.title`);
     if (!["implemented", "partial", "not-applicable"].includes(control.status)) {
@@ -138,6 +187,7 @@ function verify() {
     const evidence = arrayValue(control.evidence, `control ${control.id}.evidence`).map((item) =>
       evidencePath(item, `control ${control.id}.evidence`),
     );
+    evidence.forEach((item) => referencedEvidence.add(item));
     unique(evidence, `control ${control.id}.evidence`);
     const gaps = arrayValue(control.gaps, `control ${control.id}.gaps`).map((item) =>
       textValue(item, `control ${control.id}.gaps`),
@@ -170,9 +220,20 @@ function verify() {
     const evidence = arrayValue(gate.evidence, `gate ${gate.id}.evidence`).map((item) =>
       evidencePath(item, `gate ${gate.id}.evidence`),
     );
+    evidence.forEach((item) => referencedEvidence.add(item));
     unique(evidence, `gate ${gate.id}.evidence`);
     if (gate.status === "complete" && evidence.length === 0) {
       fail(`complete gate ${gate.id} requires retained evidence`);
+    }
+    if (gate.status === "complete") {
+      const completion = objectValue(gate.completion, `gate ${gate.id}.completion`);
+      const approver = identity(completion.approvedBy, `gate ${gate.id}.completion.approvedBy`);
+      if (approver.identity === preparer.identity) {
+        fail(`gate ${gate.id} approver must be distinct from the preparer`);
+      }
+      isoDate(completion.completedAt, `gate ${gate.id}.completion.completedAt`);
+    } else if (gate.completion !== null) {
+      fail(`open gate ${gate.id} must set completion to null`);
     }
     if (gate.status === "open" && gate.blocking) openBlocking += 1;
   }
@@ -183,8 +244,32 @@ function verify() {
   if (openBlocking && assessment.deploymentDecision !== "not-approved") {
     fail("open blocking gates require deploymentDecision=not-approved");
   }
+
+  if (assessment.deploymentDecision === "approved") {
+    referencedEvidence.add(assessment.approval.decisionRecord);
+  }
+  const snapshot = objectValue(document.evidenceSnapshot, "evidenceSnapshot");
+  if (snapshot.algorithm !== "sha256") fail("evidenceSnapshot.algorithm must equal sha256");
+  isoDate(snapshot.generatedAt, "evidenceSnapshot.generatedAt");
+  const files = arrayValue(snapshot.files, "evidenceSnapshot.files").map((item, index) =>
+    objectValue(item, `evidenceSnapshot.files[${index}]`),
+  );
+  const snapshotPaths = files.map((item, index) =>
+    evidencePath(item.path, `evidenceSnapshot.files[${index}].path`),
+  );
+  unique(snapshotPaths, "evidenceSnapshot paths");
+  exactSet(snapshotPaths, referencedEvidence, "evidenceSnapshot paths");
+  for (const [index, item] of files.entries()) {
+    if (typeof item.sha256 !== "string" || !/^[0-9a-f]{64}$/.test(item.sha256)) {
+      fail(`evidenceSnapshot.files[${index}].sha256 must be a lowercase SHA-256 digest`);
+    }
+    const actual = sha256File(item.path);
+    if (actual !== item.sha256) {
+      fail(`evidence digest mismatch for ${item.path}: expected ${item.sha256}, got ${actual}`);
+    }
+  }
   console.log(
-    `enterprise readiness manifest valid: ${controls.length} controls, ${openBlocking} open blocking gates, decision=${assessment.deploymentDecision}, reviewBy=${reviewBy}`,
+    `enterprise readiness manifest valid: ${controls.length} controls, ${files.length} hash-verified evidence files, ${openBlocking} open blocking gates, decision=${assessment.deploymentDecision}, reviewBy=${reviewBy}`,
   );
 }
 

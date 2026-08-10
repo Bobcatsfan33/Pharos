@@ -9,3 +9,7 @@
 /packages/identity/   @Bobcatsfan33
 /.github/workflows/   @Bobcatsfan33
 /Dockerfile           @Bobcatsfan33
+/docs/enterprise-readiness.json @Bobcatsfan33
+/docs/security/readiness-evidence.md @Bobcatsfan33
+/scripts/verify-enterprise-readiness.mjs @Bobcatsfan33
+/scripts/sync-enterprise-evidence.mjs @Bobcatsfan33
