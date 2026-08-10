@@ -85,6 +85,11 @@ describe("seal + chain verification", () => {
     expect(report.ok).toBe(false);
     expect(report.firstBrokenSequence).toBe(1);
     expect(report.records[1]!.checks.contentHashMatches).toBe(false);
+    expect(report.errors).toEqual([
+      expect.stringMatching(
+        /^sequence 1: content hash mismatch: recomputed [a-f0-9]{64} != sealed [a-f0-9]{64}$/,
+      ),
+    ]);
   });
 
   it("detects a broken chain link", async () => {
@@ -95,6 +100,10 @@ describe("seal + chain verification", () => {
     expect(report.ok).toBe(false);
     expect(report.firstBrokenSequence).toBe(2);
     expect(report.records[2]!.checks.chainLinkValid).toBe(false);
+    expect(report.errors).toEqual([
+      "sequence 2: signature invalid: signature mismatch",
+      `sequence 2: chain link broken: prevHash ${"f".repeat(64)} != expected ${chain[1]!.seal.contentHash}`,
+    ]);
   });
 
   it("detects a forged signature", async () => {
@@ -113,5 +122,7 @@ describe("seal + chain verification", () => {
     const chain = await buildChain(1);
     const report = verifyChain(chain, []);
     expect(report.ok).toBe(false);
+    expect(report.firstBrokenSequence).toBe(0);
+    expect(report.errors).toEqual([`sequence 0: signature invalid: unknown keyId ${keyId}`]);
   });
 });
