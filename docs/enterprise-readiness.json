@@ -1,13 +1,20 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "product": "Pharos",
   "repository": "Bobcatsfan33/Pharos",
   "assessment": {
+    "evidenceScope": "repository-self-assessment",
+    "preparedBy": {
+      "identity": "pharos-repository-maintainers",
+      "role": "Product Engineering",
+      "organization": "Pharos project"
+    },
     "asOf": "2026-07-29",
     "reviewBy": "2026-10-29",
     "softwareReleaseCandidate": false,
     "deploymentDecision": "not-approved",
-    "decisionReason": "Production deployment engineering exists, but the judge, independent assurance, organizational, and deployment-specific trust gates remain open."
+    "decisionReason": "Production deployment engineering exists, but the judge, independent assurance, organizational, and deployment-specific trust gates remain open.",
+    "approval": null
   },
   "frameworks": [
     {
@@ -57,7 +64,9 @@
         "SECURITY.md",
         "docs/LIMITATIONS.md",
         "docs/ROADMAP.md",
-        "docs/assurance-and-risk.md"
+        "docs/assurance-and-risk.md",
+        "docs/procurement-readiness.md",
+        "docs/security/readiness-evidence.md"
       ],
       "gaps": []
     },
@@ -225,7 +234,8 @@
       "blocking": true,
       "ownerRole": "AI Engineering",
       "acceptanceCriteria": "Production transformer judges, independently approved model cards, adversarial and representative evaluation, calibrated operating points, version-pinned drift profiles plus alert/rollback exercise, and production latency evidence pass approved thresholds.",
-      "evidence": []
+      "evidence": [],
+      "completion": null
     },
     {
       "id": "EXT-PENTEST",
@@ -234,7 +244,8 @@
       "blocking": true,
       "ownerRole": "Product Security",
       "acceptanceCriteria": "Signed report covers API, gateway, console, SDKs, PDP, tenant isolation, evidence chain, KMS, TSA, WORM, and deployment; critical and high findings are closed or CISO-accepted.",
-      "evidence": []
+      "evidence": [],
+      "completion": null
     },
     {
       "id": "EXT-TRUST",
@@ -243,7 +254,8 @@
       "blocking": true,
       "ownerRole": "Security, PKI, and Legal",
       "acceptanceCriteria": "Approved production KMS keys and roles, independently obtained TSA pins, rotation evidence, and outside-counsel admissibility review are retained.",
-      "evidence": []
+      "evidence": [],
+      "completion": null
     },
     {
       "id": "EXT-OPERATIONS",
@@ -252,7 +264,8 @@
       "blocking": true,
       "ownerRole": "SRE",
       "acceptanceCriteria": "Customer-topology deployment, backup restore, failover, RPO/RTO, alerts, SLOs, support, incident, escalation, and notification procedures are exercised and signed.",
-      "evidence": []
+      "evidence": [],
+      "completion": null
     },
     {
       "id": "EXT-COMPLIANCE",
@@ -261,7 +274,8 @@
       "blocking": true,
       "ownerRole": "GRC and Legal",
       "acceptanceCriteria": "Applicable SOC 2 or ISO evidence, SIG or CAIQ responses, DPA, privacy and residency terms, subprocessors, insurance, accessibility, support, and license terms are approved.",
-      "evidence": []
+      "evidence": [],
+      "completion": null
     },
     {
       "id": "EXT-CUSTOMERS",
@@ -270,7 +284,186 @@
       "blocking": true,
       "ownerRole": "Product",
       "acceptanceCriteria": "Approved pilot and production references demonstrate adoption, efficacy, operations, and support across the intended regulated-market boundary.",
-      "evidence": []
+      "evidence": [],
+      "completion": null
     }
-  ]
+  ],
+  "evidenceSnapshot": {
+    "algorithm": "sha256",
+    "generatedAt": "2026-08-10",
+    "files": [
+      {
+        "path": ".github/CODEOWNERS",
+        "sha256": "bc56b7c3d47c33c62c4f411cc84831022eeb3933005ec8b5107915c7d1413f5d"
+      },
+      {
+        "path": ".github/dependabot.yml",
+        "sha256": "bdabe1d605a716a9a43559d533cdeea523532f9838e8b120d337b007bb56752a"
+      },
+      {
+        "path": ".github/workflows/ci.yml",
+        "sha256": "a3ffc3074b0f95f45cfc8408f048c47f4360a37ef4bea3b050941f8f78f98666"
+      },
+      {
+        "path": ".github/workflows/codeql.yml",
+        "sha256": "8e930d74f0d447cfa9dddb6e984424990b91c99d430be3f3d60dbccaa3e15743"
+      },
+      {
+        "path": ".github/workflows/gitleaks.yml",
+        "sha256": "3a24463df55edf4a1474fe24a849c91d5310f3a76e6dcfb08ac12a7a9a61ae85"
+      },
+      {
+        "path": ".github/workflows/image.yml",
+        "sha256": "358bb4e7f7ed3403d03812c664c3aaac8f767ec350f7c09f03184ecb6c44abde"
+      },
+      {
+        "path": ".github/workflows/judge-parity.yml",
+        "sha256": "47990dc0d971ada97e24a507d4c795d81fef62787df0635f4e847587ef702d4b"
+      },
+      {
+        "path": ".github/workflows/release.yml",
+        "sha256": "731977caaf1dfceac4f7ea8c68d7a209ef63b0afc075a22378bc28cdbddc32c7"
+      },
+      {
+        "path": "SECURITY.md",
+        "sha256": "bc7c33be6f517ce23172477aaf9f05429ea90a6ad946d422a8064945df5c51e6"
+      },
+      {
+        "path": "docs/LIMITATIONS.md",
+        "sha256": "05012fefb9d36bd50fe48fbf3f01e0b0664d374a50b45baa9e949950ace0cb11"
+      },
+      {
+        "path": "docs/ROADMAP.md",
+        "sha256": "1db5abc020196f76255490feda176e6575c341b80dda3ce6dcd739d8c01e21c0"
+      },
+      {
+        "path": "docs/assurance-and-risk.md",
+        "sha256": "79de1014914286142c930f1d4168948a73bbae6db3e1ef5eb337887c1778eab4"
+      },
+      {
+        "path": "docs/benchmarks/judge-evals.json",
+        "sha256": "d161f34fe846832dc43e9d872509f6d8a17d58afd48945177e4ffbc4aa90160c"
+      },
+      {
+        "path": "docs/benchmarks/judge-evals.md",
+        "sha256": "0d8157e1e217a86073cb2000dfff4db4c0cd80bd5aa923034a7c61370ea358af"
+      },
+      {
+        "path": "docs/benchmarks/latency.md",
+        "sha256": "e9c15b288aed3ea142e444d299f313e79a7bee88d7009c1226907bd10a447996"
+      },
+      {
+        "path": "docs/benchmarks/system-encoding-eval.md",
+        "sha256": "43031c09127466868d0c00565c7e2c296bbbda6830c3f9deefc13e1bcf9077b5"
+      },
+      {
+        "path": "docs/code-audit-durable-stores.md",
+        "sha256": "8c5e9f02aaebe1118b02f5052b6de7c9bcbd93abe73cf25a1700ed9af10caee9"
+      },
+      {
+        "path": "docs/compliance/soc2-and-procurement.md",
+        "sha256": "4ca9f294fd9327385b2079ad24e17a8bf4fed3c24d695d074623989778458326"
+      },
+      {
+        "path": "docs/decision-cascade.md",
+        "sha256": "1bfcc68b97864bd467eaff8f93c177577f585463a9cddcdf8e9ee421b9776801"
+      },
+      {
+        "path": "docs/evidence-seal.md",
+        "sha256": "bcc8ef5b8348baf5d151690f01ad471f3ff349a96d83033858772d1a4dee8505"
+      },
+      {
+        "path": "docs/evidence/2026-08-10-onnx-runtime-qualification.md",
+        "sha256": "53eaab832a12f78fe1e6be66f15ecd0c617df0a9fcce4fe1f5dc9a95f8573d9d"
+      },
+      {
+        "path": "docs/identity-and-tenancy.md",
+        "sha256": "d3acb7748429870ac8c54fca22bb3df027c358f9bd66a379cb83e0aaaa6a9e7b"
+      },
+      {
+        "path": "docs/incident-response.md",
+        "sha256": "7a9cd24d3784143fdfe900b47cb1119a1f9818d9ae018ce3e14177546be99f27"
+      },
+      {
+        "path": "docs/legal/admissibility.md",
+        "sha256": "849476e4df284f5e1350811a7055fbdcdac0db79f0886fe2d6856e1fe2e8cb96"
+      },
+      {
+        "path": "docs/model-cards/production-judges.md",
+        "sha256": "49630ddc8fa4255f791b5b9c7119368d0c8e7e7fc903386fd423a96a139afe22"
+      },
+      {
+        "path": "docs/operations.md",
+        "sha256": "de8c84af8f52b7e830b17068fc9c6f8cad6b47937305a6f13caf8dcc578a3f82"
+      },
+      {
+        "path": "docs/procurement-readiness.md",
+        "sha256": "152ce68ce70304daade394ee66a84e08c9db5e9086e227472de2c323f334a5e0"
+      },
+      {
+        "path": "docs/review-operations.md",
+        "sha256": "a07524dd9d21b6fb1c1f884a2e67a3446b8550cf0fa0ecdaa4221657e34e6a03"
+      },
+      {
+        "path": "docs/runbooks/gateway-held-key-rotation.md",
+        "sha256": "2fb7ff5cdca19ca1f7b63a96ee8eba73383bf5015ec8dd30d56526182b1dd4eb"
+      },
+      {
+        "path": "docs/runbooks/judge-drift.md",
+        "sha256": "408d50197deb7373688aedb2d9d814fcdf25bb3eec013e3eb5eec2321dee784e"
+      },
+      {
+        "path": "docs/runbooks/key-rotation.md",
+        "sha256": "6aa93a44cfc9385d7e1cb25a3ed8eea16386fda1b64b9b5ae036160046d37108"
+      },
+      {
+        "path": "docs/runbooks/tsa-trust-rotation.md",
+        "sha256": "c3e73b3a669b6574f1a0c58fbd6f1d639beb8c6baeea306009969a4b4ba7c601"
+      },
+      {
+        "path": "docs/security/THREAT_MODEL.md",
+        "sha256": "75fb57fe2ec6fbe8b366e45ac3cbb5c37910fa36335cd270263caab2b6013e1e"
+      },
+      {
+        "path": "docs/security/crypto-review-package.md",
+        "sha256": "e51532d342c56bb63ce790f51ef66af953fbe0c5f46c77fb7e0b750f60e7ca04"
+      },
+      {
+        "path": "docs/security/pentest-tenant-isolation.md",
+        "sha256": "2574a875bd7b38587a6fe5e9df21ae2c526069469a215b26cb9b6a10f1939cdf"
+      },
+      {
+        "path": "docs/security/readiness-evidence.md",
+        "sha256": "544eac89b42da2c5d8966ea6583d86e11f94b1cf8f324100c73e527f4a71e546"
+      },
+      {
+        "path": "docs/security/release-assurance.md",
+        "sha256": "47fb4b2836441e8f8e0374878c3b6040296e3f57d422e4e70fdd286d8ac21a4c"
+      },
+      {
+        "path": "packages/judge/models/manifest.json",
+        "sha256": "f61e3803d10fbc9d8508e9454d91d325a899cd109c430997b73c29aee3993833"
+      },
+      {
+        "path": "packages/judge/src/onnxModel.ts",
+        "sha256": "0e81ec4d09ec83027ebbdf29aed450f1537acc422c0a9e1335375cde7fb230de"
+      },
+      {
+        "path": "packages/observability/src/judgeDrift.ts",
+        "sha256": "fb141eea00b04ac830b485dd615bedd6defe91f16c760557dc68e4bc36a03010"
+      },
+      {
+        "path": "services/api/src/platform.ts",
+        "sha256": "e5366cf2c7f4c52d2c65e11a1af22b5fb4cb4ba291d2effbd3530f0f983b5fdd"
+      },
+      {
+        "path": "test/observability.judge-drift.test.ts",
+        "sha256": "f5d9b485300b2f075d9cbbef7bdb03d462fbb5b54a64a7dca7925910c374a40b"
+      },
+      {
+        "path": "test/platform.judges.test.ts",
+        "sha256": "b8d5390ad902f17b9a372e94cee942c88ed8aa0ca4b335c828c25dfa039eb161"
+      }
+    ]
+  }
 }
