@@ -9,9 +9,9 @@
       "role": "Product Engineering",
       "organization": "Pharos project"
     },
-    "asOf": "2026-07-29",
-    "reviewBy": "2026-10-29",
-    "assessedCommit": "e87ba99a0911bc8d8e22587736126110163f83fa",
+    "asOf": "2026-08-10",
+    "reviewBy": "2026-11-08",
+    "assessedCommit": "5e070ccf12c8ddb750c8e487508e59e530de65be",
     "softwareReleaseCandidate": false,
     "deploymentDecision": "not-approved",
     "decisionReason": "Production deployment engineering exists, but the judge, independent assurance, organizational, and deployment-specific trust gates remain open.",
@@ -172,10 +172,17 @@
     {
       "id": "OBS-01",
       "title": "Operational observability and SLO evidence",
-      "status": "implemented",
+      "status": "partial",
       "frameworks": ["csa-ccm-caiq-4.1", "csa-ai-caiq-1.0.2"],
-      "evidence": ["docs/operations.md", "docs/review-operations.md", "docs/benchmarks/latency.md"],
-      "gaps": []
+      "evidence": [
+        "docs/operations.md",
+        "docs/review-operations.md",
+        "docs/benchmarks/latency.md",
+        "docs/benchmarks/onnx-local-reference.json"
+      ],
+      "gaps": [
+        "The ONNX-default engineering reference meets the 800ms p99 objective only at low concurrency and fails the 1,000 verdicts/second aggregate objective; production-topology load and recovery acceptance remain open."
+      ]
     },
     {
       "id": "IR-01",
@@ -209,14 +216,19 @@
       "evidence": [
         "docs/benchmarks/judge-evals.md",
         "docs/benchmarks/judge-evals.json",
+        "docs/benchmarks/funds-meta-frame-v2.json",
         "docs/benchmarks/system-encoding-eval.md",
         "packages/judge/models/manifest.json",
         ".github/workflows/judge-parity.yml",
         "docs/evidence/2026-08-10-onnx-runtime-qualification.md",
         "packages/judge/src/onnxModel.ts",
+        "training/corpus.py",
+        "training/check_leakage.py",
+        "training/lockbox/funds-movement-intent.json",
         "packages/observability/src/judgeDrift.ts",
         "services/api/src/platform.ts",
         "test/platform.judges.test.ts",
+        "test/fixtures/onnx-parity-funds.json",
         "test/observability.judge-drift.test.ts",
         "docs/model-cards/production-judges.md",
         "docs/runbooks/judge-drift.md",
@@ -344,7 +356,7 @@
       },
       {
         "path": ".github/workflows/judge-parity.yml",
-        "sha256": "47990dc0d971ada97e24a507d4c795d81fef62787df0635f4e847587ef702d4b"
+        "sha256": "2cff12b812d6db1a43052f9f66a70d1bb25e4e87750bc19e03a29f75adc6adb5"
       },
       {
         "path": ".github/workflows/release.yml",
@@ -356,7 +368,7 @@
       },
       {
         "path": "docs/LIMITATIONS.md",
-        "sha256": "05012fefb9d36bd50fe48fbf3f01e0b0664d374a50b45baa9e949950ace0cb11"
+        "sha256": "9bfb6ad87d443585f868232d08048195aefeba2422ea4004da65e059ee72fa05"
       },
       {
         "path": "docs/ROADMAP.md",
@@ -365,6 +377,10 @@
       {
         "path": "docs/assurance-and-risk.md",
         "sha256": "79de1014914286142c930f1d4168948a73bbae6db3e1ef5eb337887c1778eab4"
+      },
+      {
+        "path": "docs/benchmarks/funds-meta-frame-v2.json",
+        "sha256": "2e3e0952156a56917acb1777b7aabeb9cc23d72ca1a1b2549bcf6d0193a2a567"
       },
       {
         "path": "docs/benchmarks/judge-evals.json",
@@ -376,7 +392,11 @@
       },
       {
         "path": "docs/benchmarks/latency.md",
-        "sha256": "e9c15b288aed3ea142e444d299f313e79a7bee88d7009c1226907bd10a447996"
+        "sha256": "5f242d25a2fdd2bb16ac5c33cf64e6fbae2739c439007a7283bba2de6b710996"
+      },
+      {
+        "path": "docs/benchmarks/onnx-local-reference.json",
+        "sha256": "376e187a9427d6cfa30b3fb7287a84df49a4d00e89262fa1632aa6720c88c958"
       },
       {
         "path": "docs/benchmarks/system-encoding-eval.md",
@@ -448,7 +468,7 @@
       },
       {
         "path": "docs/model-cards/production-judges.md",
-        "sha256": "49630ddc8fa4255f791b5b9c7119368d0c8e7e7fc903386fd423a96a139afe22"
+        "sha256": "d331228cb4dd285dbfec0fe66af9e435df2180bac3d8ad1294f006b827b8c119"
       },
       {
         "path": "docs/operations.md",
@@ -500,7 +520,7 @@
       },
       {
         "path": "packages/judge/models/manifest.json",
-        "sha256": "f61e3803d10fbc9d8508e9454d91d325a899cd109c430997b73c29aee3993833"
+        "sha256": "0191f21faa2be75a474f6c3bff48cb12fce934f2cea368c54a018092f3007d36"
       },
       {
         "path": "packages/judge/src/onnxModel.ts",
@@ -519,12 +539,28 @@
         "sha256": "e5366cf2c7f4c52d2c65e11a1af22b5fb4cb4ba291d2effbd3530f0f983b5fdd"
       },
       {
+        "path": "test/fixtures/onnx-parity-funds.json",
+        "sha256": "c7ec2bbe7d412065bd89c344a0ea54c9264c868336c5b0ae0ee99079a4b59603"
+      },
+      {
         "path": "test/observability.judge-drift.test.ts",
         "sha256": "f5d9b485300b2f075d9cbbef7bdb03d462fbb5b54a64a7dca7925910c374a40b"
       },
       {
         "path": "test/platform.judges.test.ts",
         "sha256": "b8d5390ad902f17b9a372e94cee942c88ed8aa0ca4b335c828c25dfa039eb161"
+      },
+      {
+        "path": "training/check_leakage.py",
+        "sha256": "738f0f70fa7a2a8e5b1a4c7527408502f46cfb75362a7b3e5abf7043aca91f16"
+      },
+      {
+        "path": "training/corpus.py",
+        "sha256": "bbeeadaf48e15eed15d9655dc96196277b72c22c793127ba92cc627bdbf92781"
+      },
+      {
+        "path": "training/lockbox/funds-movement-intent.json",
+        "sha256": "6e29a255fa5dfac3419460e6fa359ad9afa861c1e3dbd032a49e1c777c9ff2d3"
       }
     ]
   }
