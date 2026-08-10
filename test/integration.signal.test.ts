@@ -38,7 +38,9 @@ beforeAll(async () => {
     platform = await buildPlatform();
     app = await buildApp(platform);
     await platform.tenants.createTenant({ tenantId: TENANT, displayName: "Signal" });
-    auth["x-api-key"] = (await platform.apiKeys.create(TENANT, "sig", ["actions:write"])).plaintext;
+    auth["x-api-key"] = (
+      await platform.apiKeys.create(TENANT, "sig", ["actions:write", "liability:assert"])
+    ).plaintext;
   } catch (err) {
     console.warn("[signal] infrastructure unavailable, skipping:", (err as Error).message);
     available = false;

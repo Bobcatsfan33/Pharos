@@ -58,7 +58,11 @@ beforeAll(async () => {
     ] as const) {
       await platform.tenants.createTenant({ tenantId: tenant, displayName: "Idempotency" });
       holder["x-api-key"] = (
-        await platform.apiKeys.create(tenant, "idem", ["actions:write", "records:read"])
+        await platform.apiKeys.create(tenant, "idem", [
+          "actions:write",
+          "liability:assert",
+          "records:read",
+        ])
       ).plaintext;
     }
   } catch (err) {

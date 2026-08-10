@@ -95,7 +95,13 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
     }
     const body = parsed.data;
 
-    const principal = await requireAuth(platform, request, reply, "actions:write", body.tenantId);
+    const principal = await requireAuth(
+      platform,
+      request,
+      reply,
+      ["actions:write", "liability:assert"],
+      body.tenantId,
+    );
     if (!principal) return reply;
 
     // Replay guard (#74). Resolved after authorization — an unauthenticated caller must

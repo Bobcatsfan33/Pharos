@@ -40,11 +40,13 @@ export function registerPdpRoutes(app: FastifyInstance, platform: Platform): voi
   });
 
   app.post("/v1/pdp", async (request, reply) => {
-    // Authenticate and authorize (actions:write); tenant comes from the credential.
+    // The PDP accepts a liability declaration, so its machine identity needs both the
+    // right to submit and the independently granted right to assert risk context.
     let principal;
     try {
       principal = await authenticate(platform, request);
       authorize(principal, principal.tenantId, "actions:write");
+      authorize(principal, principal.tenantId, "liability:assert");
     } catch (err) {
       const code = err instanceof AuthorizationError ? err.code : "unauthenticated";
       return reply
@@ -62,6 +64,17 @@ export function registerPdpRoutes(app: FastifyInstance, platform: Platform): voi
       });
     const req = parsed.data;
 
+    if (req.liability.mandate != null) {
+      return reply.status(400).send({
+        success: false,
+        data: null,
+        error: {
+          code: "mandate_not_assertable",
+          message: "the PDP endpoint does not accept caller-asserted mandate authority",
+        },
+      });
+    }
+
     const action = {
       type: req.action.type,
       agentId: req.action.agentId,
@@ -69,16 +82,7 @@ export function registerPdpRoutes(app: FastifyInstance, platform: Platform): voi
       emittedAt: new Date().toISOString(),
     };
     const liability = {
-      mandate: req.liability.mandate
-        ? {
-            id: req.liability.mandate.id,
-            scope: "",
-            limits: req.liability.mandate.limits ?? {},
-            grantor: "",
-            expiresAt: null,
-            version: "1",
-          }
-        : null,
+      mandate: null,
       oversightMode: req.liability.oversightMode,
       blastRadius: {
         financialAmount: req.liability.blastRadius.financialAmount ?? 0,

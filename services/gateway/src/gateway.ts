@@ -25,7 +25,7 @@ export interface GatewayOptions {
   agentId: string;
   /** Base URL of the real upstream the agent intended to call. */
   target: string;
-  /** Map a request to an action + liability. Defaults to a reversible egress action. */
+  /** Map a request to an action + liability. Unknown risk defaults fail closed. */
   mapAction?: (req: { method: string; path: string; body: unknown }) => {
     action?: Partial<ActionInput>;
     liability?: LiabilityInput;
@@ -43,8 +43,8 @@ export interface GatewayOptions {
 
 const DEFAULT_LIABILITY: LiabilityInput = {
   mandate: null,
-  oversightMode: "human_on_loop",
-  blastRadius: { financialAmount: 0, currency: "USD", reversibility: "reversible" },
+  oversightMode: "human_in_loop",
+  blastRadius: { financialAmount: 0, currency: "USD", reversibility: "irreversible" },
   modelMetadata: null,
 };
 

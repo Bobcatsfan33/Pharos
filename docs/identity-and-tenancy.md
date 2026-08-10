@@ -28,6 +28,16 @@ principal, including admins**. A principal with no role/scope can do nothing.
 API keys resolve to *their granted scopes only* — never role inheritance — so a key is
 strictly least-privilege regardless of who minted it.
 
+Submitting a liability-bearing decision requires two capabilities: `actions:write` and
+`liability:assert`. Keep `liability:assert` on the operator-controlled gateway or middleware
+identity rather than the raw agent. This makes the origin of blast-radius, oversight, and
+reversibility declarations an enforceable authorization boundary.
+
+For an existing installation, mint replacement ingestion keys with both scopes through a
+`keys:manage` identity, update gateways/middleware, verify the new identities, and only then route
+traffic to the upgraded API. Keys carrying only `actions:write` intentionally begin receiving 403;
+there is no compatibility bypass that silently restores their authority to assert risk.
+
 ## Multi-tenancy isolation (defense in depth)
 
 1. **Application layer.** `authorize(principal, tenantId, permission)` fails closed on any

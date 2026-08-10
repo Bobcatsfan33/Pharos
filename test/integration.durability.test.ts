@@ -56,6 +56,7 @@ beforeAll(async () => {
     await firstPlatform.tenants.createTenant({ tenantId: TENANT, displayName: "IT Tenant" });
     const created = await firstPlatform.apiKeys.create(TENANT, "it-admin", [
       "actions:write",
+      "liability:assert",
       "records:read",
       "chain:verify",
     ]);
