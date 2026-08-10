@@ -19,5 +19,5 @@ afterAll(async () => {
 runSigningConformance({
   name: "LocalKms (Ed25519)",
   expectedAlgorithm: "ed25519",
-  makeProvider: () => new LocalKms(new FileKeystore(dir)),
+  makeProvider: () => new LocalKms(new FileKeystore(dir, "pharos-test-keystore-passphrase")),
 });

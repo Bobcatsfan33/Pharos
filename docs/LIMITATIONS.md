@@ -87,12 +87,16 @@ a CMK under the AWS default key policy. The provider passes
 the shared `SigningProvider` conformance suite and `pnpm demo:durability --verify` runs
 end-to-end under it; the "refuses to boot" placeholder is gone.
 
-The **local-development default remains `local-kms`** (Ed25519 in an on-disk keystore,
-[`localKms.ts`](../packages/core/src/signing/localKms.ts)) — appropriate for dev and
-self-hosted evaluation, but not an HSM boundary. `PHAROS_ENV=prod`, the Helm production chart,
-and the production Compose deployment fail closed unless `aws-kms` is selected without an
-endpoint override. KMS-unreachable signing is fail closed behind a bounded circuit breaker;
-the operational rotation and outage procedures are documented in the KMS runbook.
+The **local-development default remains `local-kms`** (Ed25519 in a passphrase-encrypted on-disk
+keystore, [`keystore.ts`](../packages/core/src/signing/keystore.ts)) — appropriate for dev and
+self-hosted evaluation, but not an HSM boundary. Entries use AES-256-GCM with a per-entry scrypt
+salt, the key identity is authenticated, directory/file modes are enforced as `0700`/`0600`, and
+the default lives outside the checkout. The passphrase is still a workstation secret: source it
+from an OS keychain or local secret manager and back it up separately from the encrypted files.
+`PHAROS_ENV=prod`, the Helm production chart, and the production Compose deployment fail closed
+unless `aws-kms` is selected without an endpoint override. KMS-unreachable signing is fail closed
+behind a bounded circuit breaker; the operational rotation and outage procedures are documented
+in the KMS runbook.
 
 **Remaining:** AWS KMS is the only production HSM integration; customer-managed Vault Transit
 and non-AWS HSM integrations remain future portability work.

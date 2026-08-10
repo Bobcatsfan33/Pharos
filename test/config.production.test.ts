@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { loadConfig } from "@pharos/config";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 function productionEnv(overrides: Partial<NodeJS.ProcessEnv> = {}): NodeJS.ProcessEnv {
   return {
@@ -37,6 +39,7 @@ describe("production configuration posture", () => {
   it("defaults to fail-closed admission even outside production", () => {
     const config = loadConfig({
       PHAROS_ENV: "local",
+      PHAROS_KMS_KEYSTORE_PASSPHRASE: "pharos-test-keystore-passphrase",
       PHAROS_PG_URL: "postgres://localhost/pharos",
       PHAROS_REDIS_URL: "redis://localhost:6379",
       PHAROS_S3_ENDPOINT: "http://localhost:9000",
@@ -110,6 +113,7 @@ describe("production configuration posture", () => {
   it("preserves hermetic local-development defaults", () => {
     const config = loadConfig({
       PHAROS_ENV: "local",
+      PHAROS_KMS_KEYSTORE_PASSPHRASE: "pharos-test-keystore-passphrase",
       PHAROS_PG_URL: "postgres://localhost/pharos",
       PHAROS_REDIS_URL: "redis://localhost:6379",
       PHAROS_S3_ENDPOINT: "http://localhost:9000",
@@ -120,13 +124,46 @@ describe("production configuration posture", () => {
     });
 
     expect(config.kms.provider).toBe("local-kms");
+    expect(config.kms.keystoreDir).toBe(join(homedir(), ".local", "share", "pharos", "keystore"));
     expect(config.tsa.provider).toBe("local");
     expect(config.judge.provider).toBe("linear");
+  });
+
+  it("rejects local-kms without an encryption passphrase", () => {
+    expect(() =>
+      loadConfig({
+        PHAROS_ENV: "local",
+        PHAROS_PG_URL: "postgres://localhost/pharos",
+        PHAROS_REDIS_URL: "redis://localhost:6379",
+        PHAROS_S3_ENDPOINT: "http://localhost:9000",
+        PHAROS_S3_REGION: "us-east-1",
+        PHAROS_S3_BUCKET: "test",
+        PHAROS_S3_ACCESS_KEY: "test",
+        PHAROS_S3_SECRET_KEY: "test",
+      }),
+    ).toThrow("PHAROS_KMS_KEYSTORE_PASSPHRASE");
+  });
+
+  it("honors XDG_DATA_HOME for the default local keystore", () => {
+    const config = loadConfig({
+      PHAROS_ENV: "local",
+      XDG_DATA_HOME: "/tmp/pharos-xdg",
+      PHAROS_KMS_KEYSTORE_PASSPHRASE: "pharos-test-keystore-passphrase",
+      PHAROS_PG_URL: "postgres://localhost/pharos",
+      PHAROS_REDIS_URL: "redis://localhost:6379",
+      PHAROS_S3_ENDPOINT: "http://localhost:9000",
+      PHAROS_S3_REGION: "us-east-1",
+      PHAROS_S3_BUCKET: "test",
+      PHAROS_S3_ACCESS_KEY: "test",
+      PHAROS_S3_SECRET_KEY: "test",
+    });
+    expect(config.kms.keystoreDir).toBe("/tmp/pharos-xdg/pharos/keystore");
   });
 
   it("accepts paired static credentials for self-hosted local object storage", () => {
     const config = loadConfig({
       PHAROS_ENV: "local",
+      PHAROS_KMS_KEYSTORE_PASSPHRASE: "pharos-test-keystore-passphrase",
       PHAROS_PG_URL: "postgres://localhost/pharos",
       PHAROS_REDIS_URL: "redis://localhost:6379",
       PHAROS_S3_ENDPOINT: "http://localhost:9000",
@@ -143,6 +180,7 @@ describe("production configuration posture", () => {
     expect(() =>
       loadConfig({
         PHAROS_ENV: "local",
+        PHAROS_KMS_KEYSTORE_PASSPHRASE: "pharos-test-keystore-passphrase",
         PHAROS_PG_URL: "postgres://localhost/pharos",
         PHAROS_REDIS_URL: "redis://localhost:6379",
         PHAROS_S3_ENDPOINT: "http://localhost:9000",

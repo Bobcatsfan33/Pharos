@@ -56,7 +56,7 @@ describe("seal signature v2 (anti-splice)", () => {
 
   beforeAll(async () => {
     const dir = await mkdtemp(join(tmpdir(), "pharos-seal-v2-"));
-    kms = new LocalKms(new FileKeystore(dir));
+    kms = new LocalKms(new FileKeystore(dir, "pharos-test-keystore-passphrase"));
     keyId = await kms.ensureKey("tenant-t1");
     const keys = await kms.publishKeyset();
     keyset = new Map(keys.map((k) => [k.keyId, k]));

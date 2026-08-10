@@ -167,8 +167,10 @@ console is not required for any of the proofs above.
 pnpm infra:down        # stops containers and removes volumes
 ```
 
-Local artifacts created by the demo (`.pharos-keystore/`, `.pharos-demo-auditor-key`, `.env`)
-are all git-ignored.
+Local artifacts created by the demo (the encrypted keystore under
+`$XDG_DATA_HOME/pharos/keystore` or `~/.local/share/pharos/keystore`,
+`.pharos-demo-auditor-key`, and `.env`) are outside the checkout or git-ignored. Keep the
+keystore passphrase in an OS keychain or local secret manager, not in shell history.
 
 ## Troubleshooting
 

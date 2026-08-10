@@ -149,7 +149,10 @@ export function buildSigner(config: PharosConfig): SigningProvider {
       allowKeyCreation: config.kms.awsAllowKeyCreation,
     });
   }
-  return new LocalKms(new FileKeystore(config.kms.keystoreDir));
+  if (!config.kms.keystorePassphrase) {
+    throw new Error("local-kms requires an encrypted-keystore passphrase");
+  }
+  return new LocalKms(new FileKeystore(config.kms.keystoreDir, config.kms.keystorePassphrase));
 }
 
 /** The timestamp authority uses an INDEPENDENT keystore so anchors don't trust platform keys. */
@@ -164,7 +167,12 @@ export function buildTsaSigner(config: PharosConfig): SigningProvider {
       allowKeyCreation: config.kms.awsAllowKeyCreation,
     });
   }
-  return new LocalKms(new FileKeystore(`${config.kms.keystoreDir}-tsa`));
+  if (!config.kms.keystorePassphrase) {
+    throw new Error("local TSA requires an encrypted-keystore passphrase");
+  }
+  return new LocalKms(
+    new FileKeystore(`${config.kms.keystoreDir}-tsa`, config.kms.keystorePassphrase),
+  );
 }
 
 /** Dev default TSA when PHAROS_TSA_PROVIDER=rfc3161 but no URL is set (FreeTSA). */
