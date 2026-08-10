@@ -185,7 +185,7 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
     const store = new PostgresHeldRequestStore(
       platform!.pool,
       heldRequestKeyProviderFromMaster(gatewayHoldMasterKey),
-      { leaseMs: 20 },
+      { leaseMs: 60_000 },
     );
     await store.save(TENANT, escalationId, {
       method: "POST",
@@ -197,7 +197,28 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
     const first = await store.acquire(TENANT, escalationId);
     expect(first.status).toBe("acquired");
     expect(await store.acquire(TENANT, escalationId)).toEqual({ status: "busy" });
-    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    // Model an abandoned worker deterministically. A 20ms lease plus setTimeout raced the
+    // database round trip and occasionally expired before the immediate busy assertion.
+    const client = await platform!.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT set_config('pharos.tenant_id', $1, true)", [TENANT]);
+      await client.query("SET LOCAL ROLE pharos_app");
+      const expired = await client.query(
+        `UPDATE gateway_held_requests
+            SET lease_expires_at = clock_timestamp() - interval '1 second'
+          WHERE tenant_id = $1 AND escalation_id = $2 AND state = 'delivering'`,
+        [TENANT, escalationId],
+      );
+      expect(expired.rowCount).toBe(1);
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
 
     const recovered = await store.acquire(TENANT, escalationId);
     expect(recovered.status).toBe("acquired");
@@ -211,6 +232,53 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
     const final = await store.acquire(TENANT, escalationId);
     if (final.status !== "acquired") throw new Error("released lease was not reacquired");
     expect(await store.complete(TENANT, escalationId, final.leaseToken)).toBe(true);
+  });
+
+  it("starts the full lease window after held-request decryption", async (ctx) => {
+    if (!available) return ctx.skip();
+    const escalationId = randomUUID();
+    const baseKeyProvider = heldRequestKeyProviderFromMaster(gatewayHoldMasterKey);
+    let keyLookups = 0;
+    const slowDecryptKeyProvider = async (tenantId: string) => {
+      const key = await baseKeyProvider(tenantId);
+      keyLookups += 1;
+      if (keyLookups === 2) await new Promise((resolve) => setTimeout(resolve, 1_100));
+      return key;
+    };
+    const store = new PostgresHeldRequestStore(platform!.pool, slowDecryptKeyProvider, {
+      leaseMs: 1_000,
+    });
+    await store.save(TENANT, escalationId, {
+      method: "POST",
+      path: "/slow-decrypt",
+      body: { secret: "encrypted" },
+      headers: {},
+    });
+
+    const acquired = await store.acquire(TENANT, escalationId);
+    expect(acquired.status).toBe("acquired");
+    if (acquired.status !== "acquired") throw new Error("held request was not acquired");
+
+    const client = await platform!.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT set_config('pharos.tenant_id', $1, true)", [TENANT]);
+      await client.query("SET LOCAL ROLE pharos_app");
+      const lease = await client.query<{ remaining_ms: string }>(
+        `SELECT EXTRACT(EPOCH FROM (lease_expires_at - clock_timestamp())) * 1000 AS remaining_ms
+           FROM gateway_held_requests
+          WHERE tenant_id = $1 AND escalation_id = $2`,
+        [TENANT, escalationId],
+      );
+      expect(Number(lease.rows[0]?.remaining_ms)).toBeGreaterThan(800);
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+    expect(await store.complete(TENANT, escalationId, acquired.leaseToken)).toBe(true);
   });
 
   it("rejects oversized held requests before persistence", async (ctx) => {
