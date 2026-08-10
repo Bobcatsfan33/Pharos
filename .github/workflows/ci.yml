@@ -74,6 +74,8 @@ jobs:
           # Rendered as an integer, not "6.3072e+07" — nginx rejects scientific notation.
           grep -q 'hsts-max-age: "63072000"' rendered-api.yaml
           grep -q 'secretName: "pharos-tls"' rendered-api.yaml
+          grep -q 'name: PHAROS_TLS_TERMINATOR' rendered-api.yaml
+          grep -q 'value: "helm-ingress/nginx"' rendered-api.yaml
       - name: production must reject an undeclared TLS terminator
         # Issue #76: Pharos does not terminate TLS in-process, so the risk is not the
         # design — it is leaving the terminator UNDECLARED, which is how a cluster ends
@@ -133,6 +135,8 @@ jobs:
             echo "external terminator declared but the chart still rendered an Ingress"
             exit 1
           fi
+          grep -q 'name: PHAROS_TLS_TERMINATOR' rendered-external.yaml
+          grep -q 'value: "istio-ingressgateway"' rendered-external.yaml
       - name: mTLS at the front door renders client-certificate verification
         run: |
           helm template pharos deploy/helm \
