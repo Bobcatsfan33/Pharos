@@ -20,7 +20,9 @@ const OUT = fileURLToPath(new URL("../../../training/lockbox", import.meta.url))
 const SEEDS: Record<string, number> = {
   "finra-promissory": 0xbeef01,
   "phi-in-context": 0xbeef02,
-  "funds-movement-intent": 0xbeef03,
+  // Drawn after the speech-act-meta-frame-v2 recipe was frozen in commit 93fff3d. This is the
+  // one-shot issue-#91 qualification lockbox; do not tune or retrain against its results.
+  "funds-movement-intent": 0xe9f9a58b,
 };
 
 mkdirSync(OUT, { recursive: true });
