@@ -56,6 +56,17 @@ describe("LocalKms signing + rotation", () => {
     for (const k of keyset) expect(k.algorithm).toBe("ed25519");
   });
 
+  it("provisions an explicit migration version without overwriting an existing key", async () => {
+    await kms.ensureKey("env:provision");
+    const before = await kms.getPublicKey("env:provision#v1");
+    await expect(kms.provisionVersion("env:provision", 1)).rejects.toThrow(/already exists/i);
+    expect(await kms.getPublicKey("env:provision#v1")).toEqual(before);
+
+    expect(await kms.provisionVersion("env:provision", 5)).toBe("env:provision#v5");
+    expect(await kms.activeKeyId("env:provision")).toBe("env:provision#v5");
+    expect(await kms.rotate("env:provision")).toBe("env:provision#v6");
+  });
+
   it("persists across keystore reopen (durable)", async () => {
     const reopened = new LocalKms(new FileKeystore(dir));
     const keyId = await reopened.activeKeyId("env:test");
