@@ -11,7 +11,7 @@
     },
     "asOf": "2026-08-10",
     "reviewBy": "2026-11-08",
-    "assessedCommit": "5e070ccf12c8ddb750c8e487508e59e530de65be",
+    "assessedCommit": "6b6ce5f5e6800387f4ae591a51bf9e413d8f8acc",
     "softwareReleaseCandidate": false,
     "deploymentDecision": "not-approved",
     "decisionReason": "Production deployment engineering exists, but the judge, independent assurance, organizational, and deployment-specific trust gates remain open.",
@@ -380,7 +380,7 @@
       },
       {
         "path": "docs/benchmarks/funds-meta-frame-v2.json",
-        "sha256": "2e3e0952156a56917acb1777b7aabeb9cc23d72ca1a1b2549bcf6d0193a2a567"
+        "sha256": "4652115c37240a7405f406d80101069604b111e2eb95cf6516b47e1dcb148c0c"
       },
       {
         "path": "docs/benchmarks/judge-evals.json",

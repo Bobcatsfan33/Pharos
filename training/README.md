@@ -29,7 +29,7 @@ lr 2e-5, batch 16, seed 42; temperature-scaling calibration on a held-out split;
 augmentation with *varied* frames (a known threat class, not eval-specific). The funds concern uses
 the frozen `speech-act-meta-frame-v2` revision: balanced positive/negative discourse wrappers force
 classification of the embedded speech act instead of the wrapper. Its recipe was frozen in commit
-`93fff3d5735b896704875968be520442cb424f05` before the new lockbox seed was drawn.
+`a98aae54b4e63447b6dbda88cb982008c2b67b13` before the new lockbox seed was drawn.
 
 Determinism: seeds fixed; CPU BLAS/threading may still cause last-bit logit drift across machines —
 the committed `model.onnx` + its content hash are authoritative (same contract as the eval data).

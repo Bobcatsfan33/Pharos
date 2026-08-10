@@ -8,7 +8,7 @@
     },
     "modelSha256": "fe4fa002c35db2193598253d834c6a20cd3808361ccfdf4ec70f3ba4c3c81b5e",
     "modelVersion": "funds-movement-intent@f3fc84a6dbbf",
-    "recipeFrozenAtCommit": "93fff3d5735b896704875968be520442cb424f05",
+    "recipeFrozenAtCommit": "a98aae54b4e63447b6dbda88cb982008c2b67b13",
     "recipeVersion": "speech-act-meta-frame-v2",
     "served": "model.int8.onnx",
     "temperature": 0.6559091806411743,
