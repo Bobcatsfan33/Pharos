@@ -22,6 +22,10 @@ controls, identify an owner, and expire within 30 days.
 
 A repository ruleset must restrict `v*` tag creation to release maintainers,
 and the `production-release` environment must require independent approval.
+The live 2026-08-10 audit found that neither control is currently configured and that the sole
+repository collaborator cannot act as an independent reviewer. See
+[`2026-08-10-github-release-controls.md`](../evidence/2026-08-10-github-release-controls.md).
+Do not create a release or prerelease tag until that audit is rerun with a passing result.
 After the image gate passes, `.github/workflows/image.yml`:
 
 1. publishes the tagged and commit-addressed image to GHCR;
@@ -42,11 +46,12 @@ string alone.
 
 ### External-assessment candidate
 
-Use a semver prerelease tag such as `v0.3.0-rc.1` when an independent assessor or SRE campaign
-needs a registry-pinned candidate. The tag runs this image workflow, including the
-`production-release` approval boundary, and produces a signed, attested digest plus release
-receipt. The SDK release workflow classifies prerelease tags and skips npm and PyPI publication;
-only an exact stable `vMAJOR.MINOR.PATCH` tag or an explicit manual dispatch can publish SDKs.
+After the live release-control audit passes, use a semver prerelease tag such as `v0.3.0-rc.1`
+when an independent assessor or SRE campaign needs a registry-pinned candidate. The tag then runs
+this image workflow through the protected `production-release` approval boundary and produces a
+signed, attested digest plus release receipt. The SDK release workflow classifies prerelease tags
+and skips npm and PyPI publication; only an exact stable `vMAJOR.MINOR.PATCH` tag or an explicit
+manual dispatch can publish SDKs.
 
 Creating the prerelease tag is a release-management action, not a CI workaround. Record the
 approved source commit and intended engagement before pushing it, then use the resulting image

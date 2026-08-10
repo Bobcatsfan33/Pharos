@@ -104,14 +104,17 @@
     {
       "id": "SUPPLY-01",
       "title": "Release integrity, SBOM, signing, and provenance",
-      "status": "implemented",
+      "status": "partial",
       "frameworks": ["nist-ssdf-1.1", "slsa-1.2", "csa-ccm-caiq-4.1"],
       "evidence": [
         ".github/workflows/image.yml",
         ".github/workflows/release.yml",
-        "docs/security/release-assurance.md"
+        "docs/security/release-assurance.md",
+        "docs/evidence/2026-08-10-github-release-controls.md"
       ],
-      "gaps": []
+      "gaps": [
+        "The live repository has no v* tag ruleset, the production-release environment has no required reviewers, administrators can bypass it, and no independent collaborator is available."
+      ]
     },
     {
       "id": "IAM-01",
@@ -292,7 +295,7 @@
       "status": "open",
       "blocking": true,
       "ownerRole": "SRE",
-      "acceptanceCriteria": "Customer-topology deployment, backup restore, failover, RPO/RTO, alerts, SLOs, support, incident, escalation, and notification procedures are exercised and signed.",
+      "acceptanceCriteria": "Protected release approval and tag controls, customer-topology deployment, backup restore, failover, RPO/RTO, alerts, SLOs, support, incident, escalation, and notification procedures are exercised and signed.",
       "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/166"],
       "handoff": "docs/external-readiness/ext-operations.md",
       "evidence": [],
@@ -419,12 +422,16 @@
         "sha256": "bcc8ef5b8348baf5d151690f01ad471f3ff349a96d83033858772d1a4dee8505"
       },
       {
+        "path": "docs/evidence/2026-08-10-github-release-controls.md",
+        "sha256": "c47700264713777576d8233d5a92ed08d107a00763d8ad0974d3314e0a1b3ec1"
+      },
+      {
         "path": "docs/evidence/2026-08-10-onnx-runtime-qualification.md",
         "sha256": "53eaab832a12f78fe1e6be66f15ecd0c617df0a9fcce4fe1f5dc9a95f8573d9d"
       },
       {
         "path": "docs/external-readiness/README.md",
-        "sha256": "8f2ffe10ccf9ab6110d1aeaf60285036d3015f0c6c98a85fa20ab58a6edd5615"
+        "sha256": "f55b414894881769ae0a186d6088620e29eef4ed06d3b0256ae11f96bb290bee"
       },
       {
         "path": "docs/external-readiness/eng-judges.md",
@@ -444,7 +451,7 @@
       },
       {
         "path": "docs/external-readiness/ext-operations.md",
-        "sha256": "39c7ca5d6489d86e05dd82518256bc19018f97f1fcdf783a55a83e0db22c0aab"
+        "sha256": "d9c4ec2b544ce18a58b05ee73a38ddea71bc08f617ee14b0fc619e2da7dea18e"
       },
       {
         "path": "docs/external-readiness/ext-pentest.md",
@@ -516,7 +523,7 @@
       },
       {
         "path": "docs/security/release-assurance.md",
-        "sha256": "6018485d27ba83eace1c6dda66182ba95db920cd5f23f3a2a02e81789abcef62"
+        "sha256": "5d2b8aa1096dd1a1996193b9faff09ccfab27db202cf94b915a7af9a8edac3f2"
       },
       {
         "path": "packages/judge/models/manifest.json",
