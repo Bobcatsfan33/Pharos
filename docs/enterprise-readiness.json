@@ -11,6 +11,7 @@
     },
     "asOf": "2026-07-29",
     "reviewBy": "2026-10-29",
+    "assessedCommit": "e87ba99a0911bc8d8e22587736126110163f83fa",
     "softwareReleaseCandidate": false,
     "deploymentDecision": "not-approved",
     "decisionReason": "Production deployment engineering exists, but the judge, independent assurance, organizational, and deployment-specific trust gates remain open.",
@@ -65,8 +66,11 @@
         "docs/LIMITATIONS.md",
         "docs/ROADMAP.md",
         "docs/assurance-and-risk.md",
+        "docs/external-readiness/README.md",
+        "docs/external-readiness/evidence-receipt.schema.json",
         "docs/procurement-readiness.md",
-        "docs/security/readiness-evidence.md"
+        "docs/security/readiness-evidence.md",
+        "scripts/verify-external-gate-trackers.mjs"
       ],
       "gaps": []
     },
@@ -234,7 +238,14 @@
       "blocking": true,
       "ownerRole": "AI Engineering",
       "acceptanceCriteria": "Production transformer judges, independently approved model cards, adversarial and representative evaluation, calibrated operating points, version-pinned drift profiles plus alert/rollback exercise, and production latency evidence pass approved thresholds.",
+      "trackingIssues": [
+        "https://github.com/Bobcatsfan33/Pharos/issues/36",
+        "https://github.com/Bobcatsfan33/Pharos/issues/37",
+        "https://github.com/Bobcatsfan33/Pharos/issues/91"
+      ],
+      "handoff": "docs/external-readiness/eng-judges.md",
       "evidence": [],
+      "evidenceReceipt": null,
       "completion": null
     },
     {
@@ -244,7 +255,10 @@
       "blocking": true,
       "ownerRole": "Product Security",
       "acceptanceCriteria": "Signed report covers API, gateway, console, SDKs, PDP, tenant isolation, evidence chain, KMS, TSA, WORM, and deployment; critical and high findings are closed or CISO-accepted.",
+      "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/164"],
+      "handoff": "docs/external-readiness/ext-pentest.md",
       "evidence": [],
+      "evidenceReceipt": null,
       "completion": null
     },
     {
@@ -254,7 +268,10 @@
       "blocking": true,
       "ownerRole": "Security, PKI, and Legal",
       "acceptanceCriteria": "Approved production KMS keys and roles, independently obtained TSA pins, rotation evidence, and outside-counsel admissibility review are retained.",
+      "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/165"],
+      "handoff": "docs/external-readiness/ext-trust.md",
       "evidence": [],
+      "evidenceReceipt": null,
       "completion": null
     },
     {
@@ -264,7 +281,10 @@
       "blocking": true,
       "ownerRole": "SRE",
       "acceptanceCriteria": "Customer-topology deployment, backup restore, failover, RPO/RTO, alerts, SLOs, support, incident, escalation, and notification procedures are exercised and signed.",
+      "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/166"],
+      "handoff": "docs/external-readiness/ext-operations.md",
       "evidence": [],
+      "evidenceReceipt": null,
       "completion": null
     },
     {
@@ -274,7 +294,10 @@
       "blocking": true,
       "ownerRole": "GRC and Legal",
       "acceptanceCriteria": "Applicable SOC 2 or ISO evidence, SIG or CAIQ responses, DPA, privacy and residency terms, subprocessors, insurance, accessibility, support, and license terms are approved.",
+      "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/167"],
+      "handoff": "docs/external-readiness/ext-compliance.md",
       "evidence": [],
+      "evidenceReceipt": null,
       "completion": null
     },
     {
@@ -284,7 +307,10 @@
       "blocking": true,
       "ownerRole": "Product",
       "acceptanceCriteria": "Approved pilot and production references demonstrate adoption, efficacy, operations, and support across the intended regulated-market boundary.",
+      "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/168"],
+      "handoff": "docs/external-readiness/ext-customers.md",
       "evidence": [],
+      "evidenceReceipt": null,
       "completion": null
     }
   ],
@@ -294,7 +320,7 @@
     "files": [
       {
         "path": ".github/CODEOWNERS",
-        "sha256": "bc56b7c3d47c33c62c4f411cc84831022eeb3933005ec8b5107915c7d1413f5d"
+        "sha256": "f45a9be9db866103e3325d03790c778287e9e382a30682415cc98a2363cd5e14"
       },
       {
         "path": ".github/dependabot.yml",
@@ -302,7 +328,7 @@
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "a3ffc3074b0f95f45cfc8408f048c47f4360a37ef4bea3b050941f8f78f98666"
+        "sha256": "c5e5f9a37e2a86d0d44851f3209500148cb1e1176bd45b9818784a993cfb487c"
       },
       {
         "path": ".github/workflows/codeql.yml",
@@ -377,6 +403,38 @@
         "sha256": "53eaab832a12f78fe1e6be66f15ecd0c617df0a9fcce4fe1f5dc9a95f8573d9d"
       },
       {
+        "path": "docs/external-readiness/README.md",
+        "sha256": "6327f0d737e1f47e241959b1042c24096b944b6f12a706ccd045655ca481b44b"
+      },
+      {
+        "path": "docs/external-readiness/eng-judges.md",
+        "sha256": "197d970df2fc98b19e33704cba984bab2a3797ce70cec8e3948ccc818197eab9"
+      },
+      {
+        "path": "docs/external-readiness/evidence-receipt.schema.json",
+        "sha256": "7428badfd976e05798771e1433698ae04fbe8e42903c6d470f599297a151f3ee"
+      },
+      {
+        "path": "docs/external-readiness/ext-compliance.md",
+        "sha256": "06605536acbf32c64b40aa8b84a4ae9f90bf41f61a7812f71712e9bd39230673"
+      },
+      {
+        "path": "docs/external-readiness/ext-customers.md",
+        "sha256": "7e6520c4abc3479c3fb9b2a717056e25c3dec882d1199409e7bce8862c9b079c"
+      },
+      {
+        "path": "docs/external-readiness/ext-operations.md",
+        "sha256": "39c7ca5d6489d86e05dd82518256bc19018f97f1fcdf783a55a83e0db22c0aab"
+      },
+      {
+        "path": "docs/external-readiness/ext-pentest.md",
+        "sha256": "9c3afa45e142777d29504c88c29842569c4ce3aeb11dbe2fce5b63beedafde2b"
+      },
+      {
+        "path": "docs/external-readiness/ext-trust.md",
+        "sha256": "cfc72c7a3571a4f879f8a3646e8073f0c851e04be8c6c9f6654df6f52babf238"
+      },
+      {
         "path": "docs/identity-and-tenancy.md",
         "sha256": "d3acb7748429870ac8c54fca22bb3df027c358f9bd66a379cb83e0aaaa6a9e7b"
       },
@@ -398,7 +456,7 @@
       },
       {
         "path": "docs/procurement-readiness.md",
-        "sha256": "152ce68ce70304daade394ee66a84e08c9db5e9086e227472de2c323f334a5e0"
+        "sha256": "2b5d86efadc23239ce110b92c390e08d6e9e8eee4e342a27136333a2d2a6c6de"
       },
       {
         "path": "docs/review-operations.md",
@@ -451,6 +509,10 @@
       {
         "path": "packages/observability/src/judgeDrift.ts",
         "sha256": "fb141eea00b04ac830b485dd615bedd6defe91f16c760557dc68e4bc36a03010"
+      },
+      {
+        "path": "scripts/verify-external-gate-trackers.mjs",
+        "sha256": "583cc4a6bc4f6637aefa2fac0497e734809fb1daba6b4030c9e49f833b4ef678"
       },
       {
         "path": "services/api/src/platform.ts",

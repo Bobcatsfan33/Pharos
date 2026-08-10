@@ -28,6 +28,16 @@ const requiredFrameworks = new Set([
   "nist-ai-rmf-1.0",
   "csa-ai-caiq-1.0.2",
 ]);
+const requiredExternalGates = new Set([
+  "ENG-JUDGES",
+  "EXT-PENTEST",
+  "EXT-TRUST",
+  "EXT-OPERATIONS",
+  "EXT-COMPLIANCE",
+  "EXT-CUSTOMERS",
+]);
+const trackerPattern = /^https:\/\/github\.com\/Bobcatsfan33\/Pharos\/issues\/[1-9]\d*$/;
+const classifications = new Set(["public", "internal", "confidential", "restricted"]);
 
 function fail(message) {
   throw new Error(message);
@@ -62,6 +72,20 @@ function exactSet(values, expected, label) {
   }
 }
 
+function exactObjectKeys(value, expected, label) {
+  exactSet(Object.keys(value), new Set(expected), `${label} keys`);
+}
+
+function allowedObjectKeys(value, allowed, label) {
+  const unknown = Object.keys(value).filter((key) => !allowed.has(key));
+  if (unknown.length > 0) fail(`${label} contains unsupported keys: ${unknown.sort().join(", ")}`);
+}
+
+function requiredObjectKeys(value, required, label) {
+  const missing = [...required].filter((key) => !(key in value));
+  if (missing.length > 0) fail(`${label} is missing required keys: ${missing.sort().join(", ")}`);
+}
+
 function evidencePath(value, label) {
   const relative = textValue(value, label);
   if (path.isAbsolute(relative) || relative.split("/").includes("..") || relative.includes("\\")) {
@@ -94,6 +118,21 @@ function sha256File(relative) {
   }
 }
 
+function readEvidenceFile(relative, label) {
+  const descriptor = fs.openSync(
+    path.join(root, relative),
+    fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW,
+  );
+  try {
+    if (!fs.fstatSync(descriptor).isFile()) {
+      fail(`${label} must be a regular, non-symlink repository file`);
+    }
+    return fs.readFileSync(descriptor, "utf8");
+  } finally {
+    fs.closeSync(descriptor);
+  }
+}
+
 function identity(value, label) {
   const subject = objectValue(value, label);
   textValue(subject.identity, `${label}.identity`);
@@ -110,6 +149,162 @@ function isoDate(value, label) {
   return text;
 }
 
+function verifyEvidenceReceipt(gate, receiptPath, preparer, assessedCommit, completion, evidence) {
+  const label = `gate ${gate.id}.evidenceReceipt`;
+  let decoded;
+  try {
+    decoded = JSON.parse(readEvidenceFile(receiptPath, label));
+  } catch (error) {
+    fail(`${label} must contain valid JSON: ${error.message}`);
+  }
+  const receipt = objectValue(decoded, label);
+  exactObjectKeys(
+    receipt,
+    [
+      "schemaVersion",
+      "gateId",
+      "subject",
+      "assessment",
+      "assessor",
+      "decision",
+      "artifactRefs",
+      "signature",
+    ],
+    label,
+  );
+  if (receipt.schemaVersion !== 1) fail(`${label}.schemaVersion must equal 1`);
+  if (receipt.gateId !== gate.id) fail(`${label}.gateId must equal ${gate.id}`);
+
+  const subject = objectValue(receipt.subject, `${label}.subject`);
+  allowedObjectKeys(
+    subject,
+    new Set(["repository", "commit", "imageDigest", "deploymentId"]),
+    `${label}.subject`,
+  );
+  requiredObjectKeys(subject, new Set(["repository", "commit"]), `${label}.subject`);
+  if (subject.repository !== "Bobcatsfan33/Pharos") {
+    fail(`${label}.subject.repository must equal Bobcatsfan33/Pharos`);
+  }
+  if (typeof subject.commit !== "string" || !/^[0-9a-f]{40}$/.test(subject.commit)) {
+    fail(`${label}.subject.commit must be a full lowercase Git commit`);
+  }
+  if (subject.commit !== assessedCommit) {
+    fail(`${label}.subject.commit must equal assessment.assessedCommit`);
+  }
+  if (
+    subject.imageDigest !== undefined &&
+    subject.imageDigest !== null &&
+    (typeof subject.imageDigest !== "string" || !/^sha256:[0-9a-f]{64}$/.test(subject.imageDigest))
+  ) {
+    fail(`${label}.subject.imageDigest must be null or a sha256 digest`);
+  }
+  if (subject.deploymentId !== undefined && subject.deploymentId !== null) {
+    textValue(subject.deploymentId, `${label}.subject.deploymentId`);
+  }
+
+  const assessment = objectValue(receipt.assessment, `${label}.assessment`);
+  exactObjectKeys(
+    assessment,
+    ["startedAt", "completedAt", "scope", "methodology", "limitations"],
+    `${label}.assessment`,
+  );
+  const startedAt = isoDate(assessment.startedAt, `${label}.assessment.startedAt`);
+  const completedAt = isoDate(assessment.completedAt, `${label}.assessment.completedAt`);
+  if (completedAt < startedAt) fail(`${label} completedAt must not precede startedAt`);
+  textValue(assessment.scope, `${label}.assessment.scope`);
+  textValue(assessment.methodology, `${label}.assessment.methodology`);
+  const limitations = arrayValue(assessment.limitations, `${label}.assessment.limitations`).map(
+    (item, index) => textValue(item, `${label}.assessment.limitations[${index}]`),
+  );
+  unique(limitations, `${label}.assessment.limitations`);
+
+  exactObjectKeys(
+    objectValue(receipt.assessor, `${label}.assessor`),
+    ["identity", "role", "organization", "independentOfPreparer"],
+    `${label}.assessor`,
+  );
+  const assessor = identity(receipt.assessor, `${label}.assessor`);
+  if (assessor.identity === preparer.identity) {
+    fail(`${label} assessor must be distinct from the preparer`);
+  }
+  if (assessor.independentOfPreparer !== true) {
+    fail(`${label}.assessor.independentOfPreparer must equal true`);
+  }
+  const decision = objectValue(receipt.decision, `${label}.decision`);
+  exactObjectKeys(decision, ["result", "approvedBy", "exceptions"], `${label}.decision`);
+  if (decision.result !== "approved") fail(`${label}.decision.result must equal approved`);
+  exactObjectKeys(
+    objectValue(decision.approvedBy, `${label}.decision.approvedBy`),
+    ["identity", "role", "organization"],
+    `${label}.decision.approvedBy`,
+  );
+  const decisionApprover = identity(decision.approvedBy, `${label}.decision.approvedBy`);
+  if (decisionApprover.identity === preparer.identity) {
+    fail(`${label} decision approver must be distinct from the preparer`);
+  }
+  const exceptions = arrayValue(decision.exceptions, `${label}.decision.exceptions`).map(
+    (item, index) => textValue(item, `${label}.decision.exceptions[${index}]`),
+  );
+  unique(exceptions, `${label}.decision.exceptions`);
+  if (completion.approvedBy.identity !== decisionApprover.identity) {
+    fail(`${label} decision approver must match gate completion approver`);
+  }
+  if (completion.completedAt !== completedAt) {
+    fail(`${label} completedAt must match gate completion date`);
+  }
+  if (completion.decisionRecord !== receiptPath) {
+    fail(`${label} must equal gate completion decisionRecord`);
+  }
+  if (!evidence.includes(receiptPath)) {
+    fail(`${label} must be included in gate evidence`);
+  }
+
+  const artifacts = arrayValue(receipt.artifactRefs, `${label}.artifactRefs`).map((item, index) =>
+    objectValue(item, `${label}.artifactRefs[${index}]`),
+  );
+  if (artifacts.length === 0) fail(`${label}.artifactRefs must not be empty`);
+  const locators = [];
+  for (const [index, artifact] of artifacts.entries()) {
+    const artifactLabel = `${label}.artifactRefs[${index}]`;
+    exactObjectKeys(
+      artifact,
+      ["kind", "locator", "sha256", "classification", "retentionUntil"],
+      artifactLabel,
+    );
+    textValue(artifact.kind, `${artifactLabel}.kind`);
+    const locator = textValue(artifact.locator, `${artifactLabel}.locator`);
+    if (!/^[a-z][a-z0-9+.-]*:.+$/i.test(locator)) {
+      fail(`${artifactLabel}.locator must be a durable URI`);
+    }
+    locators.push(locator);
+    if (typeof artifact.sha256 !== "string" || !/^[0-9a-f]{64}$/.test(artifact.sha256)) {
+      fail(`${artifactLabel}.sha256 must be a lowercase SHA-256 digest`);
+    }
+    if (!classifications.has(artifact.classification)) {
+      fail(`${artifactLabel}.classification is invalid`);
+    }
+    const retentionUntil = isoDate(artifact.retentionUntil, `${artifactLabel}.retentionUntil`);
+    if (retentionUntil < completedAt) {
+      fail(`${artifactLabel}.retentionUntil must not precede assessment completion`);
+    }
+  }
+  unique(locators, `${label} artifact locators`);
+
+  const signature = objectValue(receipt.signature, `${label}.signature`);
+  exactObjectKeys(
+    signature,
+    ["scheme", "keyId", "value", "verificationInstructions"],
+    `${label}.signature`,
+  );
+  textValue(signature.scheme, `${label}.signature.scheme`);
+  textValue(signature.keyId, `${label}.signature.keyId`);
+  const signatureValue = textValue(signature.value, `${label}.signature.value`);
+  if (signatureValue.length < 16 || /^(tbd|todo|pending|none|n\/a)$/i.test(signatureValue)) {
+    fail(`${label}.signature.value must contain a non-placeholder detached signature`);
+  }
+  textValue(signature.verificationInstructions, `${label}.signature.verificationInstructions`);
+}
+
 function verify() {
   const document = objectValue(JSON.parse(fs.readFileSync(selected, "utf8")), "manifest");
   if (document.schemaVersion !== 2) fail("schemaVersion must equal 2");
@@ -123,6 +318,12 @@ function verify() {
   const preparer = identity(assessment.preparedBy, "assessment.preparedBy");
   const asOf = isoDate(assessment.asOf, "assessment.asOf");
   const reviewBy = isoDate(assessment.reviewBy, "assessment.reviewBy");
+  if (
+    typeof assessment.assessedCommit !== "string" ||
+    !/^[0-9a-f]{40}$/.test(assessment.assessedCommit)
+  ) {
+    fail("assessment.assessedCommit must be a full lowercase Git commit");
+  }
   if (reviewBy < asOf) fail("assessment.reviewBy must not precede assessment.asOf");
   const today = new Date().toISOString().slice(0, 10);
   if (today > reviewBy) fail(`enterprise readiness evidence expired on ${reviewBy}`);
@@ -210,13 +411,26 @@ function verify() {
   if (gates.length === 0) fail("externalGates must not be empty");
   const gateIds = gates.map((item) => textValue(item.id, "external gate id"));
   unique(gateIds, "external gate ids");
+  exactSet(gateIds, requiredExternalGates, "external gate ids");
+  const allTrackingIssues = [];
   let openBlocking = 0;
   for (const gate of gates) {
     textValue(gate.title, `gate ${gate.id}.title`);
     if (!["open", "complete"].includes(gate.status)) fail(`gate ${gate.id}.status is invalid`);
-    if (typeof gate.blocking !== "boolean") fail(`gate ${gate.id}.blocking must be boolean`);
+    if (gate.blocking !== true) fail(`gate ${gate.id}.blocking must equal true`);
     textValue(gate.ownerRole, `gate ${gate.id}.ownerRole`);
     textValue(gate.acceptanceCriteria, `gate ${gate.id}.acceptanceCriteria`);
+    const trackingIssues = arrayValue(gate.trackingIssues, `gate ${gate.id}.trackingIssues`).map(
+      (item, index) => textValue(item, `gate ${gate.id}.trackingIssues[${index}]`),
+    );
+    if (trackingIssues.length === 0) fail(`gate ${gate.id}.trackingIssues must not be empty`);
+    unique(trackingIssues, `gate ${gate.id}.trackingIssues`);
+    if (trackingIssues.some((item) => !trackerPattern.test(item))) {
+      fail(`gate ${gate.id}.trackingIssues must reference this repository's GitHub issues`);
+    }
+    allTrackingIssues.push(...trackingIssues);
+    const handoff = evidencePath(gate.handoff, `gate ${gate.id}.handoff`);
+    referencedEvidence.add(handoff);
     const evidence = arrayValue(gate.evidence, `gate ${gate.id}.evidence`).map((item) =>
       evidencePath(item, `gate ${gate.id}.evidence`),
     );
@@ -227,16 +441,42 @@ function verify() {
     }
     if (gate.status === "complete") {
       const completion = objectValue(gate.completion, `gate ${gate.id}.completion`);
+      exactObjectKeys(
+        completion,
+        ["approvedBy", "completedAt", "decisionRecord"],
+        `gate ${gate.id}.completion`,
+      );
       const approver = identity(completion.approvedBy, `gate ${gate.id}.completion.approvedBy`);
       if (approver.identity === preparer.identity) {
         fail(`gate ${gate.id} approver must be distinct from the preparer`);
       }
-      isoDate(completion.completedAt, `gate ${gate.id}.completion.completedAt`);
-    } else if (gate.completion !== null) {
-      fail(`open gate ${gate.id} must set completion to null`);
+      completion.completedAt = isoDate(
+        completion.completedAt,
+        `gate ${gate.id}.completion.completedAt`,
+      );
+      const decisionRecord = evidencePath(
+        completion.decisionRecord,
+        `gate ${gate.id}.completion.decisionRecord`,
+      );
+      completion.decisionRecord = decisionRecord;
+      const receiptPath = evidencePath(gate.evidenceReceipt, `gate ${gate.id}.evidenceReceipt`);
+      verifyEvidenceReceipt(
+        gate,
+        receiptPath,
+        preparer,
+        assessment.assessedCommit,
+        completion,
+        evidence,
+      );
+    } else {
+      if (gate.completion !== null) fail(`open gate ${gate.id} must set completion to null`);
+      if (gate.evidenceReceipt !== null) {
+        fail(`open gate ${gate.id} must set evidenceReceipt to null`);
+      }
     }
     if (gate.status === "open" && gate.blocking) openBlocking += 1;
   }
+  unique(allTrackingIssues, "external gate tracking issues");
 
   if (assessment.deploymentDecision === "approved" && (openBlocking || incompleteControls)) {
     fail("deploymentDecision cannot be approved while controls or blocking gates remain open");

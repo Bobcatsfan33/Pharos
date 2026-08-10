@@ -15,6 +15,7 @@ function collectEvidence() {
     for (const evidence of control.evidence ?? []) paths.add(evidence);
   }
   for (const gate of document.externalGates ?? []) {
+    paths.add(gate.handoff);
     for (const evidence of gate.evidence ?? []) paths.add(evidence);
   }
   if (document.assessment?.deploymentDecision === "approved") {

@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
   pull_request:
+permissions:
+  contents: read
+  issues: read
 jobs:
   enterprise-readiness:
     name: enterprise evidence and decision integrity
@@ -10,6 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: node scripts/verify-enterprise-readiness.mjs
+      - run: node scripts/verify-external-gate-trackers.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: node scripts/verify-action-pins.mjs
       - name: refuse false production approval
         run: |

@@ -75,4 +75,61 @@ describe("enterprise readiness verifier", () => {
     });
     expect(result).toContain("open gate ENG-JUDGES must set completion to null");
   });
+
+  it("does not allow a required external gate to become non-blocking", () => {
+    const result = verifyMutation((document) => {
+      document.externalGates[0].blocking = false;
+    });
+    expect(result).toContain("gate ENG-JUDGES.blocking must equal true");
+  });
+
+  it("requires the complete external gate set and a pinned assessed commit", () => {
+    const missingGate = verifyMutation((document) => {
+      document.externalGates.pop();
+    });
+    expect(missingGate).toContain("external gate ids must equal");
+
+    const unpinned = verifyMutation((document) => {
+      document.assessment.assessedCommit = "main";
+    });
+    expect(unpinned).toContain("assessment.assessedCommit must be a full lowercase Git commit");
+  });
+
+  it("requires an accountable tracker in this repository for every gate", () => {
+    const missing = verifyMutation((document) => {
+      document.externalGates[0].trackingIssues = [];
+    });
+    expect(missing).toContain("gate ENG-JUDGES.trackingIssues must not be empty");
+
+    const foreign = verifyMutation((document) => {
+      document.externalGates[0].trackingIssues = ["https://github.com/example/project/issues/1"];
+    });
+    expect(foreign).toContain("must reference this repository's GitHub issues");
+  });
+
+  it("rejects evidence receipt claims while a gate remains open", () => {
+    const result = verifyMutation((document) => {
+      document.externalGates[0].evidenceReceipt = "docs/enterprise-readiness.json";
+    });
+    expect(result).toContain("open gate ENG-JUDGES must set evidenceReceipt to null");
+  });
+
+  it("rejects completion without a gate-specific external evidence receipt", () => {
+    const result = verifyMutation((document) => {
+      const gate = document.externalGates[0];
+      gate.status = "complete";
+      gate.evidence = ["docs/enterprise-readiness.json"];
+      gate.evidenceReceipt = "docs/enterprise-readiness.json";
+      gate.completion = {
+        approvedBy: {
+          identity: "independent-approver",
+          role: "Approval authority",
+          organization: "External assessor",
+        },
+        completedAt: "2026-08-10",
+        decisionRecord: "docs/enterprise-readiness.json",
+      };
+    });
+    expect(result).toContain("gate ENG-JUDGES.evidenceReceipt");
+  });
 });
