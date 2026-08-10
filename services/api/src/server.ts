@@ -1,5 +1,6 @@
 import { buildApp } from "./app.js";
 import { buildPlatform } from "./platform.js";
+import { transportBoundaryWarning } from "./transport.js";
 
 /**
  * Server entrypoint. Boots the durable platform, starts continuous chain-integrity
@@ -19,7 +20,10 @@ async function main(): Promise<void> {
   }
 
   const app = await buildApp(platform);
-  await app.listen({ port: platform.config.api.port, host: "0.0.0.0" });
+  const listenHost = "0.0.0.0";
+  const transportWarning = transportBoundaryWarning(platform.config, listenHost);
+  if (transportWarning) console.warn(transportWarning);
+  await app.listen({ port: platform.config.api.port, host: listenHost });
   console.log(`Pharos API listening on :${platform.config.api.port} (${platform.config.env})`);
 
   for (const signal of ["SIGINT", "SIGTERM"] as const) {

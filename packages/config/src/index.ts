@@ -115,6 +115,8 @@ const ConfigSchema = z
        * remove the ingest limit.
        */
       rateLimitFailMode: z.enum(["closed", "open"]).default("closed"),
+      /** Name of the ingress, mesh, gateway, or load balancer that terminates TLS. */
+      tlsTerminator: z.string().min(1).optional(),
     }),
     /** Trusted OIDC issuers (Okta, Entra, ...). Optional; empty disables SSO bearer auth. */
     oidc: z.array(OidcIssuerSchema).default([]),
@@ -184,6 +186,14 @@ const ConfigSchema = z
         code: "custom",
         path: ["api", "rateLimitTenantPerMin"],
         message: "tenant aggregate budget cannot be below the per-principal budget",
+      });
+    }
+    if (!config.api.tlsTerminator) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["api", "tlsTerminator"],
+        message:
+          "production requires a named TLS-terminating proxy in the application trust boundary",
       });
     }
     if (config.kms.provider !== "aws-kms") {
@@ -395,6 +405,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
       rateLimitPerMin: env.PHAROS_RATE_LIMIT_PER_MIN,
       rateLimitTenantPerMin: env.PHAROS_RATE_LIMIT_TENANT_PER_MIN,
       rateLimitFailMode: env.PHAROS_RATE_LIMIT_FAIL_MODE,
+      tlsTerminator: env.PHAROS_TLS_TERMINATOR,
     },
     oidc: env.PHAROS_OIDC_ISSUERS ? safeJsonArray(env.PHAROS_OIDC_ISSUERS) : [],
     admin: { token: env.PHAROS_ADMIN_TOKEN },
