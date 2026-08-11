@@ -45,7 +45,7 @@ jobs:
       # v6, matching ci.yml. action-setup v4 refuses to run when a `version` input and
       # package.json's `packageManager` field both specify pnpm -- which is exactly this
       # repo's layout, so the v0.2.0 release failed here before publishing anything to npm.
-      - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6.0.10
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           version: 10.32.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
