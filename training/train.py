@@ -143,7 +143,10 @@ def main():
     temperature = fit_temperature(cal_logits, torch.tensor([r["label"] for r in cal_rows]))
     print(f"  temperature {temperature:.4f}")
 
-    # Export ONNX (opset 17, dynamic batch + sequence).
+    # ORT 1.24's dynamic quantizer still requires the TorchScript exporter graph;
+    # torch.export graphs execute in ORT but fail its mandatory shape-inference pass.
+    # Keep weights in one file: the artifact hash and serving fetch contract cover
+    # model.onnx as a single object.
     outdir = OUT / args.concern
     outdir.mkdir(parents=True, exist_ok=True)
     onnx_path = outdir / "model.onnx"
@@ -155,11 +158,13 @@ def main():
         input_names=["input_ids", "attention_mask"],
         output_names=["logits"],
         dynamic_axes={
-            "input_ids": {0: "batch", 1: "seq"},
-            "attention_mask": {0: "batch", 1: "seq"},
+            "input_ids": {0: "batch", 1: "sequence"},
+            "attention_mask": {0: "batch", 1: "sequence"},
             "logits": {0: "batch"},
         },
-        opset_version=17,
+        opset_version=18,
+        dynamo=False,
+        external_data=False,
         do_constant_folding=True,
     )
     tok.save_pretrained(str(outdir))

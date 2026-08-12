@@ -52,6 +52,19 @@ updates:
       - "dependencies"
       - "python"
 
+  # Offline judge-training environment. This graph is not shipped in the API
+  # image, but it processes model artifacts and must not become an unmonitored
+  # supply-chain blind spot.
+  - package-ecosystem: "pip"
+    directory: "/training"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+      - "ai-models"
+
   # GitHub Actions used by CI/release workflows. Group all bumps (incl. majors) into one PR —
   # actions are CI infrastructure, not the trust path.
   - package-ecosystem: "github-actions"
