@@ -20,10 +20,12 @@ controls, identify an owner, and expire within 30 days.
 
 ## Release
 
-A repository ruleset must restrict `v*` tag creation to release maintainers,
-and the `production-release` environment must require independent approval.
-The live 2026-08-10 audit found that neither control is currently configured and that the sole
-repository collaborator cannot act as an independent reviewer. See
+A repository ruleset restricts `v*` tag creation to repository administrators acting as release
+maintainers, and both release environments restrict deployment to `main` or `v*` refs and disallow
+administrator bypass. The `production-release` environment must additionally require independent
+approval. The live 2026-08-10 baseline found none of those controls; the 2026-08-12 follow-up closed
+the tag, branch, ref-policy, and administrator-bypass gaps, but the sole repository collaborator
+still cannot act as an independent reviewer. See
 [`2026-08-10-github-release-controls.md`](../evidence/2026-08-10-github-release-controls.md).
 Do not create a release or prerelease tag until that audit is rerun with a passing result.
 After the image gate passes, `.github/workflows/image.yml`:
