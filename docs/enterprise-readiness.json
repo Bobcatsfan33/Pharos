@@ -350,7 +350,7 @@
       },
       {
         "path": ".github/dependabot.yml",
-        "sha256": "fec9ee79967c6ca1499c80b68ba833e16e8cf2d48e40807a8aac5d31f4a872d6"
+        "sha256": "874ae7ec9df9c6314a5df7b54c614d3860d416d372d080976950b71a44c4907f"
       },
       {
         "path": ".github/workflows/ci.yml",
