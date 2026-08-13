@@ -350,7 +350,7 @@
       },
       {
         "path": ".github/dependabot.yml",
-        "sha256": "5cfbb888f5a4d5508769099bb9403f387632d88581abee5dfc654cd8e24a9ee0"
+        "sha256": "fec9ee79967c6ca1499c80b68ba833e16e8cf2d48e40807a8aac5d31f4a872d6"
       },
       {
         "path": ".github/workflows/ci.yml",
@@ -550,7 +550,7 @@
       },
       {
         "path": "packages/observability/src/judgeDrift.ts",
-        "sha256": "fb141eea00b04ac830b485dd615bedd6defe91f16c760557dc68e4bc36a03010"
+        "sha256": "767f1c644c0f7ced7445db05856fd5387289b820ed3579eae42432533e9af309"
       },
       {
         "path": "scripts/verify-external-gate-trackers.mjs",

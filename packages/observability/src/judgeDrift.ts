@@ -54,7 +54,9 @@ export function loadJudgeDriftProfile(path: string): JudgeDriftProfile {
   try {
     raw = JSON.parse(readFileSync(path, "utf8"));
   } catch (err) {
-    throw new Error(`could not load judge drift profile ${path}: ${(err as Error).message}`);
+    throw new Error(`could not load judge drift profile ${path}: ${(err as Error).message}`, {
+      cause: err,
+    });
   }
   return validateJudgeDriftProfile(raw);
 }
