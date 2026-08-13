@@ -23,7 +23,7 @@ updates:
       - dependency-name: "react-dom"
         update-types: ["version-update:semver-major"]
       # Dev-tooling majors deliberately deferred (adopt via a dedicated PR, not drive-by):
-      # TypeScript 7 (native rewrite), Vitest 4, ESLint 10 + plugins, @types/node 26.
+      # TypeScript 7 (native rewrite), Vitest 4, and ESLint 10 + plugins.
       # Tracking issue links these from LIMITATIONS/the board.
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
@@ -32,12 +32,6 @@ updates:
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
       - dependency-name: "@eslint/js"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint-config-prettier"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "globals"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
