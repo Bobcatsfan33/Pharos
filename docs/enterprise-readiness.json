@@ -113,7 +113,7 @@
         "docs/evidence/2026-08-10-github-release-controls.md"
       ],
       "gaps": [
-        "The live repository has no v* tag ruleset, the production-release environment has no required reviewers, administrators can bypass it, and no independent collaborator is available."
+        "Live main protection, the active v* tag ruleset, environment ref restrictions, and disabled administrator bypass are implemented. The release environments still have no required reviewer because no independent collaborator is available, the npm trusted-publisher environment must be updated, and no protected release exercise has been retained."
       ]
     },
     {
@@ -342,7 +342,7 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-08-12",
+    "generatedAt": "2026-08-13",
     "files": [
       {
         "path": ".github/CODEOWNERS",
@@ -374,7 +374,7 @@
       },
       {
         "path": ".github/workflows/release.yml",
-        "sha256": "0a32cc451cf35101f59f0cace36a1be461aa0189d92f4c08a9fc8bf4ca4e8ba8"
+        "sha256": "5e3d8b9e2bbb44a42ec79c934f3edf3dfcec721810563124941b1e39da3df276"
       },
       {
         "path": ".github/workflows/training.yml",
@@ -438,7 +438,7 @@
       },
       {
         "path": "docs/evidence/2026-08-10-github-release-controls.md",
-        "sha256": "c47700264713777576d8233d5a92ed08d107a00763d8ad0974d3314e0a1b3ec1"
+        "sha256": "443748246ac1e5d456809d61eaee434860cc7ac5c286c43feb8bd7757850e373"
       },
       {
         "path": "docs/evidence/2026-08-10-onnx-runtime-qualification.md",
@@ -538,7 +538,7 @@
       },
       {
         "path": "docs/security/release-assurance.md",
-        "sha256": "5d2b8aa1096dd1a1996193b9faff09ccfab27db202cf94b915a7af9a8edac3f2"
+        "sha256": "1a6491d5f9e9b9af9749c412b9327aac6f5789b949302a0b28ec38a3ceeb39ea"
       },
       {
         "path": "packages/judge/models/manifest.json",

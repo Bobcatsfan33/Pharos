@@ -7,7 +7,8 @@ name: release
 # irreversible registry jobs; image.yml uses those tags to publish assessment images instead.
 # workflow_dispatch remains an explicit maintainer-controlled SDK release path.
 # Requires (set up by a maintainer — see docs/PUBLISHING.md):
-#   - npm org "getpharos"; trusted publisher on @getpharos/sdk -> this repo + release.yml (no secret).
+#   - npm org "getpharos"; trusted publisher on @getpharos/sdk -> this repo + release.yml,
+#     environment "production-release" (no secret).
 #     (First 0.1.0 publish is done manually by the maintainer; this workflow covers all later tags.)
 #   - PyPI pending trusted publisher: project "getpharos" -> this repo + release.yml, environment "pharos".
 on:
@@ -37,6 +38,7 @@ jobs:
     needs: release-channel
     if: needs.release-channel.outputs.publish_sdks == 'true'
     runs-on: ubuntu-latest
+    environment: production-release
     permissions:
       contents: read
       id-token: write # required for npm provenance
