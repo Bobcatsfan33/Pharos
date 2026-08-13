@@ -53,6 +53,7 @@ export async function assertUpstreamIdempotencyConformance(
     } catch (error) {
       throw new Error(
         `upstream idempotency conformance attempt ${attempt} failed: ${(error as Error).message}`,
+        { cause: error },
       );
     } finally {
       clearTimeout(timeout);
