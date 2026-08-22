@@ -56,6 +56,11 @@ keel resume governed-demo --mock
 The resume resubmits the identical authorization key, observes the human decision, claims
 with the identical continuation identity, and executes only the unfinished step.
 
+CI also runs [`scripts/e2e-keel.ts`](../scripts/e2e-keel.ts) against real Postgres, Redis,
+MinIO WORM storage, the Pharos HTTP API, and a pinned checkout of the Keel CLI. It requires
+two sealed authorization records, two `governance.decided` events, two durable
+`step.completed` outcomes, and zero skipped infrastructure tests.
+
 ## Human modification
 
 A reviewer may supply a Pharos `modifiedAction` with `payload.keelConfig`. Keel validates
