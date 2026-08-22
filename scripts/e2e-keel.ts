@@ -9,7 +9,33 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
+
+interface CommandResult {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+}
+
+function runCommand(command: string, args: string[]): Promise<CommandResult> {
+  return new Promise((resolveCommand, rejectCommand) => {
+    const child = spawn(command, args, {
+      env: { ...process.env, PYTHONUNBUFFERED: "1" },
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk: string) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk: string) => {
+      stderr += chunk;
+    });
+    child.on("error", rejectCommand);
+    child.on("close", (status) => resolveCommand({ status, stdout, stderr }));
+  });
+}
 
 async function main(): Promise<void> {
   const work = mkdtempSync(join(tmpdir(), "pharos-keel-e2e-"));
@@ -55,11 +81,18 @@ async function main(): Promise<void> {
       "--pharos-tenant",
       tenantId,
     ];
-    const run = spawnSync(
-      "keel",
-      ["run", "--mock", graph, "--run-id", runId, "--db", db, "--blobs", blobs, ...pharosArgs],
-      { encoding: "utf8", env: { ...process.env, PYTHONUNBUFFERED: "1" } },
-    );
+    const run = await runCommand("keel", [
+      "run",
+      "--mock",
+      graph,
+      "--run-id",
+      runId,
+      "--db",
+      db,
+      "--blobs",
+      blobs,
+      ...pharosArgs,
+    ]);
     if (run.status !== 1 || !run.stdout.includes(`run ${runId} -> paused`)) {
       throw new Error(`Keel did not park for human review:\n${run.stdout}\n${run.stderr}`);
     }
@@ -91,11 +124,16 @@ async function main(): Promise<void> {
       );
     }
 
-    const resumed = spawnSync(
-      "keel",
-      ["resume", runId, "--mock", "--db", db, "--blobs", blobs, ...pharosArgs],
-      { encoding: "utf8", env: { ...process.env, PYTHONUNBUFFERED: "1" } },
-    );
+    const resumed = await runCommand("keel", [
+      "resume",
+      runId,
+      "--mock",
+      "--db",
+      db,
+      "--blobs",
+      blobs,
+      ...pharosArgs,
+    ]);
     if (resumed.status !== 0 || !resumed.stdout.includes(`run ${runId} -> completed`)) {
       throw new Error(
         `Keel did not complete after human approval:\n${resumed.stdout}\n${resumed.stderr}`,
@@ -122,9 +160,7 @@ async function main(): Promise<void> {
       }
     }
 
-    const timeline = spawnSync("keel", ["show", runId, "--db", db, "--blobs", blobs], {
-      encoding: "utf8",
-    });
+    const timeline = await runCommand("keel", ["show", runId, "--db", db, "--blobs", blobs]);
     if (timeline.status !== 0) throw new Error(`keel show failed:\n${timeline.stderr}`);
     const decisions = timeline.stdout.match(/governance\.decided/g) ?? [];
     const escalated = timeline.stdout.match(/governance\.escalated/g) ?? [];
