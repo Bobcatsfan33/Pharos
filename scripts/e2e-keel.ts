@@ -14,6 +14,7 @@ import { spawnSync } from "node:child_process";
 async function main(): Promise<void> {
   const work = mkdtempSync(join(tmpdir(), "pharos-keel-e2e-"));
   process.env.PHAROS_KMS_KEYSTORE_DIR = join(work, "keystore");
+  process.env.PHAROS_KMS_KEYSTORE_PASSPHRASE ??= `keel-e2e-${randomUUID()}`;
   process.env.PHAROS_KMS_PROVIDER = "local-kms";
   process.env.PHAROS_TSA_PROVIDER = "local";
 
