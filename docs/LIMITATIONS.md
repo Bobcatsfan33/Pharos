@@ -164,6 +164,12 @@ rests on two independent gates and both are pinned: the held-request lease, and 
 server-side `claimResume` (`resumed_at IS NULL`), which refuses a second authorization even
 to a caller that bypasses the lease entirely.
 
+Durable runtimes may supply a stable `claimId`. Pharos then lets that same identity reclaim
+ownership after a crash while refusing every different identity. Keel combines this with its
+serialized run lease and effect ledger, closing the approval-to-execution loss window for
+Keel-managed steps. Reusing one identity concurrently without a runtime lease is outside the
+claim protocol and can still duplicate work.
+
 **Protocol limit:** the Pharos claim is an atomic **at-most-once authorization**, not a
 distributed transaction with an arbitrary HTTP target. A crash after the target commits but
 before the gateway records completion creates an ambiguous outcome. Recovery sends the
