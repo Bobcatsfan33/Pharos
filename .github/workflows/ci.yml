@@ -408,7 +408,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Bobcatsfan33/keel
-          ref: 733586afdd25b1429faba54f5988aec4fadccbbe
+          ref: 9ec673bf5e70a4cd4720bd391639b49840b93c2b
           path: .e2e/keel
           persist-credentials: false
       - name: Install Keel
