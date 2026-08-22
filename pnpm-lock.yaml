@@ -169,7 +169,11 @@ importers:
         specifier: workspace:*
         version: link:../sdk-ts
 
-  packages/observability: {}
+  packages/observability:
+    dependencies:
+      '@pharos/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/pdp-spec: {}
 
