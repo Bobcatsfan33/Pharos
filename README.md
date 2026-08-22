@@ -194,6 +194,16 @@ middlewares (LangChain/LangGraph, OpenAI Agents, Anthropic SDK, CrewAI, MS Agent
 share one conformance contract, and a zero-code HTTP gateway governs agents that import
 nothing at all. See **[docs/sdks-and-integration.md](docs/sdks-and-integration.md)**.
 
+### Keel: the durable execution plane
+
+[Keel](https://github.com/Bobcatsfan33/keel) is the first-party durable runtime for Pharos.
+It submits every runnable step through `/v1/actions`, writes the sealed evidence binding into
+its append-only execution log, and maps an escalation to a zero-compute durable pause. After
+review, the same run resumes with a stable replay-safe claim identity. This closes the crash
+window between approval and step execution without coupling either service's storage.
+
+See [Keel integration and the end-to-end contract](docs/keel-integration.md).
+
 ## Status — what is and isn't proven
 
 Pharos is **not a finished product, and its own readiness manifest says so.** That manifest

@@ -18,6 +18,11 @@ const ResolveSchema = z.object({
   modifiedAction: z.record(z.string(), z.unknown()).optional(),
 });
 
+const ClaimSchema = z.object({
+  /** Stable identity of a durable continuation. Retrying the same identity is safe. */
+  claimId: z.string().min(1).max(255).optional(),
+});
+
 const DECISION_TO_VERDICT: Record<"approve" | "modify" | "reject", VerdictDecision> = {
   approve: "allow",
   modify: "modify",
@@ -136,6 +141,14 @@ export function registerEscalationRoutes(app: FastifyInstance, platform: Platfor
       const { tenantId, id } = request.params;
       const principal = await requireAuth(platform, request, reply, "actions:write", tenantId);
       if (!principal) return reply;
+      const parsed = ClaimSchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        return reply.status(400).send({
+          success: false,
+          data: null,
+          error: { code: "invalid_request", issues: parsed.error.issues },
+        });
+      }
       const escalation = await platform.escalations.get(tenantId, id);
       if (!escalation)
         return reply.status(404).send({ success: false, data: null, error: { code: "not_found" } });
@@ -153,8 +166,9 @@ export function registerEscalationRoutes(app: FastifyInstance, platform: Platfor
           error: null,
         });
       }
-      // Atomic claim: at most one caller wins the right to resume the side effect.
-      const claimed = await platform.escalations.claimResume(tenantId, id);
+      // A stable claimId makes ownership replay-safe for a durable runtime. Calls that
+      // omit it retain the original strict first-invocation-wins contract.
+      const claimed = await platform.escalations.claimResume(tenantId, id, parsed.data.claimId);
       return reply.send({
         success: true,
         data: {

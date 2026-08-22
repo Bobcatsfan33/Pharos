@@ -123,6 +123,40 @@ describe("Causeway — mandate binding", () => {
 });
 
 describe("Causeway — escalation round trip (atomic claim)", () => {
+  it("lets one durable continuation reclaim after a crash but rejects another", async (ctx) => {
+    if (!available) return ctx.skip();
+    const c = client();
+    const submitted = await c.submit({
+      tenantId: TENANT,
+      idempotencyKey: `keel:authorize:${randomUUID()}`,
+      action: {
+        type: "message.send",
+        agentId: "keel-runtime",
+        payload: {
+          body: `Patient ${randomUUID()} was diagnosed with HIV and started therapy.`,
+          keel: { runId: "run-1", nodeId: "publish" },
+        },
+      },
+      liability: {
+        oversightMode: "human_in_loop",
+        blastRadius: { financialAmount: 0, currency: "USD", reversibility: "irreversible" },
+      },
+    });
+    expect(submitted.verdict.decision).toBe("escalate");
+    expect(submitted.escalation).not.toBeNull();
+    const escalationId = submitted.escalation!.id;
+    expect((await resolve(escalationId, "approve", "approved for Keel")).status).toBe(200);
+
+    const first = await c.claim(TENANT, escalationId, "keel:claim:v1:owner-a");
+    const recovered = await c.claim(TENANT, escalationId, "keel:claim:v1:owner-a");
+    const competitor = await c.claim(TENANT, escalationId, "keel:claim:v1:owner-b");
+
+    expect(first.claimed).toBe(true);
+    expect(recovered.claimed).toBe(true);
+    expect(recovered.escalation.resumeClaimId).toBe("keel:claim:v1:owner-a");
+    expect(competitor.claimed).toBe(false);
+  });
+
   it("escalates, awaits a human verdict, and authorizes one resumer", async (ctx) => {
     if (!available) return ctx.skip();
     const c = client();

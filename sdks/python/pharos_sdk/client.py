@@ -140,7 +140,11 @@ class PharosClient:
                 raise PharosError("escalation resolution timed out", "resolution_timeout")
             time.sleep(poll_interval_ms / 1000.0)
 
-    def claim(self, tenant_id: str, escalation_id: str) -> dict:
-        result = self._request("POST", f"/v1/tenants/{tenant_id}/escalations/{escalation_id}/claim")
+    def claim(self, tenant_id: str, escalation_id: str, claim_id: Optional[str] = None) -> dict:
+        """Claim resume ownership; a stable claim_id is replay-safe after a crash."""
+        body = {"claimId": claim_id} if claim_id else None
+        result = self._request(
+            "POST", f"/v1/tenants/{tenant_id}/escalations/{escalation_id}/claim", body
+        )
         self._emit({"type": "resume", "escalationId": escalation_id, "claimed": result["claimed"]})
         return result

@@ -1,5 +1,13 @@
 # @getpharos/sdk
 
+## Unreleased
+
+### Patch Changes
+
+- `claim(tenantId, escalationId, claimId?)` now accepts a stable durable-continuation
+  identity. Retrying the same identity after a crash retains claim ownership; a different
+  identity is refused.
+
 ## 0.2.0
 
 ### Minor Changes
