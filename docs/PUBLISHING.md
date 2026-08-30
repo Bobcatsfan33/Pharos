@@ -34,8 +34,10 @@ Both were configured by the maintainer and have published real releases.
 
 ### npm — `@getpharos/sdk`
 
-- Trusted publisher: repository **`Bobcatsfan33/Pharos`**, workflow **`release.yml`**, **no
-  environment**, action **`npm publish`** allowed.
+- Trusted publisher must be repository **`Bobcatsfan33/Pharos`**, workflow **`release.yml`**,
+  environment **`production-release`**, action **`npm publish`** allowed. The original no-environment
+  publisher must be replaced before the next release; the workflow now fails closed at the protected
+  environment boundary until that registry-side change is complete.
 - Package settings: **2FA required**, **tokens disallowed**.
 - npm OIDC trusted publishing needs **npm ≥ 11.5.1** (Node 22 ships npm 10), so the workflow
   upgrades npm before publishing.
@@ -88,7 +90,8 @@ typechecking resolves imports through `exports` — which means **`dist` must ex
    git push origin vX.Y.Z          # triggers release.yml
    ```
 
-   Or run `release.yml` from the Actions tab (`workflow_dispatch`).
+   Or run `release.yml` from the Actions tab (`workflow_dispatch`). Both routes must pass the
+   protected deployment environments and an independent approval before registry publication.
 
 Do not use a prerelease tag to publish SDKs. `vX.Y.Z-rc.N` is an image-only release-candidate
 channel used by independent assessors and production-topology exercises. The release workflow

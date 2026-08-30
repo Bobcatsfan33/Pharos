@@ -103,7 +103,6 @@ export class VerdictCascade {
     const citations: RuleCitation[] = [];
     let decision: VerdictDecision = "allow";
     let riskScore = 0;
-    let tierReached: VerdictContext["tierReached"] = 1;
     let judgeVersion: string | null = null;
     let judgeRuntime: string | null = null;
 
@@ -124,7 +123,6 @@ export class VerdictCascade {
     const risk = scoreRisk(req);
     perTier["2"] = elapsedMs(t2Start);
     riskScore = Math.max(riskScore, risk.score);
-    tierReached = 2;
     if (risk.score >= HIGH_RISK_SHORT_CIRCUIT) {
       decision = mostSevere(decision, "escalate");
       citations.push({
@@ -140,7 +138,6 @@ export class VerdictCascade {
     const t3Start = process.hrtime.bigint();
     const judgeResults = await this.runJudges(req);
     perTier["3"] = elapsedMs(t3Start);
-    tierReached = 3;
     this.deps.onJudgeResults?.(judgeResults);
 
     // Default citation: the most salient judge (highest probability), even if not flagged.
@@ -193,15 +190,7 @@ export class VerdictCascade {
       }
     }
 
-    return this.compose(
-      decision,
-      tierReached,
-      citations,
-      riskScore,
-      judgeVersion,
-      judgeRuntime,
-      perTier,
-    );
+    return this.compose(decision, 3, citations, riskScore, judgeVersion, judgeRuntime, perTier);
   }
 
   /** Protected so the test-only subclass in ./testing.js can wrap it; never faulted here. */

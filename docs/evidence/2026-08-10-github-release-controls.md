@@ -42,3 +42,38 @@ Do not create or push a release or prerelease tag until all of the following are
 
 This audit is repository-maintainer evidence, not an independent approval. It remains valid only
 for the observed GitHub state at the time of the queries.
+
+## Follow-up — 2026-08-12
+
+After restoring authenticated repository administration, the maintainer implemented and verified:
+
+- `main` branch protection with strict, GitHub-App-bound required checks; one approving review;
+  stale-review dismissal; CODEOWNERS review; last-pusher separation; conversation resolution;
+  administrator enforcement; and force-push/deletion denial;
+- active tag ruleset `Protect v* release tags` (ID `20772878`) covering `refs/tags/v*`, restricting
+  creation to repository administrators acting as release maintainers and preventing unauthorized
+  creation, update, deletion, and non-fast-forward changes;
+- `production-release` and `pharos` environment deployment policies restricted to explicit `main`
+  and `v*` branch/tag patterns; and
+- administrator bypass disabled on both release environments.
+
+The follow-up queries were:
+
+```bash
+gh api repos/Bobcatsfan33/Pharos/branches/main/protection
+gh api repos/Bobcatsfan33/Pharos/rulesets/20772878
+gh api repos/Bobcatsfan33/Pharos/environments/production-release
+gh api repos/Bobcatsfan33/Pharos/environments/production-release/deployment-branch-policies
+gh api repos/Bobcatsfan33/Pharos/environments/pharos
+gh api repos/Bobcatsfan33/Pharos/environments/pharos/deployment-branch-policies
+gh api repos/Bobcatsfan33/Pharos/collaborators --paginate
+```
+
+**FOLLOW-UP DECISION: PARTIAL.** The repository and tag controls are now live and administrator
+environment bypass is disabled. The remaining release-control blocker is genuine separation of
+duties: `Bobcatsfan33` remains the only collaborator, neither environment has a required reviewer,
+and no protected release exercise has yet produced an approval record and signed artifact evidence.
+The npm trusted-publisher configuration must also be changed from no environment to
+`production-release` before its newly protected workflow job can publish. The original prohibition
+on release tags remains in force until an independent reviewer is added, configured on both release
+environments, and the protected release exercise passes.

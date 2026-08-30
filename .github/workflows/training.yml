@@ -1,0 +1,50 @@
+name: judge training toolchain
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "43 7 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/training.yml"
+      - "packages/judge-eval/data/**"
+      - "packages/judge/data/**"
+      - "training/**"
+  pull_request:
+    paths:
+      - ".github/workflows/training.yml"
+      - "packages/judge-eval/data/**"
+      - "packages/judge/data/**"
+      - "training/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: judge-training-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compatibility:
+    name: locked CPU training compatibility
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.32"
+          enable-cache: true
+          cache-dependency-glob: training/uv.lock
+      - name: install the exact training graph
+        run: uv sync --directory training --frozen
+      - name: corpus and toolchain compatibility
+        working-directory: training
+        run: uv run --frozen python -m unittest -v test_corpus.py test_toolchain.py
+      - name: training and evaluation data must remain isolated
+        working-directory: training
+        run: uv run --frozen python check_leakage.py
