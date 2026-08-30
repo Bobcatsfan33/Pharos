@@ -11,13 +11,13 @@
   },
   "dependencies": {
     "@pharos/identity": "workspace:*",
-    "next": "^15.5.23",
+    "next": "^15.5.24",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
+    "@types/react-dom": "^19.2.5",
     "typescript": "^5.7.2"
   }
 }
