@@ -1,0 +1,22 @@
+# .github/workflows/security.yml — this repo's caller of the shared workflow
+name: security
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+jobs:
+  suite:
+    # The reusable workflow's jobs request these scopes (CodeQL upload, GHCR push,
+    # cosign keyless OIDC, SLSA provenance, SBOM attestation); a caller must grant
+    # them or the run fails at startup.
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      security-events: write
+      attestations: write
+      actions: read
+    uses: Bobcatsfan33/.github/.github/workflows/security-reusable.yml@main
+    with:
+      image: ghcr.io/bobcatsfan33/keel
+      languages: '["python"]'
+      dockerfile: Dockerfile

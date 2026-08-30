@@ -1,0 +1,18 @@
+# Code owners — review is required from an owner for security-sensitive paths.
+# (Enforced by branch protection once a second maintainer exists; see
+# docs/SDLC-POLICY.md for current status.)
+#
+# TODO(SH-2): add the named second maintainer (e.g. @second-maintainer) to the
+# lines below so code-owner review is satisfiable by someone other than the author.
+
+# Default owner for everything.
+*                       @Bobcatsfan33
+
+# Security-sensitive surfaces — substrate (ports/events/store), the durable
+# executor, and all CI/release/governance config.
+/keel/substrate/        @Bobcatsfan33
+/keel/executor/         @Bobcatsfan33
+/.github/               @Bobcatsfan33
+/scripts/org/           @Bobcatsfan33
+/Dockerfile             @Bobcatsfan33
+/pyproject.toml         @Bobcatsfan33

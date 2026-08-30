@@ -1,0 +1,302 @@
+{
+  "graph": {
+    "kir_version": "1.0",
+    "graph_id": "branch_x",
+    "nodes": [
+      {
+        "id": "r",
+        "type": "router",
+        "model_policy": "default",
+        "input_schema": null,
+        "output_schema": null,
+        "tool": null,
+        "retry": {
+          "max": 0,
+          "backoff": "exp",
+          "on": [
+            "rate_limit",
+            "transient"
+          ]
+        },
+        "budget": {
+          "max_tokens": null,
+          "max_usd": null,
+          "max_steps": null
+        },
+        "region": null,
+        "config": {
+          "branch": "x"
+        }
+      },
+      {
+        "id": "x",
+        "type": "llm_step",
+        "model_policy": "default",
+        "input_schema": null,
+        "output_schema": null,
+        "tool": null,
+        "retry": {
+          "max": 0,
+          "backoff": "exp",
+          "on": [
+            "rate_limit",
+            "transient"
+          ]
+        },
+        "budget": {
+          "max_tokens": null,
+          "max_usd": null,
+          "max_steps": null
+        },
+        "region": null,
+        "config": {
+          "model": "mock:t",
+          "prompt": "x"
+        }
+      },
+      {
+        "id": "y",
+        "type": "llm_step",
+        "model_policy": "default",
+        "input_schema": null,
+        "output_schema": null,
+        "tool": null,
+        "retry": {
+          "max": 0,
+          "backoff": "exp",
+          "on": [
+            "rate_limit",
+            "transient"
+          ]
+        },
+        "budget": {
+          "max_tokens": null,
+          "max_usd": null,
+          "max_steps": null
+        },
+        "region": null,
+        "config": {
+          "model": "mock:t",
+          "prompt": "y"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from_": "r",
+        "to": "x",
+        "when": "branch:x"
+      },
+      {
+        "from_": "r",
+        "to": "y",
+        "when": "branch:y"
+      }
+    ]
+  },
+  "events": [
+    {
+      "schema_version": 1,
+      "event_id": "01KV4J82S8GZPQV44PXTJJA9QN",
+      "run_id": "branch_x",
+      "seq": 0,
+      "ts": "2026-06-15T02:37:23.112195Z",
+      "type": "run.started",
+      "node_id": null,
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01KV4J82S8GZPQV44PXTJJA9QP",
+      "run_id": "branch_x",
+      "seq": 1,
+      "ts": "2026-06-15T02:37:23.112253Z",
+      "type": "step.scheduled",
+      "node_id": "r",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01KV4J82S8GZPQV44PXTJJA9QQ",
+      "run_id": "branch_x",
+      "seq": 2,
+      "ts": "2026-06-15T02:37:23.112265Z",
+      "type": "step.started",
+      "node_id": "r",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01KV4J82S8GZPQV44PXTJJA9QR",
+      "run_id": "branch_x",
+      "seq": 3,
+      "ts": "2026-06-15T02:37:23.112275Z",
+      "type": "route.decided",
+      "node_id": "r",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {
+        "chosen_branch": "x",
+        "reason": "static"
+      }
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01KV4J82S8GZPQV44PXTJJA9QS",
+      "run_id": "branch_x",
+      "seq": 4,
+      "ts": "2026-06-15T02:37:23.112294Z",
+      "type": "step.completed",
+      "node_id": "r",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:f0a6f84063c736be6e80e0fe1d435a2f38e7d9a9fd3418c6f72efa3040d68b9a",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01KV4J82S8GZPQV44PXTJJA9QT",
+      "run_id": "branch_x",
+      "seq": 5,
+      "ts": "2026-06-15T02:37:23.112383Z",
+      "type": "step.scheduled",
+      "node_id": "x",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01KV4J82S8GZPQV44PXTJJA9QV",
+      "run_id": "branch_x",
+      "seq": 6,
+      "ts": "2026-06-15T02:37:23.112394Z",
+      "type": "step.started",
+      "node_id": "x",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01KV4J82S8GZPQV44PXTJJA9QW",
+      "run_id": "branch_x",
+      "seq": 7,
+      "ts": "2026-06-15T02:37:23.112417Z",
+      "type": "llm.request",
+      "node_id": "x",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:e1c02354033f5d47e692f8f07cc9b5193c4fa53ba9f1047f41c4a49f3314f617",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {
+        "model": "mock:t",
+        "reprompt": 0,
+        "context_tokens": {
+          "system": 0,
+          "role": 0,
+          "memory": 0,
+          "history": 0,
+          "inputs": 9
+        },
+        "context_total": 9
+      }
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01KV4J82S8GZPQV44PXTJJA9QX",
+      "run_id": "branch_x",
+      "seq": 8,
+      "ts": "2026-06-15T02:37:23.112442Z",
+      "type": "llm.response",
+      "node_id": "x",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:60083d0116d20e3cc87970ad7523045b1f2c6bfce4c8f767ae132ca29ded6b2f",
+      "tokens": {
+        "input": 7,
+        "output": 4,
+        "model": "mock:t"
+      },
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01KV4J82S8GZPQV44PXTJJA9QY",
+      "run_id": "branch_x",
+      "seq": 9,
+      "ts": "2026-06-15T02:37:23.112455Z",
+      "type": "step.completed",
+      "node_id": "x",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:60083d0116d20e3cc87970ad7523045b1f2c6bfce4c8f767ae132ca29ded6b2f",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01KV4J82S8GZPQV44PXTJJA9QZ",
+      "run_id": "branch_x",
+      "seq": 10,
+      "ts": "2026-06-15T02:37:23.112470Z",
+      "type": "step.skipped",
+      "node_id": "y",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "01KV4J82S8GZPQV44PXTJJA9R0",
+      "run_id": "branch_x",
+      "seq": 11,
+      "ts": "2026-06-15T02:37:23.112535Z",
+      "type": "run.completed",
+      "node_id": null,
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    }
+  ],
+  "blobs": {
+    "f0a6f84063c736be6e80e0fe1d435a2f38e7d9a9fd3418c6f72efa3040d68b9a": "eyJicmFuY2giOiAieCJ9",
+    "e1c02354033f5d47e692f8f07cc9b5193c4fa53ba9f1047f41c4a49f3314f617": "W3sicm9sZSI6ICJ1c2VyIiwgImNvbnRlbnQiOiAieFxuXG5JbnB1dHM6XG57XCJyXCI6IFwie1xcXCJicmFuY2hcXFwiOiBcXFwieFxcXCJ9XCJ9In1d",
+    "60083d0116d20e3cc87970ad7523045b1f2c6bfce4c8f767ae132ca29ded6b2f": "eyJ2IjogIjEwMWVkZTgyZWVhZDRhZDUifQ=="
+  }
+}
