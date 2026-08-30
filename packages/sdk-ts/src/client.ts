@@ -179,11 +179,12 @@ export class PharosClient {
     }
   }
 
-  /** Atomically claim the right to resume — at most one claim succeeds across all callers. */
-  async claim(tenantId: string, id: string): Promise<ClaimResult> {
+  /** Claim resume ownership. A stable claimId can be retried after a process crash. */
+  async claim(tenantId: string, id: string, claimId?: string): Promise<ClaimResult> {
     const data = await this.request<ClaimResult>(
       "POST",
       `/v1/tenants/${tenantId}/escalations/${id}/claim`,
+      claimId ? { claimId } : undefined,
     );
     this.emit({ type: "resume", escalationId: id, claimed: data.claimed });
     return data;

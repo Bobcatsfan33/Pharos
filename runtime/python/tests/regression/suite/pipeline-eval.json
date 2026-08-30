@@ -1,0 +1,301 @@
+{
+  "format": "keel.regression/1",
+  "bundle_id": "pipeline-eval",
+  "run_id": "pipeline-eval",
+  "graph": {
+    "kir_version": "1.0",
+    "graph_id": "pipeline-eval",
+    "nodes": [
+      {
+        "id": "ask",
+        "type": "llm_step",
+        "model_policy": "default",
+        "input_schema": null,
+        "output_schema": null,
+        "tool": null,
+        "retry": {
+          "max": 0,
+          "backoff": "exp",
+          "on": [
+            "rate_limit",
+            "transient"
+          ]
+        },
+        "budget": {
+          "max_tokens": null,
+          "max_usd": null,
+          "max_steps": null
+        },
+        "region": null,
+        "config": {
+          "model": "mock:test"
+        }
+      },
+      {
+        "id": "answer",
+        "type": "llm_step",
+        "model_policy": "default",
+        "input_schema": null,
+        "output_schema": null,
+        "tool": null,
+        "retry": {
+          "max": 0,
+          "backoff": "exp",
+          "on": [
+            "rate_limit",
+            "transient"
+          ]
+        },
+        "budget": {
+          "max_tokens": null,
+          "max_usd": null,
+          "max_steps": null
+        },
+        "region": null,
+        "config": {
+          "model": "mock:test"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from": "ask",
+        "to": "answer",
+        "when": null
+      }
+    ]
+  },
+  "events": [
+    {
+      "schema_version": 1,
+      "event_id": "ev00000001",
+      "run_id": "pipeline-eval",
+      "seq": 0,
+      "ts": "2026-01-01T00:00:00.002000Z",
+      "type": "run.started",
+      "node_id": null,
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000002",
+      "run_id": "pipeline-eval",
+      "seq": 1,
+      "ts": "2026-01-01T00:00:00.003000Z",
+      "type": "step.scheduled",
+      "node_id": "ask",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000003",
+      "run_id": "pipeline-eval",
+      "seq": 2,
+      "ts": "2026-01-01T00:00:00.004000Z",
+      "type": "step.started",
+      "node_id": "ask",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000004",
+      "run_id": "pipeline-eval",
+      "seq": 3,
+      "ts": "2026-01-01T00:00:00.005000Z",
+      "type": "llm.request",
+      "node_id": "ask",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:ab2991f78bf0360302e08ed537a779045992a53cf453470bf3f8096b8b753e57",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {
+        "model": "mock:test",
+        "reprompt": 0,
+        "context_tokens": {
+          "system": 0,
+          "role": 0,
+          "memory": 0,
+          "history": 0,
+          "inputs": 0
+        },
+        "context_total": 0
+      }
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000005",
+      "run_id": "pipeline-eval",
+      "seq": 4,
+      "ts": "2026-01-01T00:00:00.006000Z",
+      "type": "llm.response",
+      "node_id": "ask",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:37b71625026ca2cd79f7334cc1bcb00c16ec604ec219e31438cf303b028dd781",
+      "tokens": {
+        "input": 10,
+        "output": 5,
+        "model": "mock:test"
+      },
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000006",
+      "run_id": "pipeline-eval",
+      "seq": 5,
+      "ts": "2026-01-01T00:00:00.007000Z",
+      "type": "step.completed",
+      "node_id": "ask",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:37b71625026ca2cd79f7334cc1bcb00c16ec604ec219e31438cf303b028dd781",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000007",
+      "run_id": "pipeline-eval",
+      "seq": 6,
+      "ts": "2026-01-01T00:00:00.008000Z",
+      "type": "step.scheduled",
+      "node_id": "answer",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000008",
+      "run_id": "pipeline-eval",
+      "seq": 7,
+      "ts": "2026-01-01T00:00:00.009000Z",
+      "type": "step.started",
+      "node_id": "answer",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000009",
+      "run_id": "pipeline-eval",
+      "seq": 8,
+      "ts": "2026-01-01T00:00:00.010000Z",
+      "type": "llm.request",
+      "node_id": "answer",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:c6c275a30093ee58c67f19dded310084e5a738b284e9de9b0e4e5e2ac14aeae2",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {
+        "model": "mock:test",
+        "reprompt": 0,
+        "context_tokens": {
+          "system": 0,
+          "role": 0,
+          "memory": 0,
+          "history": 0,
+          "inputs": 10
+        },
+        "context_total": 10
+      }
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000010",
+      "run_id": "pipeline-eval",
+      "seq": 9,
+      "ts": "2026-01-01T00:00:00.011000Z",
+      "type": "llm.response",
+      "node_id": "answer",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:37b71625026ca2cd79f7334cc1bcb00c16ec604ec219e31438cf303b028dd781",
+      "tokens": {
+        "input": 10,
+        "output": 5,
+        "model": "mock:test"
+      },
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000011",
+      "run_id": "pipeline-eval",
+      "seq": 10,
+      "ts": "2026-01-01T00:00:00.012000Z",
+      "type": "step.completed",
+      "node_id": "answer",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:37b71625026ca2cd79f7334cc1bcb00c16ec604ec219e31438cf303b028dd781",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000012",
+      "run_id": "pipeline-eval",
+      "seq": 11,
+      "ts": "2026-01-01T00:00:00.013000Z",
+      "type": "run.completed",
+      "node_id": null,
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    }
+  ],
+  "blobs": {
+    "blob:sha256:37b71625026ca2cd79f7334cc1bcb00c16ec604ec219e31438cf303b028dd781": "eyJhbnN3ZXIiOiAiNDIifQ==",
+    "blob:sha256:ab2991f78bf0360302e08ed537a779045992a53cf453470bf3f8096b8b753e57": "W3sicm9sZSI6ICJ1c2VyIiwgImNvbnRlbnQiOiAiIn1d",
+    "blob:sha256:c6c275a30093ee58c67f19dded310084e5a738b284e9de9b0e4e5e2ac14aeae2": "W3sicm9sZSI6ICJ1c2VyIiwgImNvbnRlbnQiOiAiXG5cbklucHV0czpcbntcImFza1wiOiBcIntcXFwiYW5zd2VyXFxcIjogXFxcIjQyXFxcIn1cIn0ifV0="
+  },
+  "eval_case": {
+    "case_id": "pipeline-eval:answer-is-42",
+    "graph_id": "pipeline-eval",
+    "recorded_run_id": "pipeline-eval",
+    "assertions": [
+      {
+        "type": "exact",
+        "node_id": "answer",
+        "expected": "42",
+        "tolerance": null,
+        "judge_model": null,
+        "rubric": null,
+        "field": "answer"
+      }
+    ]
+  }
+}

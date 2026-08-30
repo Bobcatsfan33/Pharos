@@ -1,7 +1,8 @@
 name: release
-# Publishes the SDKs from signed, stable-version artifacts.
+# Publishes the SDKs and builds the Pharos Runtime from signed, stable-version artifacts.
 #   @getpharos/sdk -> npm  (with provenance)
 #   getpharos  -> PyPI (with trusted publishing / OIDC)
+#   pharos-runtime -> verified wheel + optional PyPI trusted publishing after project setup
 #
 # Stable vMAJOR.MINOR.PATCH tags publish SDKs. Semver prerelease tags intentionally skip these
 # irreversible registry jobs; image.yml uses those tags to publish assessment images instead.
@@ -100,4 +101,43 @@ jobs:
           # the v0.2.0 case -- fails the job on "file already exists" even though the
           # published artifact is correct. PyPI versions are immutable, so skipping an
           # existing one cannot overwrite anything.
+          skip-existing: true
+
+  runtime-package:
+    needs: release-channel
+    if: needs.release-channel.outputs.publish_sdks == 'true'
+    runs-on: ubuntu-latest
+    environment: pharos
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - name: test and build Pharos Runtime
+        working-directory: runtime/python
+        run: |
+          pip install -e ".[dev,viewer]" build twine
+          pytest -q
+          python -m build
+          twine check dist/*
+      - name: install the built wheel and smoke both command names
+        run: |
+          python -m venv /tmp/pharos-runtime-release-smoke
+          /tmp/pharos-runtime-release-smoke/bin/pip install runtime/python/dist/*.whl
+          /tmp/pharos-runtime-release-smoke/bin/pharos --help | grep -q "usage: pharos"
+          /tmp/pharos-runtime-release-smoke/bin/keel --help | grep -q "usage: keel"
+      - name: retain the verified runtime distribution
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4
+        with:
+          name: pharos-runtime-${{ github.ref_name }}
+          path: runtime/python/dist/*
+          if-no-files-found: error
+          retention-days: 90
+      - name: publish pharos-runtime to PyPI after trusted-publisher activation
+        if: vars.PHAROS_RUNTIME_PYPI_ENABLED == 'true'
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: runtime/python/dist
           skip-existing: true

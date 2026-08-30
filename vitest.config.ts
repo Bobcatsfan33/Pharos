@@ -20,6 +20,8 @@ export default defineConfig({
       "@pharos/assurance": r("./packages/assurance/src/index.ts"),
       "@pharos/billing": r("./packages/billing/src/index.ts"),
       "@pharos/observability": r("./packages/observability/src/index.ts"),
+      "@pharos/connectors": r("./packages/connectors/src/index.ts"),
+      "@pharos/devkit": r("./packages/devkit/src/index.ts"),
       "@getpharos/pdp-spec": r("./packages/pdp-spec/src/index.ts"),
       "@getpharos/sdk": r("./packages/sdk-ts/src/index.ts"),
       "@getpharos/middleware": r("./packages/middleware/src/index.ts"),

@@ -23,3 +23,14 @@ export {
   disagreementRate,
   summarize,
 } from "./analytics.js";
+export {
+  type ApprovalDecision,
+  type ApprovalContext,
+  type ApprovalPolicyRule,
+  type ApprovalRequirement,
+  type ApprovalVote,
+  type BreakGlassGrant,
+  type ApprovalOutcome,
+  resolveApprovalRequirement,
+  evaluateApprovals,
+} from "./approvalPolicy.js";

@@ -40,6 +40,17 @@ updates:
       - "dependencies"
       - "python"
 
+  # Durable runtime dependencies shipped as part of the Pharos product.
+  - package-ecosystem: "pip"
+    directory: "/runtime/python"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+      - "runtime"
+
   # Offline judge-training environment. This graph is not shipped in the API
   # image, but it processes model artifacts and must not become an unmonitored
   # supply-chain blind spot.

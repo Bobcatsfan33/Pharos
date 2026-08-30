@@ -67,6 +67,7 @@ export interface Escalation {
   id: string;
   status: "pending" | "approved" | "modified" | "rejected" | "cancelled";
   resolution: { decision: string; rationale: string; modifiedAction: unknown } | null;
+  resumeClaimId?: string | null;
   [k: string]: unknown;
 }
 

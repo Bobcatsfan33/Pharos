@@ -16,6 +16,7 @@ export interface Escalation {
   createdAt: string;
   resolvedAt: string | null;
   resumedAt: string | null;
+  resumeClaimId: string | null;
   queue: string;
   priority: number;
   slaDueAt: string | null;
@@ -35,6 +36,7 @@ interface EscalationRow {
   created_at: string;
   resolved_at: string | null;
   resumed_at: string | null;
+  resume_claim_id: string | null;
   queue: string;
   priority: number;
   sla_due_at: string | null;
@@ -46,9 +48,9 @@ interface EscalationRow {
  * Workflow continuation store.
  *
  * An escalated action parks here with full context. A human verdict (approve/modify/reject)
- * resolves it; the agent's SDK then resumes. claimResume() flips resumed_at atomically so
- * one resumer wins — guaranteeing at-most-once authorization under concurrent resumes.
- * Crash-safe exactly-once execution still requires target-side idempotency or an outbox.
+ * resolves it; the agent's SDK then resumes. claimResume() binds resumed_at to either a
+ * first invocation or a stable durable-continuation identity. Crash-safe exactly-once
+ * execution still requires runtime serialization plus target idempotency or an outbox.
  */
 export class EscalationStore {
   constructor(private readonly pool: Pool) {}
@@ -66,6 +68,7 @@ export class EscalationStore {
       createdAt: iso(row.created_at),
       resolvedAt: row.resolved_at ? iso(row.resolved_at) : null,
       resumedAt: row.resumed_at ? iso(row.resumed_at) : null,
+      resumeClaimId: row.resume_claim_id,
       queue: row.queue,
       priority: row.priority,
       slaDueAt: row.sla_due_at ? iso(row.sla_due_at) : null,
@@ -215,11 +218,23 @@ export class EscalationStore {
   }
 
   /**
-   * Atomically claim the right to resume. Returns the escalation only to the first caller
-   * after an approve/modify resolution; subsequent calls return null. This is the
-   * at-most-once authorization gate for the agent's pending side effect.
+   * Atomically claim the right to resume. With a claimId, retries by the same durable
+   * continuation retain ownership after a crash while every other claimant is refused.
+   * Omitting claimId preserves the original strict first-call-wins behavior.
    */
-  async claimResume(tenantId: string, id: string): Promise<Escalation | null> {
+  async claimResume(tenantId: string, id: string, claimId?: string): Promise<Escalation | null> {
+    if (claimId) {
+      const res = await this.pool.query<EscalationRow>(
+        `UPDATE escalations
+           SET resumed_at = COALESCE(resumed_at, now()),
+               resume_claim_id = COALESCE(resume_claim_id, $3)
+         WHERE tenant_id = $1 AND id = $2 AND status IN ('approved','modified')
+           AND (resumed_at IS NULL OR resume_claim_id = $3)
+         RETURNING *`,
+        [tenantId, id, claimId],
+      );
+      return res.rows[0] ? this.rowTo(res.rows[0]) : null;
+    }
     const res = await this.pool.query<EscalationRow>(
       `UPDATE escalations SET resumed_at = now()
        WHERE tenant_id = $1 AND id = $2 AND status IN ('approved','modified') AND resumed_at IS NULL

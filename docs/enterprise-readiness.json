@@ -342,19 +342,19 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-08-13",
+    "generatedAt": "2026-08-30",
     "files": [
       {
         "path": ".github/CODEOWNERS",
-        "sha256": "f45a9be9db866103e3325d03790c778287e9e382a30682415cc98a2363cd5e14"
+        "sha256": "c73eb1b219620f9ec132cd8bea200c17f203165ddeca72a40c85c454b8944f03"
       },
       {
         "path": ".github/dependabot.yml",
-        "sha256": "874ae7ec9df9c6314a5df7b54c614d3860d416d372d080976950b71a44c4907f"
+        "sha256": "46cda7fc6ce13ef83031388f98f359de4ac0291d1cf67c30ac19969cc8dc3401"
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "9eea949cd37862afadfba03fc2a1f80c2d436ae9a746b46c9b489c7a2811048c"
+        "sha256": "5c34e658a600274ec1ec86234d409d3b53b513ca25c5d36b8830888fbb463dca"
       },
       {
         "path": ".github/workflows/codeql.yml",
@@ -366,7 +366,7 @@
       },
       {
         "path": ".github/workflows/image.yml",
-        "sha256": "b26b5a8b22ac1749be296a2dcf24974bf245efabae392e027cb2ee5e7d4e2b98"
+        "sha256": "eca368eca3193286d36a9e7ebb3a8896a1f5441352d7116bb6c7da7f9aafd924"
       },
       {
         "path": ".github/workflows/judge-parity.yml",
@@ -374,7 +374,7 @@
       },
       {
         "path": ".github/workflows/release.yml",
-        "sha256": "5e3d8b9e2bbb44a42ec79c934f3edf3dfcec721810563124941b1e39da3df276"
+        "sha256": "32da993a97958b66c710fa3949e96c9cc9e3edadfcb6ed21dc8057200f7cc5ce"
       },
       {
         "path": ".github/workflows/training.yml",
@@ -386,11 +386,11 @@
       },
       {
         "path": "docs/LIMITATIONS.md",
-        "sha256": "9bfb6ad87d443585f868232d08048195aefeba2422ea4004da65e059ee72fa05"
+        "sha256": "03def4c65b5da41d89920e4ec6eb3d734fcd1db67372f3926cc5cf213892ab6c"
       },
       {
         "path": "docs/ROADMAP.md",
-        "sha256": "1db5abc020196f76255490feda176e6575c341b80dda3ce6dcd739d8c01e21c0"
+        "sha256": "ca65558981d2d37169c8e890766013df97f60cf36a6178549636ae040517aaf4"
       },
       {
         "path": "docs/assurance-and-risk.md",
