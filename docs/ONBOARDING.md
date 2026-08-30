@@ -13,6 +13,7 @@ asking anyone anything.
 |---|---|---|
 | Node.js | ≥ 20 (verified on 25.x) | `node -v` |
 | pnpm | 10.32.1 | `corepack enable` or `npm i -g pnpm@10.32.1` |
+| Python | ≥ 3.11 | Pharos Runtime and its tests |
 | Docker | Desktop / Engine with `docker compose` | provides Postgres + Redis + MinIO |
 
 No cloud accounts, API keys, or secrets are required for the local quickstart.
@@ -23,6 +24,8 @@ No cloud accounts, API keys, or secrets are required for the local quickstart.
 git clone https://github.com/Bobcatsfan33/Pharos.git
 cd Pharos
 pnpm install
+python3 -m venv runtime/python/.venv
+runtime/python/.venv/bin/pip install -e "runtime/python[dev,viewer]"
 ```
 
 Expected: install completes in seconds. pnpm 10 prints a one-time warning that build scripts
@@ -41,7 +44,7 @@ Done in ~2s using pnpm v10.32.1
 ## 2. Start the infrastructure
 
 ```bash
-pnpm infra:up          # Postgres + Redis + MinIO (S3 WORM) via docker compose
+pnpm infra:up          # control-plane stores + Pharos Runtime viewer
 ```
 
 Wait until all three report `healthy`:
@@ -51,6 +54,7 @@ docker compose ps
 # pharos-postgres   Up (healthy)
 # pharos-redis      Up (healthy)
 # pharos-minio      Up (healthy)
+# pharos-runtime    Up (healthy)
 ```
 
 The containers use fixed host ports **5433** (Postgres), **6380** (Redis), and **9010**
@@ -71,19 +75,19 @@ the local quickstart. (The integration tests also self-provide these same defaul
 
 ```bash
 pnpm test
+PATH="$PWD/runtime/python/.venv/bin:$PATH" pnpm runtime:check
 ```
 
-Expected output (472 tests across 68 files, **0 skipped** — the CI gate fails the build if any integration
-test skips):
+Expected: 520 control-plane tests with **0 skipped** plus the complete runtime suite. CI fails
+if a control-plane integration test skips:
 
 ```
  ✓ test/core.migration.test.ts (5 tests)
  ✓ test/core.signing.test.ts (5 tests)
- ... (29 files)
+ ...
 
- Test Files  29 passed (29)
-      Tests  472 passed (472)
-   Duration  ~11s
+ Test Files  74 passed (74)
+      Tests  520 passed (520)
 ```
 
 > Note: `test/integration.causeway.test.ts` is mildly timing-sensitive; on a busy machine it

@@ -1,0 +1,67 @@
+{
+  "edges": [
+    {
+      "from_": "research_the_topic_thoroughly",
+      "to": "write_the_article_from",
+      "when": null
+    }
+  ],
+  "graph_id": "research_pipeline",
+  "kir_version": "1.0",
+  "nodes": [
+    {
+      "budget": {
+        "max_steps": null,
+        "max_tokens": null,
+        "max_usd": null
+      },
+      "config": {
+        "agent": "researcher",
+        "prompt": "Research the topic thoroughly",
+        "system": "You are the researcher. Your goal: Find the key facts on the topic."
+      },
+      "id": "research_the_topic_thoroughly",
+      "input_schema": null,
+      "model_policy": "default",
+      "output_schema": "ref:schemas/Notes",
+      "region": null,
+      "retry": {
+        "backoff": "exp",
+        "max": 0,
+        "on": [
+          "rate_limit",
+          "transient"
+        ]
+      },
+      "tool": null,
+      "type": "llm_step"
+    },
+    {
+      "budget": {
+        "max_steps": null,
+        "max_tokens": null,
+        "max_usd": null
+      },
+      "config": {
+        "agent": "writer",
+        "prompt": "Write the article from the research",
+        "system": "You are the writer. Your goal: Write a clear summary from the research."
+      },
+      "id": "write_the_article_from",
+      "input_schema": null,
+      "model_policy": "default",
+      "output_schema": null,
+      "region": null,
+      "retry": {
+        "backoff": "exp",
+        "max": 0,
+        "on": [
+          "rate_limit",
+          "transient"
+        ]
+      },
+      "tool": null,
+      "type": "llm_step"
+    }
+  ]
+}

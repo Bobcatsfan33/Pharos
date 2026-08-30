@@ -74,17 +74,28 @@ escalate         -> await a human verdict, then one caller wins the resume claim
 double-resume    -> the tool runs at most once
 ```
 
-## Workflow continuation (atomic at-most-once claim)
+## Workflow continuation (exclusive, replay-safe claim)
 
 An `escalate` verdict parks the action ([`escalations`](../packages/storage/src/escalationStore.ts))
 with full context. A reviewer resolves it (`approve` / `modify` / `reject`), which **seals a
 tier-`human` verdict record** linking reviewer identity, rationale, and the overridden
-machine context. The agent then resumes via an atomic **claim**: `claimResume` flips
-`resumed_at` in one statement, so one resumer wins under concurrent attempts. This is an
-at-most-once authorization: a process crash after the claim but before an arbitrary side
-effect commits can lose execution. Exactly-once requires an idempotent target or a
-transactional outbox. The concurrency property is proven end-to-end in
+machine context. The agent then resumes via an atomic **claim**. With no claim identity the
+original first-invocation-wins behavior remains. A durable runtime can instead supply a
+stable `claimId`: the first identity owns the continuation, retries by that same identity
+retain ownership after a crash, and every different identity is refused. The caller must
+still serialize concurrent work under one identity (Pharos Runtime does this with its run lease).
+Exactly-once effects additionally require the runtime's effect ledger, an idempotent target,
+or a transactional outbox. The ownership property is proven against Postgres in
 `test/integration.causeway.test.ts`.
+
+## Pharos Runtime integration
+
+Pharos Runtime is the first-party execution plane included in this monorepo. It uses an
+exact-once action key before
+each step, records Pharos's sealed evidence binding directly before `step.scheduled`, parks
+durably on escalation, and claims an approved continuation with a stable run/node identity.
+See [`docs/runtime.md`](runtime.md) for the field mapping, failure behavior,
+and runnable example.
 
 ## Zero-code gateway
 

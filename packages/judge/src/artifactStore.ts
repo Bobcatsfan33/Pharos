@@ -136,6 +136,7 @@ async function ensureAsset(
     throw new Error(
       `Could not fetch judge artifact ${safeName} from ${url}: ${(err as Error).message}. ` +
         `Has the maintainer uploaded the blobs to the Release yet?`,
+      { cause: err },
     );
   }
   const got = sha256Hex(bytes);

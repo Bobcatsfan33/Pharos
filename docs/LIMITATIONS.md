@@ -106,8 +106,14 @@ unless `aws-kms` is selected without an endpoint override. KMS-unreachable signi
 behind a bounded circuit breaker; the operational rotation and outage procedures are documented
 in the KMS runbook.
 
-**Remaining:** AWS KMS is the only production HSM integration; customer-managed Vault Transit
-and non-AWS HSM integrations remain future portability work.
+**Portability surface:** `RemoteKms` now implements the same signing contract through an injected,
+namespace-bound transport for Vault Transit, Azure Key Vault, and GCP KMS. It preserves the
+private-key boundary and supports ensure, rotate, sign, verify, and public-key publication.
+The adapter is tested with a hermetic transport, but cloud-specific authentication, availability,
+private networking, and provider conformance remain deployment responsibilities. The packaged API
+startup configuration and Helm production profile still select AWS KMS; they do not yet instantiate
+those remote transports automatically. Therefore this expands the BYOK/HYOK integration seam but
+does not claim three additional qualified production deployments.
 
 ## 4. Trusted-time anchoring: real RFC 3161 supported; `local` is the default for hermetic dev
 
@@ -137,10 +143,15 @@ amount; require human review for a subject; block/escalate a subject when a fiel
 phrase). Anything outside those patterns is returned as `unparsed` for a human to encode.
 It never auto-activates — output is candidate rules requiring approval and a dry-run.
 
-**Production:** broader policy authoring and standards interop (Cedar / OPA-Rego) behind the
-existing `evaluateArtifact` seam — roadmap task **S9-T1** (Phase 3). This is a labeling and
-scope correction, not a defect: the lifecycle (compile → dry-run → shadow → active →
-rollback) is genuinely implemented and tested.
+Pharos also imports explicit portable OPA evaluated-JSON and Cedar JSON interchange profiles into
+the canonical policy IR, preserves citations/source digests, and signs promotion bundles. This is
+standards interoperability without pretending to parse arbitrary Rego source or the complete Cedar
+language.
+
+**Production:** broader authoring, complete upstream-language semantic coverage, and continuous
+compatibility testing against OPA/Cedar releases remain future work. This is a labeling and scope
+correction, not a defect: the lifecycle (compile → dry-run → shadow → active → rollback), portable
+interchange, signing, and impact analysis are genuinely implemented and tested.
 
 ## 6. Generic HTTP delivery is exactly-once only when the upstream honors idempotency
 
@@ -163,6 +174,12 @@ successful delivery removed the row), a second resume issued at a *different* re
 rests on two independent gates and both are pinned: the held-request lease, and the
 server-side `claimResume` (`resumed_at IS NULL`), which refuses a second authorization even
 to a caller that bypasses the lease entirely.
+
+Durable runtimes may supply a stable `claimId`. Pharos then lets that same identity reclaim
+ownership after a crash while refusing every different identity. Pharos Runtime combines
+this with its serialized run lease and effect ledger, closing the approval-to-execution loss
+window for runtime-managed steps. Reusing one identity concurrently without a runtime lease is outside the
+claim protocol and can still duplicate work.
 
 **Protocol limit:** the Pharos claim is an atomic **at-most-once authorization**, not a
 distributed transaction with an arbitrary HTTP target. A crash after the target commits but

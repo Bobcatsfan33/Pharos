@@ -113,7 +113,7 @@
         "docs/evidence/2026-08-10-github-release-controls.md"
       ],
       "gaps": [
-        "The live repository has no v* tag ruleset, the production-release environment has no required reviewers, administrators can bypass it, and no independent collaborator is available."
+        "Live main protection, the active v* tag ruleset, environment ref restrictions, and disabled administrator bypass are implemented. The release environments still have no required reviewer because no independent collaborator is available, the npm trusted-publisher environment must be updated, and no protected release exercise has been retained."
       ]
     },
     {
@@ -207,7 +207,12 @@
         ".github/workflows/ci.yml",
         ".github/workflows/gitleaks.yml",
         ".github/workflows/codeql.yml",
-        ".github/workflows/image.yml"
+        ".github/workflows/image.yml",
+        ".github/workflows/training.yml",
+        "training/pyproject.toml",
+        "training/quantize.py",
+        "training/uv.lock",
+        "training/test_toolchain.py"
       ],
       "gaps": []
     },
@@ -223,10 +228,16 @@
         "docs/benchmarks/system-encoding-eval.md",
         "packages/judge/models/manifest.json",
         ".github/workflows/judge-parity.yml",
+        ".github/workflows/training.yml",
         "docs/evidence/2026-08-10-onnx-runtime-qualification.md",
         "packages/judge/src/onnxModel.ts",
         "training/corpus.py",
         "training/check_leakage.py",
+        "training/pyproject.toml",
+        "training/quantize.py",
+        "training/uv.lock",
+        "training/train.py",
+        "training/test_toolchain.py",
         "training/lockbox/funds-movement-intent.json",
         "packages/observability/src/judgeDrift.ts",
         "services/api/src/platform.ts",
@@ -331,23 +342,23 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-08-10",
+    "generatedAt": "2026-08-30",
     "files": [
       {
         "path": ".github/CODEOWNERS",
-        "sha256": "f45a9be9db866103e3325d03790c778287e9e382a30682415cc98a2363cd5e14"
+        "sha256": "c73eb1b219620f9ec132cd8bea200c17f203165ddeca72a40c85c454b8944f03"
       },
       {
         "path": ".github/dependabot.yml",
-        "sha256": "bdabe1d605a716a9a43559d533cdeea523532f9838e8b120d337b007bb56752a"
+        "sha256": "46cda7fc6ce13ef83031388f98f359de4ac0291d1cf67c30ac19969cc8dc3401"
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "c5e5f9a37e2a86d0d44851f3209500148cb1e1176bd45b9818784a993cfb487c"
+        "sha256": "5c34e658a600274ec1ec86234d409d3b53b513ca25c5d36b8830888fbb463dca"
       },
       {
         "path": ".github/workflows/codeql.yml",
-        "sha256": "8e930d74f0d447cfa9dddb6e984424990b91c99d430be3f3d60dbccaa3e15743"
+        "sha256": "c5a17878f2a9e74aa79c1dccdc6429106b452971335f58e1322dde954aa87dd4"
       },
       {
         "path": ".github/workflows/gitleaks.yml",
@@ -355,15 +366,19 @@
       },
       {
         "path": ".github/workflows/image.yml",
-        "sha256": "358bb4e7f7ed3403d03812c664c3aaac8f767ec350f7c09f03184ecb6c44abde"
+        "sha256": "eca368eca3193286d36a9e7ebb3a8896a1f5441352d7116bb6c7da7f9aafd924"
       },
       {
         "path": ".github/workflows/judge-parity.yml",
-        "sha256": "2cff12b812d6db1a43052f9f66a70d1bb25e4e87750bc19e03a29f75adc6adb5"
+        "sha256": "88b3518840abf8e99851a2184682ba6b1ab391ca83f48c86f960b45b3fbf1d16"
       },
       {
         "path": ".github/workflows/release.yml",
-        "sha256": "04d5dfc862c87b4f32cf31c9769eb129a7ef19adb11ddf63710d7593d2d1ff7c"
+        "sha256": "32da993a97958b66c710fa3949e96c9cc9e3edadfcb6ed21dc8057200f7cc5ce"
+      },
+      {
+        "path": ".github/workflows/training.yml",
+        "sha256": "cdcc19976f526f5d92ddca63ed7598d948fbc218670587cf71a233358d2db43e"
       },
       {
         "path": "SECURITY.md",
@@ -371,11 +386,11 @@
       },
       {
         "path": "docs/LIMITATIONS.md",
-        "sha256": "9bfb6ad87d443585f868232d08048195aefeba2422ea4004da65e059ee72fa05"
+        "sha256": "03def4c65b5da41d89920e4ec6eb3d734fcd1db67372f3926cc5cf213892ab6c"
       },
       {
         "path": "docs/ROADMAP.md",
-        "sha256": "1db5abc020196f76255490feda176e6575c341b80dda3ce6dcd739d8c01e21c0"
+        "sha256": "ca65558981d2d37169c8e890766013df97f60cf36a6178549636ae040517aaf4"
       },
       {
         "path": "docs/assurance-and-risk.md",
@@ -423,7 +438,7 @@
       },
       {
         "path": "docs/evidence/2026-08-10-github-release-controls.md",
-        "sha256": "c47700264713777576d8233d5a92ed08d107a00763d8ad0974d3314e0a1b3ec1"
+        "sha256": "443748246ac1e5d456809d61eaee434860cc7ac5c286c43feb8bd7757850e373"
       },
       {
         "path": "docs/evidence/2026-08-10-onnx-runtime-qualification.md",
@@ -523,7 +538,7 @@
       },
       {
         "path": "docs/security/release-assurance.md",
-        "sha256": "5d2b8aa1096dd1a1996193b9faff09ccfab27db202cf94b915a7af9a8edac3f2"
+        "sha256": "1a6491d5f9e9b9af9749c412b9327aac6f5789b949302a0b28ec38a3ceeb39ea"
       },
       {
         "path": "packages/judge/models/manifest.json",
@@ -535,11 +550,11 @@
       },
       {
         "path": "packages/observability/src/judgeDrift.ts",
-        "sha256": "fb141eea00b04ac830b485dd615bedd6defe91f16c760557dc68e4bc36a03010"
+        "sha256": "767f1c644c0f7ced7445db05856fd5387289b820ed3579eae42432533e9af309"
       },
       {
         "path": "scripts/verify-external-gate-trackers.mjs",
-        "sha256": "583cc4a6bc4f6637aefa2fac0497e734809fb1daba6b4030c9e49f833b4ef678"
+        "sha256": "ab5fe75e4fcccebb32bfd9b7488ae64f144d0870bc594856eaa045b7272a4dac"
       },
       {
         "path": "services/api/src/platform.ts",
@@ -568,6 +583,26 @@
       {
         "path": "training/lockbox/funds-movement-intent.json",
         "sha256": "6e29a255fa5dfac3419460e6fa359ad9afa861c1e3dbd032a49e1c777c9ff2d3"
+      },
+      {
+        "path": "training/pyproject.toml",
+        "sha256": "4c30c69aae81538d5b21eceb74fb04ce8ce2f15be33528aac33acb7effaed358"
+      },
+      {
+        "path": "training/quantize.py",
+        "sha256": "63c24c54ba9ab2e36dfb0c6ab5e13e101a6dfcc60b0aba1d914e366bb998a0d7"
+      },
+      {
+        "path": "training/test_toolchain.py",
+        "sha256": "c51d3a39bfc0f583a10f72a10805ddfbdd2e1a26ad6032f6418305cfa03151d0"
+      },
+      {
+        "path": "training/train.py",
+        "sha256": "151df23bf0b1cf3274742b93251c10d21d34eccd6e1a94893f4fc86923c3508d"
+      },
+      {
+        "path": "training/uv.lock",
+        "sha256": "791fef3b764cc5ee04c995b9f83a60fae3f8226e27fdc4f0e0404026ba2e8daf"
       }
     ]
   }

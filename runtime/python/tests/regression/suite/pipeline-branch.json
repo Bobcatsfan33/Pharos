@@ -1,0 +1,532 @@
+{
+  "format": "keel.regression/1",
+  "bundle_id": "pipeline-branch",
+  "run_id": "pipeline-branch",
+  "graph": {
+    "kir_version": "1.0",
+    "graph_id": "pipeline-branch",
+    "nodes": [
+      {
+        "id": "root",
+        "type": "llm_step",
+        "model_policy": "default",
+        "input_schema": null,
+        "output_schema": null,
+        "tool": null,
+        "retry": {
+          "max": 0,
+          "backoff": "exp",
+          "on": [
+            "rate_limit",
+            "transient"
+          ]
+        },
+        "budget": {
+          "max_tokens": null,
+          "max_usd": null,
+          "max_steps": null
+        },
+        "region": null,
+        "config": {
+          "model": "mock:test"
+        }
+      },
+      {
+        "id": "a",
+        "type": "llm_step",
+        "model_policy": "default",
+        "input_schema": null,
+        "output_schema": null,
+        "tool": null,
+        "retry": {
+          "max": 0,
+          "backoff": "exp",
+          "on": [
+            "rate_limit",
+            "transient"
+          ]
+        },
+        "budget": {
+          "max_tokens": null,
+          "max_usd": null,
+          "max_steps": null
+        },
+        "region": null,
+        "config": {
+          "model": "mock:test"
+        }
+      },
+      {
+        "id": "b",
+        "type": "llm_step",
+        "model_policy": "default",
+        "input_schema": null,
+        "output_schema": null,
+        "tool": null,
+        "retry": {
+          "max": 0,
+          "backoff": "exp",
+          "on": [
+            "rate_limit",
+            "transient"
+          ]
+        },
+        "budget": {
+          "max_tokens": null,
+          "max_usd": null,
+          "max_steps": null
+        },
+        "region": null,
+        "config": {
+          "model": "mock:test"
+        }
+      },
+      {
+        "id": "join",
+        "type": "llm_step",
+        "model_policy": "default",
+        "input_schema": null,
+        "output_schema": null,
+        "tool": null,
+        "retry": {
+          "max": 0,
+          "backoff": "exp",
+          "on": [
+            "rate_limit",
+            "transient"
+          ]
+        },
+        "budget": {
+          "max_tokens": null,
+          "max_usd": null,
+          "max_steps": null
+        },
+        "region": null,
+        "config": {
+          "model": "mock:test"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from": "root",
+        "to": "a",
+        "when": null
+      },
+      {
+        "from": "root",
+        "to": "b",
+        "when": null
+      },
+      {
+        "from": "a",
+        "to": "join",
+        "when": null
+      },
+      {
+        "from": "b",
+        "to": "join",
+        "when": null
+      }
+    ]
+  },
+  "events": [
+    {
+      "schema_version": 1,
+      "event_id": "ev00000001",
+      "run_id": "pipeline-branch",
+      "seq": 0,
+      "ts": "2026-01-01T00:00:00.002000Z",
+      "type": "run.started",
+      "node_id": null,
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000002",
+      "run_id": "pipeline-branch",
+      "seq": 1,
+      "ts": "2026-01-01T00:00:00.003000Z",
+      "type": "step.scheduled",
+      "node_id": "root",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000003",
+      "run_id": "pipeline-branch",
+      "seq": 2,
+      "ts": "2026-01-01T00:00:00.004000Z",
+      "type": "step.started",
+      "node_id": "root",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000004",
+      "run_id": "pipeline-branch",
+      "seq": 3,
+      "ts": "2026-01-01T00:00:00.005000Z",
+      "type": "llm.request",
+      "node_id": "root",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:ab2991f78bf0360302e08ed537a779045992a53cf453470bf3f8096b8b753e57",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {
+        "model": "mock:test",
+        "reprompt": 0,
+        "context_tokens": {
+          "system": 0,
+          "role": 0,
+          "memory": 0,
+          "history": 0,
+          "inputs": 0
+        },
+        "context_total": 0
+      }
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000005",
+      "run_id": "pipeline-branch",
+      "seq": 4,
+      "ts": "2026-01-01T00:00:00.006000Z",
+      "type": "llm.response",
+      "node_id": "root",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:6bc0da1f42f96fc37b8bd7ed20ba57606d2a0da5cda2b135c7854fbdc985b8a3",
+      "tokens": {
+        "input": 10,
+        "output": 5,
+        "model": "mock:test"
+      },
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000006",
+      "run_id": "pipeline-branch",
+      "seq": 5,
+      "ts": "2026-01-01T00:00:00.007000Z",
+      "type": "step.completed",
+      "node_id": "root",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:6bc0da1f42f96fc37b8bd7ed20ba57606d2a0da5cda2b135c7854fbdc985b8a3",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000007",
+      "run_id": "pipeline-branch",
+      "seq": 6,
+      "ts": "2026-01-01T00:00:00.008000Z",
+      "type": "step.scheduled",
+      "node_id": "a",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000008",
+      "run_id": "pipeline-branch",
+      "seq": 7,
+      "ts": "2026-01-01T00:00:00.009000Z",
+      "type": "step.started",
+      "node_id": "a",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000009",
+      "run_id": "pipeline-branch",
+      "seq": 8,
+      "ts": "2026-01-01T00:00:00.010000Z",
+      "type": "llm.request",
+      "node_id": "a",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:24445fc35aa81282ab8bf4e88a22b52e5f41ad45d18c113c9dad619f3d083bbc",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {
+        "model": "mock:test",
+        "reprompt": 0,
+        "context_tokens": {
+          "system": 0,
+          "role": 0,
+          "memory": 0,
+          "history": 0,
+          "inputs": 9
+        },
+        "context_total": 9
+      }
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000010",
+      "run_id": "pipeline-branch",
+      "seq": 9,
+      "ts": "2026-01-01T00:00:00.011000Z",
+      "type": "llm.response",
+      "node_id": "a",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:6bc0da1f42f96fc37b8bd7ed20ba57606d2a0da5cda2b135c7854fbdc985b8a3",
+      "tokens": {
+        "input": 10,
+        "output": 5,
+        "model": "mock:test"
+      },
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000011",
+      "run_id": "pipeline-branch",
+      "seq": 10,
+      "ts": "2026-01-01T00:00:00.012000Z",
+      "type": "step.completed",
+      "node_id": "a",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:6bc0da1f42f96fc37b8bd7ed20ba57606d2a0da5cda2b135c7854fbdc985b8a3",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000012",
+      "run_id": "pipeline-branch",
+      "seq": 11,
+      "ts": "2026-01-01T00:00:00.013000Z",
+      "type": "step.scheduled",
+      "node_id": "b",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000013",
+      "run_id": "pipeline-branch",
+      "seq": 12,
+      "ts": "2026-01-01T00:00:00.014000Z",
+      "type": "step.started",
+      "node_id": "b",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000014",
+      "run_id": "pipeline-branch",
+      "seq": 13,
+      "ts": "2026-01-01T00:00:00.015000Z",
+      "type": "llm.request",
+      "node_id": "b",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:24445fc35aa81282ab8bf4e88a22b52e5f41ad45d18c113c9dad619f3d083bbc",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {
+        "model": "mock:test",
+        "reprompt": 0,
+        "context_tokens": {
+          "system": 0,
+          "role": 0,
+          "memory": 0,
+          "history": 0,
+          "inputs": 9
+        },
+        "context_total": 9
+      }
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000015",
+      "run_id": "pipeline-branch",
+      "seq": 14,
+      "ts": "2026-01-01T00:00:00.016000Z",
+      "type": "llm.response",
+      "node_id": "b",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:6bc0da1f42f96fc37b8bd7ed20ba57606d2a0da5cda2b135c7854fbdc985b8a3",
+      "tokens": {
+        "input": 10,
+        "output": 5,
+        "model": "mock:test"
+      },
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000016",
+      "run_id": "pipeline-branch",
+      "seq": 15,
+      "ts": "2026-01-01T00:00:00.017000Z",
+      "type": "step.completed",
+      "node_id": "b",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:6bc0da1f42f96fc37b8bd7ed20ba57606d2a0da5cda2b135c7854fbdc985b8a3",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000017",
+      "run_id": "pipeline-branch",
+      "seq": 16,
+      "ts": "2026-01-01T00:00:00.018000Z",
+      "type": "step.scheduled",
+      "node_id": "join",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000018",
+      "run_id": "pipeline-branch",
+      "seq": 17,
+      "ts": "2026-01-01T00:00:00.019000Z",
+      "type": "step.started",
+      "node_id": "join",
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000019",
+      "run_id": "pipeline-branch",
+      "seq": 18,
+      "ts": "2026-01-01T00:00:00.020000Z",
+      "type": "llm.request",
+      "node_id": "join",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:93df8cd7f051898e8e066b647629d96c73d7ceef3bd61fdc18cebd27c0821e0a",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {
+        "model": "mock:test",
+        "reprompt": 0,
+        "context_tokens": {
+          "system": 0,
+          "role": 0,
+          "memory": 0,
+          "history": 0,
+          "inputs": 14
+        },
+        "context_total": 14
+      }
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000020",
+      "run_id": "pipeline-branch",
+      "seq": 19,
+      "ts": "2026-01-01T00:00:00.021000Z",
+      "type": "llm.response",
+      "node_id": "join",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:6bc0da1f42f96fc37b8bd7ed20ba57606d2a0da5cda2b135c7854fbdc985b8a3",
+      "tokens": {
+        "input": 10,
+        "output": 5,
+        "model": "mock:test"
+      },
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000021",
+      "run_id": "pipeline-branch",
+      "seq": 20,
+      "ts": "2026-01-01T00:00:00.022000Z",
+      "type": "step.completed",
+      "node_id": "join",
+      "attempt": 1,
+      "payload_ref": "blob:sha256:6bc0da1f42f96fc37b8bd7ed20ba57606d2a0da5cda2b135c7854fbdc985b8a3",
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    },
+    {
+      "schema_version": 1,
+      "event_id": "ev00000022",
+      "run_id": "pipeline-branch",
+      "seq": 21,
+      "ts": "2026-01-01T00:00:00.023000Z",
+      "type": "run.completed",
+      "node_id": null,
+      "attempt": 1,
+      "payload_ref": null,
+      "tokens": null,
+      "cost_usd": 0.0,
+      "parent_span": null,
+      "data": {}
+    }
+  ],
+  "blobs": {
+    "blob:sha256:24445fc35aa81282ab8bf4e88a22b52e5f41ad45d18c113c9dad619f3d083bbc": "W3sicm9sZSI6ICJ1c2VyIiwgImNvbnRlbnQiOiAiXG5cbklucHV0czpcbntcInJvb3RcIjogXCJ7XFxcIm9rXFxcIjogdHJ1ZX1cIn0ifV0=",
+    "blob:sha256:6bc0da1f42f96fc37b8bd7ed20ba57606d2a0da5cda2b135c7854fbdc985b8a3": "eyJvayI6IHRydWV9",
+    "blob:sha256:93df8cd7f051898e8e066b647629d96c73d7ceef3bd61fdc18cebd27c0821e0a": "W3sicm9sZSI6ICJ1c2VyIiwgImNvbnRlbnQiOiAiXG5cbklucHV0czpcbntcImFcIjogXCJ7XFxcIm9rXFxcIjogdHJ1ZX1cIiwgXCJiXCI6IFwie1xcXCJva1xcXCI6IHRydWV9XCJ9In1d",
+    "blob:sha256:ab2991f78bf0360302e08ed537a779045992a53cf453470bf3f8096b8b753e57": "W3sicm9sZSI6ICJ1c2VyIiwgImNvbnRlbnQiOiAiIn1d"
+  },
+  "eval_case": null
+}

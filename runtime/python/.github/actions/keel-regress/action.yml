@@ -1,0 +1,28 @@
+name: keel-regress
+description: >-
+  Replay recorded KEEL runs as regression tests and fail the job on any determinism
+  or behavioural drift. Point it at a directory of regression bundles captured with
+  `keel regress record`.
+inputs:
+  suite:
+    description: Directory of regression bundle .json files.
+    required: false
+    default: tests/regression/suite
+  flake:
+    description: Eval runs per bundle (flake detection).
+    required: false
+    default: "3"
+  junit:
+    description: Path to write a JUnit XML report.
+    required: false
+    default: regression-junit.xml
+runs:
+  using: composite
+  steps:
+    - name: keel regress run
+      shell: bash
+      run: |
+        python -m keel.cli regress run \
+          --suite "${{ inputs.suite }}" \
+          --flake "${{ inputs.flake }}" \
+          --junit "${{ inputs.junit }}"

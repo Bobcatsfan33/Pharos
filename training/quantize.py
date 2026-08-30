@@ -14,6 +14,7 @@ import hashlib
 import json
 from pathlib import Path
 
+import onnx
 from onnxruntime.quantization import quantize_dynamic, QuantType
 
 MODELS = Path(__file__).parent / "models"
@@ -35,7 +36,9 @@ def main():
     fp32 = outdir / "model.onnx"
     int8 = outdir / "model.int8.onnx"
 
+    onnx.checker.check_model(onnx.load(fp32))
     quantize_dynamic(str(fp32), str(int8), weight_type=QuantType.QInt8)
+    onnx.checker.check_model(onnx.load(int8))
 
     artifact = json.loads((outdir / "artifact.json").read_text())
     artifact["hashes"]["onnxInt8"] = sha256_file(int8)

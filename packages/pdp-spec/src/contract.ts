@@ -39,7 +39,7 @@ export interface PdpCitation {
 
 /** Optional evidence-binding: a signature binding the verdict to a sealed record. */
 export interface PdpEvidenceBinding {
-  algorithm: "ed25519";
+  algorithm: "ed25519" | "ecdsa-p256";
   contentHash: string; // 64-char hex
   keyId: string;
   signature: string; // base64

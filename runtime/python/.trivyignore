@@ -1,0 +1,15 @@
+# Trivy waivers — the ONLY sanctioned waiver path (SH-1 acceptance). Each entry is a
+# base-image (distroless) OS-package CVE not reachable from KEEL's own code; fixes are
+# pending in the distroless python3-debian12:nonroot base and clear automatically when
+# the base updates. Re-review on every base bump; nothing here waives a finding in
+# KEEL code (those must be fixed, never ignored).
+
+# cpython http.client excessive read-buffering DoS. KEEL makes only client-side HTTP
+# calls via httpx (to model providers); the viewer uses Starlette/uvicorn, not
+# stdlib http.client servers. Fixed upstream in 3.11.2-6+deb12u7 (not yet in base).
+CVE-2025-13836
+
+# OpenSSL heap use-after-free in PKCS7_verify(). KEEL never calls PKCS7_verify; TLS to
+# providers is handled by httpx/OpenSSL's standard paths. Fixed in openssl
+# 3.0.20-1~deb12u2 (not yet in base).
+CVE-2026-45447

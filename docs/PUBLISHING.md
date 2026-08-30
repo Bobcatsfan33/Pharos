@@ -1,19 +1,21 @@
-# Publishing the SDKs
+# Publishing Pharos
 
-Pharos ships two SDKs from signed, versioned artifacts:
+Pharos ships two SDKs and its durable runtime from signed, versioned artifacts:
 
 - **`@getpharos/sdk`** → npm, with [provenance](https://docs.npmjs.com/generating-provenance-statements).
 - **`getpharos`** → PyPI (the Python import name stays `pharos_sdk`), with
   [Trusted Publishing](https://docs.pypi.org/trusted-publishers/) (OIDC).
+- **`pharos-runtime`** → a verified Python wheel and signed `ghcr.io/.../pharos-runtime`
+  image. PyPI publication is enabled after its pending trusted publisher is activated.
 
-Both are **live**. Publishing is automated by
+The SDK registries are **live**. Runtime artifacts and images are automated by
 [`.github/workflows/release.yml`](../.github/workflows/release.yml). An exact stable tag
 (`vMAJOR.MINOR.PATCH`) or an explicit manual `workflow_dispatch` publishes the SDKs. A semver
 prerelease tag such as `v0.3.0-rc.1` deliberately skips both irreversible registry jobs and is
 reserved for publishing the signed API assessment image through `image.yml`.
 
-> The `pharos` npm scope and PyPI name were taken, so the packages use the `getpharos` scope /
-> distribution name. The Python module you import is unchanged: `import pharos_sdk`.
+> The `pharos` npm scope and PyPI name were taken, so the SDKs use the `getpharos` scope /
+> distribution name. The runtime uses the available `pharos-runtime` distribution name.
 
 ## No-secrets model (read this first)
 
@@ -32,8 +34,10 @@ Both were configured by the maintainer and have published real releases.
 
 ### npm — `@getpharos/sdk`
 
-- Trusted publisher: repository **`Bobcatsfan33/Pharos`**, workflow **`release.yml`**, **no
-  environment**, action **`npm publish`** allowed.
+- Trusted publisher must be repository **`Bobcatsfan33/Pharos`**, workflow **`release.yml`**,
+  environment **`production-release`**, action **`npm publish`** allowed. The original no-environment
+  publisher must be replaced before the next release; the workflow now fails closed at the protected
+  environment boundary until that registry-side change is complete.
 - Package settings: **2FA required**, **tokens disallowed**.
 - npm OIDC trusted publishing needs **npm ≥ 11.5.1** (Node 22 ships npm 10), so the workflow
   upgrades npm before publishing.
@@ -44,6 +48,13 @@ Both were configured by the maintainer and have published real releases.
   environment **`pharos`**.
 - The `pypi-publish` job declares `environment: pharos` — this **must** match the trusted
   publisher, or PyPI rejects the OIDC token.
+
+### PyPI — `pharos-runtime`
+
+The workflow always builds, tests, smoke-installs, and retains the runtime wheel. To enable
+registry publication, configure a PyPI pending trusted publisher for repository
+`Bobcatsfan33/Pharos`, workflow `release.yml`, environment `pharos`, then set the repository
+variable `PHAROS_RUNTIME_PYPI_ENABLED=true`. No token or repository secret is permitted.
 
 ## Published versions
 
@@ -69,8 +80,9 @@ typechecking resolves imports through `exports` — which means **`dist` must ex
 
 ## Cutting a release
 
-1. Bump the versions: `packages/sdk-ts/package.json` (+ its `CHANGELOG.md`) and
-   `sdks/python/pyproject.toml`. Prefer a Changeset for the npm package.
+1. Bump the versions: `packages/sdk-ts/package.json` (+ its `CHANGELOG.md`),
+   `sdks/python/pyproject.toml`, and `runtime/python/pyproject.toml`. Prefer a Changeset for
+   the npm package.
 2. Create and push an exact stable tag:
 
    ```bash
@@ -78,7 +90,8 @@ typechecking resolves imports through `exports` — which means **`dist` must ex
    git push origin vX.Y.Z          # triggers release.yml
    ```
 
-   Or run `release.yml` from the Actions tab (`workflow_dispatch`).
+   Or run `release.yml` from the Actions tab (`workflow_dispatch`). Both routes must pass the
+   protected deployment environments and an independent approval before registry publication.
 
 Do not use a prerelease tag to publish SDKs. `vX.Y.Z-rc.N` is an image-only release-candidate
 channel used by independent assessors and production-topology exercises. The release workflow

@@ -410,6 +410,19 @@ export const MIGRATIONS: Migration[] = [
         WITH CHECK (tenant_id = current_setting('pharos.tenant_id', true));
     `,
   },
+  {
+    version: "0014_replay_safe_resume_claims",
+    sql: /* sql */ `
+      -- A durable runtime can crash after obtaining resume authorization but before
+      -- committing its side effect. Binding the claim to a stable caller identity lets
+      -- that same continuation recover while preserving exclusive ownership against
+      -- every differently identified caller.
+      ALTER TABLE escalations ADD COLUMN IF NOT EXISTS resume_claim_id TEXT;
+      ALTER TABLE escalations DROP CONSTRAINT IF EXISTS escalations_resume_claim_id_length;
+      ALTER TABLE escalations ADD CONSTRAINT escalations_resume_claim_id_length
+        CHECK (resume_claim_id IS NULL OR length(resume_claim_id) BETWEEN 1 AND 255);
+    `,
+  },
 ];
 
 export async function runMigrations(pool: Pool): Promise<string[]> {

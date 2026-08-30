@@ -7,14 +7,17 @@ By participating you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md)
 
 ## Development setup
 
-Prerequisites: Node.js ≥ 20, [pnpm](https://pnpm.io) 10.x, and Docker (for the local
-Postgres / Redis / MinIO stack).
+Prerequisites: Node.js ≥ 20, [pnpm](https://pnpm.io) 10.x, Python ≥ 3.11, and Docker (for
+the local Postgres / Redis / MinIO stack).
 
 ```bash
 pnpm install
+python3 -m venv runtime/python/.venv
+runtime/python/.venv/bin/pip install -e "runtime/python[dev,viewer]"
 pnpm infra:up          # Postgres + Redis + MinIO via docker compose
 cp .env.example .env
-pnpm test              # all tests must pass before you start ANY task
+pnpm test              # control-plane suite
+PATH="$PWD/runtime/python/.venv/bin:$PATH" pnpm runtime:check
 pnpm api:dev           # API on :4000
 ```
 
@@ -24,7 +27,7 @@ clean-machine transcript.
 
 ## Ground rules
 
-1. **Green before and after.** `pnpm -r typecheck && pnpm test` must be green before you
+1. **Green before and after.** `pnpm -r typecheck && pnpm test && pnpm runtime:check` must be green before you
    branch and before you open a PR. Do not weaken, skip-list, or conditionalize the CI
    "integration tests must run, not skip" gate to get a PR green.
 2. **One task, one PR.** Branch `s<sprint>-t<task>-short-name` (e.g. `s3-t2-aws-kms-provider`).

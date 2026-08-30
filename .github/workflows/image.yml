@@ -10,6 +10,7 @@ on:
       - "packages/**"
       - "services/**"
       - "apps/**"
+      - "runtime/python/**"
       - ".github/workflows/image.yml"
       - "deploy/INSTALL.md"
   push:
@@ -24,7 +25,9 @@ concurrency:
 
 env:
   NODE_IMAGE: node:22-bookworm-slim@sha256:7af03b14a13c8cdd38e45058fd957bf00a72bbe17feac43b1c15a689c029c732
+  PYTHON_IMAGE: python:3.11-slim-bookworm@sha256:0bee7276f83efd4a1ee05bbbf4281d95ed28e079220a9457f25a93e3f1e3c31b
   LOCAL_IMAGE: pharos-api:verification
+  LOCAL_RUNTIME_IMAGE: pharos-runtime:verification
   TRIVY_VERSION: v0.72.0
 
 jobs:
@@ -129,10 +132,78 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: 1
 
+  verify-runtime-image:
+    name: runtime image policy, SBOM, and vulnerability gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c
+      - name: build the Pharos Runtime image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
+        with:
+          context: runtime/python
+          load: true
+          push: false
+          tags: ${{ env.LOCAL_RUNTIME_IMAGE }}
+          build-args: |
+            PYTHON_IMAGE=${{ env.PYTHON_IMAGE }}
+      - name: verify immutable base, non-root identity, and branded CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEFAULT_BASE="$(sed -n 's/^ARG PYTHON_IMAGE=//p' runtime/python/Dockerfile | head -n 1)"
+          test "${DEFAULT_BASE}" = "${PYTHON_IMAGE}"
+          test "$(docker image inspect "${LOCAL_RUNTIME_IMAGE}" --format '{{ index .Config.Labels "org.opencontainers.image.base.name" }}')" = "${PYTHON_IMAGE}"
+          test "$(docker image inspect "${LOCAL_RUNTIME_IMAGE}" --format '{{.Config.User}}')" = "65532:65532"
+          docker run --rm --read-only --network none --cap-drop ALL \
+            --security-opt no-new-privileges "${LOCAL_RUNTIME_IMAGE}" --help | grep -q "usage: pharos"
+      - name: generate runtime SPDX SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
+        with:
+          image: ${{ env.LOCAL_RUNTIME_IMAGE }}
+          format: spdx-json
+          output-file: pharos-runtime.spdx.json
+          syft-version: v1.50.0
+          upload-artifact: false
+      - name: write runtime vulnerability evidence
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: ${{ env.LOCAL_RUNTIME_IMAGE }}
+          version: ${{ env.TRIVY_VERSION }}
+          format: json
+          output: pharos-runtime.trivy.json
+          scanners: vuln
+          vuln-type: os,library
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          exit-code: 0
+      - name: retain runtime assurance evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: pharos-runtime-image-assurance-${{ github.run_id }}
+          path: |
+            pharos-runtime.spdx.json
+            pharos-runtime.trivy.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: block runtime fixable high and critical vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: ${{ env.LOCAL_RUNTIME_IMAGE }}
+          version: ${{ env.TRIVY_VERSION }}
+          format: table
+          scanners: vuln
+          vuln-type: os,library
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
   publish:
     name: publish, sign, and attest
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: verify-image
+    needs: [verify-image, verify-runtime-image]
     runs-on: ubuntu-latest
     environment: production-release
     permissions:
@@ -205,7 +276,7 @@ jobs:
           "${IMAGE}@${{ steps.build.outputs.digest }}"
 
       - name: publish GitHub build provenance
-        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ${{ env.IMAGE }}
           subject-digest: ${{ steps.build.outputs.digest }}
@@ -256,5 +327,108 @@ jobs:
           path: |
             pharos-api.spdx.json
             pharos-api.release.json
+          if-no-files-found: error
+          retention-days: 90
+
+  publish-runtime:
+    name: publish, sign, and attest Pharos Runtime
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: verify-runtime-image
+    runs-on: ubuntu-latest
+    environment: production-release
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: validate release tag and compute runtime image name
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::runtime image release tag must be an explicit semantic version"
+            exit 1
+          fi
+          echo "RUNTIME_IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/pharos-runtime" >> "${GITHUB_ENV}"
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: runtime-metadata
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302
+        with:
+          images: ${{ env.RUNTIME_IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=sha,format=long,prefix=sha-
+      - id: runtime-build
+        name: build and publish Pharos Runtime
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
+        with:
+          context: runtime/python
+          push: true
+          tags: ${{ steps.runtime-metadata.outputs.tags }}
+          labels: ${{ steps.runtime-metadata.outputs.labels }}
+          build-args: |
+            PYTHON_IMAGE=${{ env.PYTHON_IMAGE }}
+          provenance: mode=max
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
+      - name: keylessly sign the runtime image
+        run: cosign sign --yes "${RUNTIME_IMAGE}@${{ steps.runtime-build.outputs.digest }}"
+      - name: generate runtime release SPDX SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
+        with:
+          image: ${{ env.RUNTIME_IMAGE }}@${{ steps.runtime-build.outputs.digest }}
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          format: spdx-json
+          output-file: pharos-runtime.spdx.json
+          syft-version: v1.50.0
+          upload-artifact: false
+      - name: keylessly attest the runtime SBOM
+        run: >-
+          cosign attest --yes
+          --predicate pharos-runtime.spdx.json
+          --type spdxjson
+          "${RUNTIME_IMAGE}@${{ steps.runtime-build.outputs.digest }}"
+      - name: publish runtime build provenance
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373
+        with:
+          subject-name: ${{ env.RUNTIME_IMAGE }}
+          subject-digest: ${{ steps.runtime-build.outputs.digest }}
+          push-to-registry: true
+      - name: write runtime release receipt
+        env:
+          IMAGE_DIGEST: ${{ steps.runtime-build.outputs.digest }}
+        shell: bash
+        run: |
+          jq -n \
+            --arg schema_version "1" \
+            --arg image "${RUNTIME_IMAGE}" \
+            --arg image_digest "${IMAGE_DIGEST}" \
+            --arg base_image "${PYTHON_IMAGE}" \
+            --arg source_repository "https://github.com/${GITHUB_REPOSITORY}" \
+            --arg source_revision "${GITHUB_SHA}" \
+            --arg release_tag "${GITHUB_REF_NAME}" \
+            '{
+              schema_version: ($schema_version | tonumber),
+              image: $image,
+              image_digest: $image_digest,
+              base_image: $base_image,
+              source_repository: $source_repository,
+              source_revision: $source_revision,
+              release_tag: $release_tag
+            }' > pharos-runtime.release.json
+      - name: retain runtime release evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: pharos-runtime-${{ github.ref_name }}
+          path: |
+            pharos-runtime.spdx.json
+            pharos-runtime.release.json
           if-no-files-found: error
           retention-days: 90

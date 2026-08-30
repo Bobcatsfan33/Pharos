@@ -1,0 +1,26 @@
+name: regression
+# M5 — replay-as-a-test. On every PR (and push to main), KEEL replays its committed
+# regression bundles byte-identically and blocks the merge on any determinism or
+# behavioural drift. KEEL dogfoods this on its own recorded runs.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  replay-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install -e ".[dev]"
+      - name: replay recorded runs (block on regression)
+        run: |
+          python -m keel.cli regress run \
+            --suite tests/regression/suite \
+            --junit regression-junit.xml
+      - name: upload JUnit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: regression-junit, path: regression-junit.xml, retention-days: 30 }

@@ -2,6 +2,16 @@ import { z } from "zod";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
+export {
+  type EnterpriseKmsProvider,
+  type DeploymentRegion,
+  type TenantResidency,
+  type EnterpriseDeploymentPlan,
+  type DeploymentValidation,
+  validateEnterpriseDeployment,
+  planTenantFailover,
+} from "./deployment.js";
+
 /**
  * Validated platform configuration, loaded from the environment at startup.
  * Fail-fast: a missing or malformed value aborts boot rather than failing later

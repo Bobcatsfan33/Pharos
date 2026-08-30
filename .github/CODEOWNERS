@@ -5,8 +5,13 @@
 # Order matters: the last matching pattern wins.
 
 /packages/core/       @Bobcatsfan33
+/packages/connectors/ @Bobcatsfan33
+/packages/pdp-spec/   @Bobcatsfan33
+/packages/policy/     @Bobcatsfan33
+/packages/review/     @Bobcatsfan33
 /packages/storage/    @Bobcatsfan33
 /packages/identity/   @Bobcatsfan33
+/runtime/python/      @Bobcatsfan33
 /.github/workflows/   @Bobcatsfan33
 /Dockerfile           @Bobcatsfan33
 /docs/enterprise-readiness.json @Bobcatsfan33

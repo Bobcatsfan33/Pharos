@@ -37,7 +37,7 @@ the committed `model.onnx` + its content hash are authoritative (same contract a
 ## Commands
 
 ```bash
-cd training && uv sync
+cd training && uv sync --frozen
 uv run python corpus.py                       # generate the training corpus
 uv run python check_leakage.py                # PROVE zero training↔eval leakage (blocks on any hit)
 uv run python train.py --concern finra-promissory --epochs 5
@@ -45,6 +45,12 @@ uv run python quantize.py --concern finra-promissory     # dynamic int8 (served 
 uv run python calibrate.py --concern phi-in-context      # per-model int8 threshold (if int8 FPR regresses)
 uv run python eval_final.py --concern finra-promissory   # numbers of record (dev vs lockbox, fp32 vs int8)
 ```
+
+The lock is resolved for the declared Python 3.10+ support range. CI exports and audits the exact
+hashed graph on Python 3.10 and 3.12. A separate ARM64 macOS job installs the full CPU toolchain,
+proves corpus isolation, and exercises the Torch → ONNX → ONNX Runtime boundary. Dependabot monitors
+this directory independently from the Python SDK. `optimum` is intentionally absent because export
+uses `torch.onnx.export` directly.
 
 ## Numbers of record (lockbox, served config, frozen threshold 0.5)
 

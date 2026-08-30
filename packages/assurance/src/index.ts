@@ -8,3 +8,14 @@ export {
   evaluateReadiness,
 } from "./readiness.js";
 export { UNDERWRITER_FEED_VERSION, type UnderwriterFeed, buildUnderwriterFeed } from "./feed.js";
+export {
+  type ComplianceFramework,
+  type EvidencePosture,
+  type ControlMapping,
+  type ControlPack,
+  type ControlResult,
+  type ComplianceEvaluation,
+  PHAROS_CONTROL_PACK,
+  evaluateControlPack,
+  complianceRegressions,
+} from "./controls.js";

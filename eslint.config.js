@@ -19,6 +19,7 @@ export default tseslint.config(
       "**/node_modules/**",
       "**/.next/**",
       "**/coverage/**",
+      "**/.venv/**",
       "**/*.d.ts",
       "pnpm-lock.yaml",
       // Python training pipeline (uv-managed) — out of the Node/TS tree entirely.
