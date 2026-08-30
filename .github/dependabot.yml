@@ -22,22 +22,10 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "react-dom"
         update-types: ["version-update:semver-major"]
-      # Dev-tooling majors deliberately deferred (adopt via a dedicated PR, not drive-by):
-      # TypeScript 7 (native rewrite), Vitest 4, ESLint 10 + plugins, @types/node 26.
+      # TypeScript 7 is deliberately deferred for its native rewrite and must be
+      # adopted through a dedicated PR rather than a drive-by dependency update.
       # Tracking issue links these from LIMITATIONS/the board.
       - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "vitest"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@eslint/js"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint-config-prettier"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "globals"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
@@ -51,6 +39,19 @@ updates:
     labels:
       - "dependencies"
       - "python"
+
+  # Offline judge-training environment. This graph is not shipped in the API
+  # image, but it processes model artifacts and must not become an unmonitored
+  # supply-chain blind spot.
+  - package-ecosystem: "pip"
+    directory: "/training"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+      - "ai-models"
 
   # GitHub Actions used by CI/release workflows. Group all bumps (incl. majors) into one PR —
   # actions are CI infrastructure, not the trust path.
