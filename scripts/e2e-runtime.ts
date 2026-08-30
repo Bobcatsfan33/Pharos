@@ -1,9 +1,9 @@
 /**
- * Cross-repository smoke test for the combined product.
+ * End-to-end smoke test for the unified Pharos product.
  *
- * Starts the real Pharos platform/API, provisions a least-privilege Keel credential,
- * invokes the real Keel CLI over HTTP, and verifies both sealed Pharos records and the
- * durable Keel event timeline. CI checks out a pinned Keel revision into .e2e/keel.
+ * Starts the real Pharos platform/API, provisions least-privilege runtime and reviewer
+ * credentials, invokes the in-repository Pharos Runtime CLI over HTTP, and verifies both
+ * sealed evidence and the durable execution timeline.
  */
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -38,9 +38,9 @@ function runCommand(command: string, args: string[]): Promise<CommandResult> {
 }
 
 async function main(): Promise<void> {
-  const work = mkdtempSync(join(tmpdir(), "pharos-keel-e2e-"));
+  const work = mkdtempSync(join(tmpdir(), "pharos-runtime-e2e-"));
   process.env.PHAROS_KMS_KEYSTORE_DIR = join(work, "keystore");
-  process.env.PHAROS_KMS_KEYSTORE_PASSPHRASE ??= `keel-e2e-${randomUUID()}`;
+  process.env.PHAROS_KMS_KEYSTORE_PASSPHRASE ??= `runtime-e2e-${randomUUID()}`;
   process.env.PHAROS_KMS_PROVIDER = "local-kms";
   process.env.PHAROS_TSA_PROVIDER = "local";
 
@@ -57,20 +57,20 @@ async function main(): Promise<void> {
     if (typeof address !== "object" || address === null) throw new Error("API did not bind");
     const baseUrl = `http://127.0.0.1:${address.port}`;
 
-    const tenantId = `keel-e2e-${randomUUID().slice(0, 8)}`;
-    await platform.tenants.createTenant({ tenantId, displayName: "Keel E2E" });
-    const credential = await platform.apiKeys.create(tenantId, "keel-runtime", [
+    const tenantId = `runtime-e2e-${randomUUID().slice(0, 8)}`;
+    await platform.tenants.createTenant({ tenantId, displayName: "Pharos Runtime E2E" });
+    const credential = await platform.apiKeys.create(tenantId, "pharos-runtime", [
       "actions:write",
       "liability:assert",
     ]);
-    const reviewer = await platform.apiKeys.create(tenantId, "keel-reviewer", [
+    const reviewer = await platform.apiKeys.create(tenantId, "pharos-runtime-reviewer", [
       "reviews:read",
       "reviews:act",
     ]);
 
-    const keelRoot = resolve(process.env.KEEL_CHECKOUT ?? ".e2e/keel");
-    const graph = join(keelRoot, "examples", "pharos_governed.py");
-    const runId = `pharos-keel-${randomUUID().slice(0, 8)}`;
+    const runtimeRoot = resolve(process.env.PHAROS_RUNTIME_ROOT ?? "runtime/python");
+    const graph = join(runtimeRoot, "examples", "pharos_governed.py");
+    const runId = `pharos-runtime-${randomUUID().slice(0, 8)}`;
     const db = join(work, "keel.db");
     const blobs = join(work, "blobs");
     const pharosArgs = [
@@ -81,7 +81,7 @@ async function main(): Promise<void> {
       "--pharos-tenant",
       tenantId,
     ];
-    const run = await runCommand("keel", [
+    const run = await runCommand("pharos", [
       "run",
       "--mock",
       graph,
@@ -94,7 +94,7 @@ async function main(): Promise<void> {
       ...pharosArgs,
     ]);
     if (run.status !== 1 || !run.stdout.includes(`run ${runId} -> paused`)) {
-      throw new Error(`Keel did not park for human review:\n${run.stdout}\n${run.stderr}`);
+      throw new Error(`Pharos Runtime did not park for review:\n${run.stdout}\n${run.stderr}`);
     }
 
     const pendingResponse = await fetch(`${baseUrl}/v1/tenants/${tenantId}/escalations`, {
@@ -124,7 +124,7 @@ async function main(): Promise<void> {
       );
     }
 
-    const resumed = await runCommand("keel", [
+    const resumed = await runCommand("pharos", [
       "resume",
       runId,
       "--mock",
@@ -136,7 +136,7 @@ async function main(): Promise<void> {
     ]);
     if (resumed.status !== 0 || !resumed.stdout.includes(`run ${runId} -> completed`)) {
       throw new Error(
-        `Keel did not complete after human approval:\n${resumed.stdout}\n${resumed.stderr}`,
+        `Pharos Runtime did not complete after approval:\n${resumed.stdout}\n${resumed.stderr}`,
       );
     }
 
@@ -156,12 +156,12 @@ async function main(): Promise<void> {
       const action = record.content.action;
       const keel = action.payload.keel as Record<string, unknown> | undefined;
       if (action.sessionId !== runId || keel?.runId !== runId || !keel.nodeId) {
-        throw new Error("sealed authorization is missing its Keel run/node binding");
+        throw new Error("sealed authorization is missing its runtime run/node binding");
       }
     }
 
-    const timeline = await runCommand("keel", ["show", runId, "--db", db, "--blobs", blobs]);
-    if (timeline.status !== 0) throw new Error(`keel show failed:\n${timeline.stderr}`);
+    const timeline = await runCommand("pharos", ["show", runId, "--db", db, "--blobs", blobs]);
+    if (timeline.status !== 0) throw new Error(`pharos show failed:\n${timeline.stderr}`);
     const decisions = timeline.stdout.match(/governance\.decided/g) ?? [];
     const escalated = timeline.stdout.match(/governance\.escalated/g) ?? [];
     const completed = timeline.stdout.match(/step\.completed/g) ?? [];
@@ -175,7 +175,7 @@ async function main(): Promise<void> {
       throw new Error(`incomplete governed timeline:\n${timeline.stdout}`);
     }
     console.log(
-      `Keel + Pharos E2E passed: ${authorizations.length} sealed authorizations, ` +
+      `Pharos Runtime E2E passed: ${authorizations.length} sealed authorizations, ` +
         `${humanVerdicts.length} sealed human verdict, ${completed.length} completed durable steps`,
     );
   } finally {

@@ -83,17 +83,18 @@ machine context. The agent then resumes via an atomic **claim**. With no claim i
 original first-invocation-wins behavior remains. A durable runtime can instead supply a
 stable `claimId`: the first identity owns the continuation, retries by that same identity
 retain ownership after a crash, and every different identity is refused. The caller must
-still serialize concurrent work under one identity (Keel does this with its run lease).
+still serialize concurrent work under one identity (Pharos Runtime does this with its run lease).
 Exactly-once effects additionally require the runtime's effect ledger, an idempotent target,
 or a transactional outbox. The ownership property is proven against Postgres in
 `test/integration.causeway.test.ts`.
 
-## Keel durable-runtime integration
+## Pharos Runtime integration
 
-Keel is the first-party execution plane for Pharos. It uses an exact-once action key before
+Pharos Runtime is the first-party execution plane included in this monorepo. It uses an
+exact-once action key before
 each step, records Pharos's sealed evidence binding directly before `step.scheduled`, parks
 durably on escalation, and claims an approved continuation with a stable run/node identity.
-See [`docs/keel-integration.md`](keel-integration.md) for the field mapping, failure behavior,
+See [`docs/runtime.md`](runtime.md) for the field mapping, failure behavior,
 and runnable example.
 
 ## Zero-code gateway

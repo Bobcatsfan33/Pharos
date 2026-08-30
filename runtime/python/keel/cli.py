@@ -434,30 +434,42 @@ def _print_summary(run_id: str, state: Any) -> None:
           f"{state.total_tokens_in}->{state.total_tokens_out}")
 
 
+def _program_name() -> str:
+    executable = Path(sys.argv[0]).name.lower()
+    return "pharos" if executable.startswith("pharos") else "keel"
+
+
 def _die(msg: str) -> NoReturn:
-    print(f"keel: error: {msg}", file=sys.stderr)
+    print(f"{_program_name()}: error: {msg}", file=sys.stderr)
     raise SystemExit(2)
 
 
 def _default_db() -> str:
+    if "PHAROS_RUNTIME_DB" in os.environ:
+        return os.environ["PHAROS_RUNTIME_DB"]
     if "KEEL_DB" in os.environ:
         return os.environ["KEEL_DB"]
-    data = os.environ.get("KEEL_DATA_DIR")
+    data = os.environ.get("PHAROS_RUNTIME_DATA_DIR") or os.environ.get("KEEL_DATA_DIR")
     return f"{data.rstrip('/')}/keel.db" if data else "keel.db"
 
 
 def _default_blobs() -> str:
+    if "PHAROS_RUNTIME_BLOBS" in os.environ:
+        return os.environ["PHAROS_RUNTIME_BLOBS"]
     if "KEEL_BLOBS" in os.environ:
         return os.environ["KEEL_BLOBS"]
-    data = os.environ.get("KEEL_DATA_DIR")
+    data = os.environ.get("PHAROS_RUNTIME_DATA_DIR") or os.environ.get("KEEL_DATA_DIR")
     return f"{data.rstrip('/')}/blobs" if data else "blobs"
 
 
 def _add_store_args(p: argparse.ArgumentParser) -> None:
-    # KEEL_DB / KEEL_BLOBS win; otherwise derive from KEEL_DATA_DIR (the container's
-    # /data volume); otherwise default to the CWD.
+    # Branded environment names win, with KEEL_* retained for compatibility.
     p.add_argument("--db", default=_default_db())
     p.add_argument("--blobs", default=_default_blobs())
+
+
+def _default_model() -> str | None:
+    return os.environ.get("PHAROS_RUNTIME_MODEL") or os.environ.get("KEEL_MODEL")
 
 
 def _add_pharos_args(p: argparse.ArgumentParser) -> None:
@@ -484,14 +496,15 @@ def _add_pharos_args(p: argparse.ArgumentParser) -> None:
     )
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="keel", description="KEEL agent runtime")
+def build_parser(prog: str | None = None) -> argparse.ArgumentParser:
+    program = prog or _program_name()
+    parser = argparse.ArgumentParser(prog=program, description="Pharos governed agent runtime")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_run = sub.add_parser("run", help="run a graph/crew file")
     p_run.add_argument("file")
     p_run.add_argument("--run-id", dest="run_id", default=None)
-    p_run.add_argument("--model", default=os.environ.get("KEEL_MODEL"))
+    p_run.add_argument("--model", default=_default_model())
     p_run.add_argument("--mock", action="store_true")
     p_run.add_argument("--mock-reply", dest="mock_reply", default=None)
     p_run.add_argument("--quiet", action="store_true")
@@ -511,7 +524,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_res = sub.add_parser("resume", help="continue a crashed/paused run")
     p_res.add_argument("run_id")
-    p_res.add_argument("--model", default=os.environ.get("KEEL_MODEL"))
+    p_res.add_argument("--model", default=_default_model())
     p_res.add_argument("--mock", action="store_true")
     p_res.add_argument("--quiet", action="store_true")
     _add_store_args(p_res)
@@ -524,7 +537,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_app.add_argument("--reject", action="store_true")
     p_app.add_argument("--payload", default=None)
     p_app.add_argument("--resume", action="store_true", help="resume after deciding")
-    p_app.add_argument("--model", default=os.environ.get("KEEL_MODEL"))
+    p_app.add_argument("--model", default=_default_model())
     p_app.add_argument("--mock", action="store_true")
     p_app.add_argument("--quiet", action="store_true")
     _add_store_args(p_app)
@@ -536,7 +549,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_rep.add_argument("--from", dest="from_step", default=None,
                        help="patched replay: re-run from this node live")
     p_rep.add_argument("--patch", default=None, help="JSON to splice as --from's output")
-    p_rep.add_argument("--model", default=os.environ.get("KEEL_MODEL"))
+    p_rep.add_argument("--model", default=_default_model())
     p_rep.add_argument("--mock", action="store_true")
     p_rep.add_argument("--quiet", action="store_true")
     _add_store_args(p_rep)
@@ -606,8 +619,8 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[list[str]] = None) -> int:
-    args = build_parser().parse_args(argv)
+def main(argv: Optional[list[str]] = None, *, prog: str | None = None) -> int:
+    args = build_parser(prog).parse_args(argv)
     if getattr(args, "_async", False):
         return int(asyncio.run(args.func(args)))
     return int(args.func(args))

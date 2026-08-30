@@ -165,9 +165,9 @@ server-side `claimResume` (`resumed_at IS NULL`), which refuses a second authori
 to a caller that bypasses the lease entirely.
 
 Durable runtimes may supply a stable `claimId`. Pharos then lets that same identity reclaim
-ownership after a crash while refusing every different identity. Keel combines this with its
-serialized run lease and effect ledger, closing the approval-to-execution loss window for
-Keel-managed steps. Reusing one identity concurrently without a runtime lease is outside the
+ownership after a crash while refusing every different identity. Pharos Runtime combines
+this with its serialized run lease and effect ledger, closing the approval-to-execution loss
+window for runtime-managed steps. Reusing one identity concurrently without a runtime lease is outside the
 claim protocol and can still duplicate work.
 
 **Protocol limit:** the Pharos claim is an atomic **at-most-once authorization**, not a

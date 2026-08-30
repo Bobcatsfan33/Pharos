@@ -194,15 +194,22 @@ middlewares (LangChain/LangGraph, OpenAI Agents, Anthropic SDK, CrewAI, MS Agent
 share one conformance contract, and a zero-code HTTP gateway governs agents that import
 nothing at all. See **[docs/sdks-and-integration.md](docs/sdks-and-integration.md)**.
 
-### Keel: the durable execution plane
+### Pharos Runtime: governed execution included
 
-[Keel](https://github.com/Bobcatsfan33/keel) is the first-party durable runtime for Pharos.
-It submits every runnable step through `/v1/actions`, writes the sealed evidence binding into
-its append-only execution log, and maps an escalation to a zero-compute durable pause. After
-review, the same run resumes with a stable replay-safe claim identity. This closes the crash
-window between approval and step execution without coupling either service's storage.
+Pharos now ships its durable Python runtime in this monorepo under
+[`runtime/python`](runtime/python). It submits every runnable step through `/v1/actions`,
+writes the sealed evidence binding into its append-only execution log, and maps escalation
+to a zero-compute durable pause. After review, the same run resumes with a stable replay-safe
+claim identity. The control plane and runtime remain independently scalable while sharing
+one product, release boundary, and end-to-end CI proof.
 
-See [Keel integration and the end-to-end contract](docs/keel-integration.md).
+```bash
+python3 -m pip install -e "runtime/python[viewer]"
+pharos run --mock runtime/python/examples/pharos_governed.py --run-id governed-demo
+```
+
+The legacy `keel` command remains available for compatibility. See the
+[Pharos Runtime contract and quickstart](docs/runtime.md).
 
 ## Status — what is and isn't proven
 
@@ -214,7 +221,7 @@ should be willing to be evidence about itself.
 | | |
 |---|---|
 | **Works today, tested** | Verdict cascade · sealing · hash chain · WORM · offline verification · TS + Python SDKs · framework middlewares · zero-code gateway · mandates · escalation and review ops · policy lifecycle · redaction · claims packs |
-| **Test suite** | 472 TypeScript tests across 68 files, plus 28 Python — run against **real** Postgres / Redis / MinIO. CI fails the build if integration tests are skipped rather than run |
+| **Test suite** | 520 control-plane tests plus the complete runtime and Python SDK suites—run against **real** Postgres / Redis / MinIO. CI fails the build if integration tests are skipped rather than run |
 | **Not production-approved** | [`docs/enterprise-readiness.json`](docs/enterprise-readiness.json) · [`docs/procurement-readiness.md`](docs/procurement-readiness.md) |
 | **Every known gap** | [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) |
 
