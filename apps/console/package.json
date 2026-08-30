@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@pharos/identity": "workspace:*",
-    "next": "^15.5.23",
+    "next": "^15.5.24",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
