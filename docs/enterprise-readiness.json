@@ -354,11 +354,11 @@
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "5c34e658a600274ec1ec86234d409d3b53b513ca25c5d36b8830888fbb463dca"
+        "sha256": "f28fe9c1fd427518853f9e78abc43f7ca6473e0e0f8ee48d089acc672b70f7c3"
       },
       {
         "path": ".github/workflows/codeql.yml",
-        "sha256": "c5a17878f2a9e74aa79c1dccdc6429106b452971335f58e1322dde954aa87dd4"
+        "sha256": "ae45e2936e8a57f9813e996b38b221be8df7533d25e01a71d1efb98a9aa31253"
       },
       {
         "path": ".github/workflows/gitleaks.yml",
@@ -366,7 +366,7 @@
       },
       {
         "path": ".github/workflows/image.yml",
-        "sha256": "eca368eca3193286d36a9e7ebb3a8896a1f5441352d7116bb6c7da7f9aafd924"
+        "sha256": "370fff61dc454bd5c43241e87a5d82a158703328bc923849abb721ce6d600b8d"
       },
       {
         "path": ".github/workflows/judge-parity.yml",
@@ -378,7 +378,7 @@
       },
       {
         "path": ".github/workflows/training.yml",
-        "sha256": "cdcc19976f526f5d92ddca63ed7598d948fbc218670587cf71a233358d2db43e"
+        "sha256": "6d995c8907c1fa7a154fecaab99f2c6d250fa09e64b283bf9afc5f7bbb490eaf"
       },
       {
         "path": "SECURITY.md",
