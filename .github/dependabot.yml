@@ -52,6 +52,17 @@ updates:
       - "dependencies"
       - "python"
 
+  # Durable runtime dependencies shipped as part of the Pharos product.
+  - package-ecosystem: "pip"
+    directory: "/runtime/python"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+      - "runtime"
+
   # GitHub Actions used by CI/release workflows. Group all bumps (incl. majors) into one PR —
   # actions are CI infrastructure, not the trust path.
   - package-ecosystem: "github-actions"

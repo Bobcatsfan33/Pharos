@@ -1,5 +1,5 @@
-# Pharos local infrastructure — operational state, evidence WORM store, and verdict cache.
-# These are the three storage tiers from the target architecture (Sprint 0 Bedrock):
+# Pharos local product stack — durable runtime plus operational and evidence stores.
+# Storage tiers:
 #   postgres -> operational state (policies, mandates, tenants, queues, chained action_records)
 #   minio    -> S3-compatible WORM object storage with Object Lock for the evidence chain
 #   redis    -> deadline-bound verdict caches
@@ -53,7 +53,22 @@ services:
     volumes:
       - pharos_minio:/data
 
+  runtime:
+    build:
+      context: ./runtime/python
+    container_name: pharos-runtime
+    environment:
+      PHAROS_RUNTIME_DATA_DIR: /data
+      PHAROS_URL: ${PHAROS_URL:-http://host.docker.internal:4000}
+      PHAROS_API_KEY: ${PHAROS_API_KEY:-}
+      PHAROS_TENANT_ID: ${PHAROS_TENANT_ID:-}
+    ports:
+      - "8321:8321"
+    volumes:
+      - pharos_runtime:/data
+
 volumes:
   pharos_pg:
   pharos_redis:
   pharos_minio:
+  pharos_runtime:
