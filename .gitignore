@@ -12,6 +12,7 @@ coverage/
 # covered by the narrower `.pharos-keystore/` rule — running `pnpm demo` creates it,
 # so a contributor could have committed a private key. Glob covers both.
 .pharos-keystore*/
+.pharos-runtime/
 .turbo/
 
 .pharos-demo-auditor-key
