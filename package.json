@@ -31,6 +31,7 @@
     "runtime:architecture": "cd runtime/python && lint-imports",
     "runtime:check": "pnpm runtime:lint && pnpm runtime:typecheck && pnpm runtime:architecture && pnpm runtime:test",
     "runtime:e2e": "tsx scripts/e2e-runtime.ts",
+    "pharos:workbench": "tsx scripts/pharos-workbench.ts",
     "demo:durability": "tsx --env-file=.env scripts/demo-durability.ts",
     "demo": "tsx --env-file=.env scripts/demo.ts",
     "verify:external": "tsx --env-file=.env scripts/external-verify.ts",

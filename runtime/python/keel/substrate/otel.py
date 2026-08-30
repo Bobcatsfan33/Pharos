@@ -19,7 +19,7 @@ _TERMINAL_STEP = {EventType.STEP_COMPLETED, EventType.STEP_FAILED, EventType.STE
 class OTelEventExporter:
     def __init__(self, tracer: Any) -> None:
         self._tracer = tracer
-        from opentelemetry import trace
+        import opentelemetry.trace as trace
         self._trace = trace
         self._run_spans: dict[str, Any] = {}
         self._step_spans: dict[tuple[str, str], Any] = {}
@@ -61,6 +61,6 @@ def _system_of(model: str) -> str:
 
 
 def make_otel_exporter(tracer_provider: Optional[Any] = None) -> OTelEventExporter:
-    from opentelemetry import trace
+    import opentelemetry.trace as trace
     provider = tracer_provider or trace.get_tracer_provider()
     return OTelEventExporter(provider.get_tracer("keel"))

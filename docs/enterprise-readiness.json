@@ -335,7 +335,7 @@
     "files": [
       {
         "path": ".github/CODEOWNERS",
-        "sha256": "20812dc4e7a7dca1f1f978b878142db34d9c5d44bad450cdff1f8320ff84d72a"
+        "sha256": "c73eb1b219620f9ec132cd8bea200c17f203165ddeca72a40c85c454b8944f03"
       },
       {
         "path": ".github/dependabot.yml",
@@ -371,11 +371,11 @@
       },
       {
         "path": "docs/LIMITATIONS.md",
-        "sha256": "49054f986135c0ff9df52a39dc0c09b9198ceec56f7079fb70c78073b1243005"
+        "sha256": "03def4c65b5da41d89920e4ec6eb3d734fcd1db67372f3926cc5cf213892ab6c"
       },
       {
         "path": "docs/ROADMAP.md",
-        "sha256": "1db5abc020196f76255490feda176e6575c341b80dda3ce6dcd739d8c01e21c0"
+        "sha256": "ca65558981d2d37169c8e890766013df97f60cf36a6178549636ae040517aaf4"
       },
       {
         "path": "docs/assurance-and-risk.md",

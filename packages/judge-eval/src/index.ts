@@ -78,3 +78,12 @@ export {
   type BaselineLock,
   type Direction,
 } from "./gate.js";
+export {
+  type DatasetProvenance,
+  type AssuranceDataset,
+  type DriftSignal,
+  type PromotionDecision,
+  registerDataset,
+  decidePromotion,
+  AssuranceLab,
+} from "./lab.js";
