@@ -11,6 +11,7 @@ export {
   type JudgeDriftSnapshot,
 } from "./judgeDrift.js";
 export { Tracer, type SpanContext, type LogSink } from "./tracing.js";
+export { actionRecordToOcsf, type OcsfBaseEvent, type OcsfExportOptions } from "./ocsf.js";
 export {
   EvidenceGraph,
   type EvidenceNodeKind,
