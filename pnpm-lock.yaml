@@ -44,8 +44,8 @@ importers:
         specifier: ^17.11.0
         version: 17.11.0
       jose:
-        specifier: ^6.2.8
-        version: 6.2.8
+        specifier: ^6.2.10
+        version: 6.2.10
       prettier:
         specifier: ^3.9.6
         version: 3.9.6
@@ -151,8 +151,8 @@ importers:
   packages/identity:
     dependencies:
       jose:
-        specifier: ^6.2.8
-        version: 6.2.8
+        specifier: ^6.2.10
+        version: 6.2.10
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -1477,8 +1477,8 @@ packages:
   jju@1.4.0:
     resolution: {integrity: sha512-8wb9Yw966OSxApiCt0K3yNJL8pnNeIv+OEq2YMidz4FKP6nonSRoOXc80iXY4JaN2FC11B9qsNmDsm+ZOfMROA==}
 
-  jose@6.2.8:
-    resolution: {integrity: sha512-Bsdjwm3Qsd/P0jR+BHDe3LytDfY7WBq2HmCCLIwuVRHMuEC9ae7/R474GIUdF1NgCyZjzVo/A9DOiOBtXq8ZoQ==}
+  jose@6.2.10:
+    resolution: {integrity: sha512-iiW7J9qRFlGxvCOIBDBDxFePQSn7ZMAnrYGhrrOo6siO/MIqwfyilLR27pkfDgUk+raLuzADS8A3S/KLBisc0g==}
 
   json-buffer@3.0.1:
     resolution: {integrity: sha512-4bV5BfR2mqfQTJm+V5tPPdf+ZpuhiIvTuAB5g8kcrXOZpTT/QwwVRWBywX1ozr6lEuPdbHxwaJlm9G6mI2sfSQ==}
@@ -3273,7 +3273,7 @@ snapshots:
 
   jju@1.4.0: {}
 
-  jose@6.2.8: {}
+  jose@6.2.10: {}
 
   json-buffer@3.0.1: {}
 
