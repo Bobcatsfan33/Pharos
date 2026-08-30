@@ -220,8 +220,8 @@ should be willing to be evidence about itself.
 
 | | |
 |---|---|
-| **Works today, tested** | Verdict cascade · sealing · hash chain · WORM · offline verification · TS + Python SDKs · framework middlewares · zero-code gateway · mandates · escalation and review ops · policy lifecycle · redaction · claims packs |
-| **Test suite** | 520 control-plane tests plus the complete runtime and Python SDK suites—run against **real** Postgres / Redis / MinIO. CI fails the build if integration tests are skipped rather than run |
+| **Works today, tested** | Verdict cascade · sealing · hash chain · WORM · offline verification · TS + Python SDKs · framework middlewares · zero-code gateway · OPA/Cedar interchange · signed policy bundles · MCP/tool governance · governed connectors · approval policy · causal evidence graph · assurance promotion/rollback · technical control mappings · open governed-action protocol |
+| **Test suite** | 545 control-plane tests plus the complete runtime and Python SDK suites—run against **real** Postgres / Redis / MinIO. CI fails the build if integration tests are skipped rather than run |
 | **Not production-approved** | [`docs/enterprise-readiness.json`](docs/enterprise-readiness.json) · [`docs/procurement-readiness.md`](docs/procurement-readiness.md) |
 | **Every known gap** | [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) |
 
@@ -247,12 +247,14 @@ run stayed below 800 ms p99 at concurrency 2 but achieved only about 8 verdicts/
 | Operational state | Postgres — policies, mandates, queues, tenants; RLS-isolated under a `NOBYPASSRLS` role |
 | Evidence chain | WORM object storage (S3 Object Lock), hash-chained and continuously verified |
 | Verdict cache | Redis, deadline-bound |
-| Signing | Pluggable `SigningProvider` — local Ed25519 for development, AWS KMS P-256 for production, with rotation and chain continuity |
+| Signing | Pluggable `SigningProvider` — local Ed25519, AWS KMS P-256, and remote BYOK/HYOK transports for Vault Transit, Azure Key Vault, and GCP KMS, with rotation and chain continuity |
 | Deployment | Docker Compose or Helm — see [deploy/INSTALL.md](deploy/INSTALL.md) |
 
 ```
 packages/core        ActionRecord schema, hashing, sealing, chain verify, KMS signing
 packages/cascade     the tiered verdict engine
+packages/connectors  MCP registry, credential grants, governed effects, plugin conformance
+packages/devkit      policy simulation/diff, fixture sanitation, environment doctor
 packages/storage     Postgres + S3 WORM + Redis; the transactional write path
 packages/sdk-ts      TypeScript SDK          sdks/python   Python SDK
 packages/middleware  framework adapters
@@ -265,6 +267,7 @@ apps/console         Next.js console
 | | |
 |---|---|
 | [Architecture](docs/architecture.md) | How the pieces fit together |
+| [Capability platform](docs/capability-platform.md) | Policy interop, MCP, connectors, approvals, assurance, compliance, and the open protocol |
 | [Demo walkthrough](docs/demo.md) | The funds-transfer story, end to end |
 | [Decision cascade](docs/decision-cascade.md) | Tiers, deadlines, fail-modes |
 | [Evidence & sealing](docs/evidence-seal.md) | Chain, anchoring, redaction, claims packs |

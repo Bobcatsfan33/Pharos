@@ -94,5 +94,6 @@ roadmap brief that seeded this repository; the table above is the working checkl
 
 ## 7. Explicitly deferred (post-M9)
 
-Additional vertical packs beyond FINRA/HIPAA; EU AI Act Annex III examiner workflows;
-agent marketplaces / self-serve onboarding; hardware attestation; mobile consoles.
+Additional validated vertical packs beyond the shipped technical-control mappings; EU AI Act
+Annex III examiner workflows; a hosted connector marketplace and self-serve onboarding beyond the
+open plugin manifest/conformance SDK; hardware attestation; mobile consoles.

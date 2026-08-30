@@ -112,6 +112,12 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
 
+  packages/connectors:
+    dependencies:
+      '@pharos/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/core:
     dependencies:
       '@aws-sdk/client-kms':
@@ -120,6 +126,15 @@ importers:
       zod:
         specifier: ^4.4.3
         version: 4.4.3
+
+  packages/devkit:
+    dependencies:
+      '@pharos/core':
+        specifier: workspace:*
+        version: link:../core
+      '@pharos/policy':
+        specifier: workspace:*
+        version: link:../policy
 
   packages/evidence:
     dependencies:
@@ -169,7 +184,11 @@ importers:
         specifier: workspace:*
         version: link:../sdk-ts
 
-  packages/observability: {}
+  packages/observability:
+    dependencies:
+      '@pharos/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/pdp-spec: {}
 

@@ -43,7 +43,8 @@ export function validatePdpResponse(obj: unknown): ValidationResult {
   }
   if (r.evidenceBinding) {
     const b = r.evidenceBinding;
-    if (b.algorithm !== "ed25519") errors.push("evidenceBinding.algorithm must be ed25519");
+    if (b.algorithm !== "ed25519" && b.algorithm !== "ecdsa-p256")
+      errors.push("evidenceBinding.algorithm must be ed25519|ecdsa-p256");
     if (typeof b.contentHash !== "string" || !/^[0-9a-f]{64}$/.test(b.contentHash))
       errors.push("evidenceBinding.contentHash must be 64-hex");
     if (typeof b.keyId !== "string" || typeof b.signature !== "string")

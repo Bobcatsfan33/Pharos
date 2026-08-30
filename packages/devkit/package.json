@@ -1,5 +1,5 @@
 {
-  "name": "@pharos/observability",
+  "name": "@pharos/devkit",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "private": true,
@@ -15,6 +15,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@pharos/core": "workspace:*"
+    "@pharos/core": "workspace:*",
+    "@pharos/policy": "workspace:*"
   }
 }
