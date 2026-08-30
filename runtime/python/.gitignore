@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+keel.db
+keel.db-wal
+keel.db-shm
+blobs/
+dist/
+build/
