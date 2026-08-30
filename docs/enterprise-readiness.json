@@ -331,7 +331,7 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-08-10",
+    "generatedAt": "2026-08-30",
     "files": [
       {
         "path": ".github/CODEOWNERS",
@@ -343,7 +343,7 @@
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "c5e5f9a37e2a86d0d44851f3209500148cb1e1176bd45b9818784a993cfb487c"
+        "sha256": "bee9d0829c6aee463336044169bdd91a4887716c6a6896ce36216ef67fb53e3f"
       },
       {
         "path": ".github/workflows/codeql.yml",
@@ -355,15 +355,15 @@
       },
       {
         "path": ".github/workflows/image.yml",
-        "sha256": "358bb4e7f7ed3403d03812c664c3aaac8f767ec350f7c09f03184ecb6c44abde"
+        "sha256": "fe183fc4abb766e00d0a62614714cd5a9bba44ee4a7d296fc8a7875e261985b8"
       },
       {
         "path": ".github/workflows/judge-parity.yml",
-        "sha256": "2cff12b812d6db1a43052f9f66a70d1bb25e4e87750bc19e03a29f75adc6adb5"
+        "sha256": "88b3518840abf8e99851a2184682ba6b1ab391ca83f48c86f960b45b3fbf1d16"
       },
       {
         "path": ".github/workflows/release.yml",
-        "sha256": "04d5dfc862c87b4f32cf31c9769eb129a7ef19adb11ddf63710d7593d2d1ff7c"
+        "sha256": "0a32cc451cf35101f59f0cace36a1be461aa0189d92f4c08a9fc8bf4ca4e8ba8"
       },
       {
         "path": "SECURITY.md",
