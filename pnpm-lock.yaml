@@ -121,8 +121,8 @@ importers:
   packages/core:
     dependencies:
       '@aws-sdk/client-kms':
-        specifier: ^3.1119.0
-        version: 3.1119.0
+        specifier: ^3.1121.0
+        version: 3.1121.0
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -296,8 +296,8 @@ packages:
     resolution: {integrity: sha512-Dtu0gr4dnATZAPwEYbpCsG+MpLM7OAliy2gTepEFQwl1vZ6DL3QMH2FveMa3HLvPsOdhJsPRB3KtxVhph9T75A==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-kms@3.1119.0':
-    resolution: {integrity: sha512-+ElIEweemb9kSudIK+PrQKbxzYbrpIiXNDZFiOJ0l4y1F9Z+98YiQ8bkk2006bgPn3y0GW2w1AoJnc9Y15JkNQ==}
+  '@aws-sdk/client-kms@3.1121.0':
+    resolution: {integrity: sha512-zE7Z+jeKxCULk+m7XCZguZtBeWbreEZYtJcDrSkPJoAW9esux3Fx66+wp5WQVY8T4X5dYdsYymGvPIhEfTQpew==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/client-s3@3.1119.0':
@@ -2100,7 +2100,7 @@ snapshots:
       '@smithy/types': 4.17.2
       tslib: 2.8.1
 
-  '@aws-sdk/client-kms@3.1119.0':
+  '@aws-sdk/client-kms@3.1121.0':
     dependencies:
       '@aws-sdk/core': 3.977.9
       '@aws-sdk/credential-provider-node': 3.972.81
