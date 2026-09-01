@@ -33,6 +33,6 @@
     "@pharos/storage": "workspace:*",
     "fastify": "^5.12.1",
     "tsx": "^4.23.12",
-    "zod": "^4.4.3"
+    "zod": "^4.5.2"
   }
 }
