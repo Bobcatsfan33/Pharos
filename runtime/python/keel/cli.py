@@ -247,7 +247,12 @@ async def cmd_test(args: argparse.Namespace) -> int:
         for f in files:
             try:
                 cases.append(EvalCase.model_validate_json(f.read_text()))
-            except Exception:  # noqa: BLE001 — skip non-case json
+            except (ValueError, OSError) as e:
+                # Skipping a non-case json is intended; skipping a *malformed* case
+                # silently is not — it would shrink the suite and still report
+                # "all passed". Name the file and the reason on stderr.
+                print(f"{_program_name()}: skipping {f} — not a valid eval case: "
+                      f"{type(e).__name__}: {e}", file=sys.stderr)
                 continue
         if not cases:
             _die(f"no eval cases found in {suite}")
@@ -319,7 +324,11 @@ async def cmd_regress(args: argparse.Namespace) -> int:
         for f in files:
             try:
                 bundles.append(RegressionBundle.model_validate_json(f.read_text()))
-            except Exception:  # noqa: BLE001 — skip non-bundle json
+            except (ValueError, OSError) as e:
+                # Same contract as the eval suite above: a file that cannot be read
+                # as a bundle is skipped, but never without saying so.
+                print(f"{_program_name()}: skipping {f} — not a valid regression "
+                      f"bundle: {type(e).__name__}: {e}", file=sys.stderr)
                 continue
         if not bundles:
             _die(f"no regression bundles found in {suite}")

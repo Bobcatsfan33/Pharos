@@ -27,12 +27,27 @@ class NatsScheduler:
 
     async def connect(self) -> "NatsScheduler":
         import nats
+        from nats.js.errors import BadRequestError
         self._nc = await nats.connect(self._url)
         self._js = self._nc.jetstream()
         try:
             await self._js.add_stream(name=self._stream, subjects=[self._subject])
-        except Exception:  # noqa: BLE001 — stream may already exist
-            pass
+        except BadRequestError:
+            # The stream already exists — the only condition this call is allowed to
+            # tolerate. Anything else (auth, permissions, an unreachable broker) must
+            # propagate: swallowing it here would leave the scheduler "connected" to a
+            # stream that does not exist. Confirm the pre-existing stream actually
+            # carries our subject; a same-named stream bound elsewhere would accept
+            # every publish and deliver none, which in a durable runtime surfaces as
+            # runs that silently never start rather than as an error.
+            info = await self._js.stream_info(self._stream)
+            subjects = list(getattr(info.config, "subjects", None) or ())
+            if self._subject not in subjects:
+                raise RuntimeError(
+                    f"JetStream stream {self._stream!r} already exists but does not "
+                    f"carry subject {self._subject!r} (subjects={subjects!r}); refusing "
+                    f"to enqueue run ids that would never be delivered."
+                ) from None
         self._sub = await self._js.pull_subscribe(self._subject, durable=self._durable)
         return self
 
