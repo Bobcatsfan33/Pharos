@@ -32,7 +32,7 @@
     "@pharos/review": "workspace:*",
     "@pharos/storage": "workspace:*",
     "fastify": "^5.12.1",
-    "tsx": "^4.23.12",
+    "tsx": "^4.23.13",
     "zod": "^4.4.3"
   }
 }
