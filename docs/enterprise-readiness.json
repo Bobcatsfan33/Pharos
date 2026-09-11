@@ -342,7 +342,7 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-08-30",
+    "generatedAt": "2026-09-11",
     "files": [
       {
         "path": ".github/CODEOWNERS",
@@ -350,7 +350,7 @@
       },
       {
         "path": ".github/dependabot.yml",
-        "sha256": "46cda7fc6ce13ef83031388f98f359de4ac0291d1cf67c30ac19969cc8dc3401"
+        "sha256": "52a4bcd67359e41e126f4b440ba24b9e6834f4ef0ddff3a158790a3e0183dacb"
       },
       {
         "path": ".github/workflows/ci.yml",
