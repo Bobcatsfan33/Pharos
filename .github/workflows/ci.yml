@@ -358,7 +358,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
         env:
           POSTGRES_USER: pharos
           POSTGRES_PASSWORD: pharos_local_dev
@@ -368,7 +368,7 @@ jobs:
           --health-cmd "pg_isready -U pharos" --health-interval 3s
           --health-timeout 3s --health-retries 20
       redis:
-        image: redis:7-alpine
+        image: redis:7-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
         ports: ["6380:6379"]
         options: >-
           --health-cmd "redis-cli ping" --health-interval 3s
@@ -377,12 +377,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # MinIO needs a `server` command, which GitHub service containers can't pass,
-      # so run it as a step (same image as docker-compose).
+      # so run it as a step (same image as docker-compose). Docker Hub's minio/minio was
+      # removed upstream (404), so this pulls MinIO's own registry at a dated release tag.
       - name: Start MinIO (S3 WORM)
         run: |
           docker run -d --name minio -p 9010:9000 \
             -e MINIO_ROOT_USER=pharos -e MINIO_ROOT_PASSWORD=pharos_local_dev \
-            minio/minio:latest server /data
+            quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
           for i in $(seq 1 30); do
             if curl -sf http://localhost:9010/minio/health/ready; then echo "minio ready"; break; fi
             sleep 2
@@ -392,7 +393,7 @@ jobs:
       # license-free, unlike LocalStack, which now requires a paid token). ~36MB, starts fast.
       - name: Start KMS emulator (nsmithuk/local-kms)
         run: |
-          docker run -d --name local-kms -p 8088:8080 nsmithuk/local-kms:latest
+          docker run -d --name local-kms -p 8088:8080 nsmithuk/local-kms:latest@sha256:e070866476b20973a9e23a9b636204b7a222e4169a6e03198d27b80d47ed28e3
           for i in $(seq 1 20); do
             if curl -s -o /dev/null http://localhost:8088; then echo "kms ready"; break; fi
             sleep 1
