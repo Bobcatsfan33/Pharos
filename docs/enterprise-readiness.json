@@ -342,7 +342,7 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-08-30",
+    "generatedAt": "2026-09-13",
     "files": [
       {
         "path": ".github/CODEOWNERS",
@@ -354,7 +354,7 @@
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "f28fe9c1fd427518853f9e78abc43f7ca6473e0e0f8ee48d089acc672b70f7c3"
+        "sha256": "89caa34d42394ec3a7b6a5f8fe8123c1e3f195453c31fd87a552c4e405f13d54"
       },
       {
         "path": ".github/workflows/codeql.yml",
