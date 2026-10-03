@@ -305,7 +305,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 10.32.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -333,7 +333,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           version: "0.11.32"
           enable-cache: false
@@ -358,7 +358,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
         env:
           POSTGRES_USER: pharos
           POSTGRES_PASSWORD: pharos_local_dev
@@ -368,7 +368,7 @@ jobs:
           --health-cmd "pg_isready -U pharos" --health-interval 3s
           --health-timeout 3s --health-retries 20
       redis:
-        image: redis:7-alpine
+        image: redis:7-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
         ports: ["6380:6379"]
         options: >-
           --health-cmd "redis-cli ping" --health-interval 3s
@@ -377,12 +377,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # MinIO needs a `server` command, which GitHub service containers can't pass,
-      # so run it as a step (same image as docker-compose).
+      # so run it as a step (same image as docker-compose). MinIO has withdrawn public
+      # image distribution entirely: Docker Hub's minio/minio was removed (404, 2026-09)
+      # and quay.io/minio/* went private (401, by 2026-10). Chainguard's build of
+      # upstream MinIO is the remaining maintained public image; its free tier only
+      # publishes :latest, so it is pinned by digest (resolved 2026-10-03) — if this
+      # pull ever 404s, re-resolve the digest from cgr.dev/chainguard/minio:latest.
+      # The image runs as uid 65532, so /data must be a pre-made writable mount.
       - name: Start MinIO (S3 WORM)
         run: |
+          mkdir -p "$RUNNER_TEMP/minio-data" && chmod 0777 "$RUNNER_TEMP/minio-data"
           docker run -d --name minio -p 9010:9000 \
             -e MINIO_ROOT_USER=pharos -e MINIO_ROOT_PASSWORD=pharos_local_dev \
-            minio/minio:latest server /data
+            -v "$RUNNER_TEMP/minio-data:/data" \
+            cgr.dev/chainguard/minio@sha256:4cf4831a2bbcf13ddca09c1cbcc9faff716dd3c4247e0babc32864b8ee8e0034 server /data
           for i in $(seq 1 30); do
             if curl -sf http://localhost:9010/minio/health/ready; then echo "minio ready"; break; fi
             sleep 2
@@ -392,13 +400,13 @@ jobs:
       # license-free, unlike LocalStack, which now requires a paid token). ~36MB, starts fast.
       - name: Start KMS emulator (nsmithuk/local-kms)
         run: |
-          docker run -d --name local-kms -p 8088:8080 nsmithuk/local-kms:latest
+          docker run -d --name local-kms -p 8088:8080 nsmithuk/local-kms:latest@sha256:e070866476b20973a9e23a9b636204b7a222e4169a6e03198d27b80d47ed28e3
           for i in $(seq 1 20); do
             if curl -s -o /dev/null http://localhost:8088; then echo "kms ready"; break; fi
             sleep 1
           done
 
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 10.32.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -511,7 +519,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 10.32.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
