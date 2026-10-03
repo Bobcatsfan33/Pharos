@@ -58,6 +58,34 @@ ignore_missing_imports = true
 line-length = 100
 target-version = "py311"
 
+[tool.ruff.lint]
+# Pin the rule set explicitly. Without a `select`, the lint contract is whatever
+# ruff's default happens to be that week: 0.15.20 reported 0 findings on this tree
+# and 0.16.5 reported 394, none of which were new code. A pinned `select` means a
+# ruff bump can only change *how* the listed rules are enforced, never *which*
+# rules the runtime is held to — widening the contract becomes a deliberate commit.
+#
+#   E4/E7/E9, F  ruff's historical default (pycodestyle subset + pyflakes).
+#   BLE001       blind `except Exception`. Every such site in this tree already
+#                carries an explicit `# noqa: BLE001 — <why>`, so enabling it costs
+#                zero findings today and converts eleven inert comments into
+#                reviewed exemptions: a new blind except now has to argue for itself.
+#   S110/S112    `except: pass` / `except: continue`. These are the blind excepts
+#                that leave no trace at all. In a durable-execution runtime a
+#                silently swallowed error is the worst failure mode there is — the
+#                run looks healthy and simply does less than it claimed. The four
+#                sites 0.16 found here were real (a scheduler that ignored every
+#                JetStream error, a trace bus that hid broken listeners, two CLI
+#                loops that dropped malformed suite files and still reported "all
+#                passed"); all four are fixed in this commit, so the rules stay on
+#                to keep them fixed.
+#
+# Deliberately NOT adopted: the rest of ruff 0.16's widened default (UP*, I001,
+# RUF*, SIM*, C4*, B*, ISC*, PLR*, FURB*). Those are style and modernization rules
+# — ~390 findings of churn across the tree with no defect behind them. They can be
+# adopted later, one family at a time, as their own reviewable commits.
+select = ["E4", "E7", "E9", "F", "BLE001", "S110", "S112"]
+
 [tool.importlinter]
 root_package = "keel"
 
