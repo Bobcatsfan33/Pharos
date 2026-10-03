@@ -586,7 +586,7 @@
       },
       {
         "path": "training/pyproject.toml",
-        "sha256": "f06909f820b3831d080c02b0019321d72325a93198d3d581e9a51e75b7d5db2b"
+        "sha256": "1f6384f96aa15f106f460013bcbb1d0bc6ba68e631af021f3999f90143613041"
       },
       {
         "path": "training/quantize.py",
@@ -602,7 +602,7 @@
       },
       {
         "path": "training/uv.lock",
-        "sha256": "7895230c3007216e199491757d02803217da77f5a8811c2db2e27a9185c842a4"
+        "sha256": "373442796e4ae6141e0feac63ead3eacf50887e84c9956fe51ff8fdabfda6593"
       }
     ]
   }
