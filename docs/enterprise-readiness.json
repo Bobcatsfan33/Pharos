@@ -342,7 +342,7 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-08-30",
+    "generatedAt": "2026-10-03",
     "files": [
       {
         "path": ".github/CODEOWNERS",
@@ -350,15 +350,15 @@
       },
       {
         "path": ".github/dependabot.yml",
-        "sha256": "46cda7fc6ce13ef83031388f98f359de4ac0291d1cf67c30ac19969cc8dc3401"
+        "sha256": "52a4bcd67359e41e126f4b440ba24b9e6834f4ef0ddff3a158790a3e0183dacb"
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "f28fe9c1fd427518853f9e78abc43f7ca6473e0e0f8ee48d089acc672b70f7c3"
+        "sha256": "529ab2457b21620667ed1919dcf215141d2da0bc6406cec896d03a0bbe44e432"
       },
       {
         "path": ".github/workflows/codeql.yml",
-        "sha256": "ae45e2936e8a57f9813e996b38b221be8df7533d25e01a71d1efb98a9aa31253"
+        "sha256": "cb7e025b5d97d1d0d76ef16d35149e808111f309077b4e8b0604259ee81c8efe"
       },
       {
         "path": ".github/workflows/gitleaks.yml",
@@ -366,19 +366,19 @@
       },
       {
         "path": ".github/workflows/image.yml",
-        "sha256": "370fff61dc454bd5c43241e87a5d82a158703328bc923849abb721ce6d600b8d"
+        "sha256": "b1869bec6c0a175b6e907d2407e59bcb55c85858af4cae7be507c4d8c608d70a"
       },
       {
         "path": ".github/workflows/judge-parity.yml",
-        "sha256": "88b3518840abf8e99851a2184682ba6b1ab391ca83f48c86f960b45b3fbf1d16"
+        "sha256": "9a1a1ce7e8fcf0a6efd94a522f2fa45bfb7c679cb3990a3e98f87255fc839dda"
       },
       {
         "path": ".github/workflows/release.yml",
-        "sha256": "32da993a97958b66c710fa3949e96c9cc9e3edadfcb6ed21dc8057200f7cc5ce"
+        "sha256": "55a9e5a68b2389bf0827e98a1d8d483348ac759f7f05415c374c1aa13575aa65"
       },
       {
         "path": ".github/workflows/training.yml",
-        "sha256": "6d995c8907c1fa7a154fecaab99f2c6d250fa09e64b283bf9afc5f7bbb490eaf"
+        "sha256": "7fc343c71db62396590975c82129117044d89fb9f5c7ebad985e65012b6d0500"
       },
       {
         "path": "SECURITY.md",
@@ -586,7 +586,7 @@
       },
       {
         "path": "training/pyproject.toml",
-        "sha256": "f06909f820b3831d080c02b0019321d72325a93198d3d581e9a51e75b7d5db2b"
+        "sha256": "3f3edde2d01e7784b74b8fea50f8ed2df7630652355c48987bca39e3fe3f5242"
       },
       {
         "path": "training/quantize.py",
@@ -602,7 +602,7 @@
       },
       {
         "path": "training/uv.lock",
-        "sha256": "7895230c3007216e199491757d02803217da77f5a8811c2db2e27a9185c842a4"
+        "sha256": "7626739d71e79ff1eba7e2e2f820696897de8e25b516e06260fea36264bb3786"
       }
     ]
   }

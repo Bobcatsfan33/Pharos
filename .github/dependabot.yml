@@ -54,7 +54,10 @@ updates:
   # Offline judge-training environment. This graph is not shipped in the API
   # image, but it processes model artifacts and must not become an unmonitored
   # supply-chain blind spot.
-  - package-ecosystem: "pip"
+  # /training is a uv project (uv.lock, verified by `uv lock --check` in ci.yml).
+  # The "pip" ecosystem updates pyproject.toml but never uv.lock, which left every
+  # training bump half-done and failing the lock audit and the evidence digest.
+  - package-ecosystem: "uv"
     directory: "/training"
     schedule:
       interval: "weekly"

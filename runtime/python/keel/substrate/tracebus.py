@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+import sys
 from typing import Optional, Protocol, Callable, Awaitable
 from .events import Event
 from .store.base import EventStore
@@ -14,6 +15,10 @@ class OTelExporter(Protocol):
 # persisted events and must not raise — a failing listener is isolated, never
 # allowed to wedge the trace bus.
 EventListener = Callable[[Event], Awaitable[None]]
+
+# A permanently broken listener must not spam the drain loop; report the first few
+# failures on stderr and keep counting the rest on ``TraceBus.listener_errors``.
+_LISTENER_ERROR_REPORT_LIMIT = 5
 
 
 class TraceBus:
@@ -38,6 +43,7 @@ class TraceBus:
         self._listeners = listeners or []
         self._q: asyncio.Queue[Event] = asyncio.Queue(maxsize=buffer_size)
         self._batch_size = batch_size
+        self.listener_errors = 0  # observable count of isolated listener failures
         self._task: Optional[asyncio.Task[None]] = None
         self._closing = False
 
@@ -65,8 +71,16 @@ class TraceBus:
                     for listener in self._listeners:
                         try:
                             await listener(e)
-                        except Exception:  # noqa: BLE001 — a listener never wedges the bus
-                            pass
+                        except Exception as exc:  # noqa: BLE001 — never wedges the bus
+                            # Isolation is the contract, silence is not: a listener
+                            # that fails on every event would otherwise be invisible
+                            # forever. Count every failure and report the first few.
+                            self.listener_errors += 1
+                            if self.listener_errors <= _LISTENER_ERROR_REPORT_LIMIT:
+                                name = getattr(listener, "__name__", repr(listener))
+                                print(f"tracebus: listener {name} failed on "
+                                      f"{e.type}: {type(exc).__name__}: {exc}",
+                                      file=sys.stderr)
                 for _ in batch:
                     self._q.task_done()
                 batch.clear()
