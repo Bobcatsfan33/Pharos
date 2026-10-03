@@ -2,7 +2,10 @@
 nesting (steps are children of their run). Skipped without keel[otel]."""
 import pytest
 
-pytest.importorskip("opentelemetry")
+# fastapi >=0.142 drags in opentelemetry-api transitively, so probing the bare
+# namespace no longer proves keel[otel] is installed — probe the sdk, which is
+# what the imports below (and the extra) actually require.
+pytest.importorskip("opentelemetry.sdk")
 from opentelemetry.sdk.trace import TracerProvider  # noqa: E402
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor  # noqa: E402
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import (  # noqa: E402
