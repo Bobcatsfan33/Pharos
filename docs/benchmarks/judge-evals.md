@@ -19,7 +19,7 @@ Today's Tier-3 judges are linear bag-of-words classifiers. They hold up on clean
 - **Operating points (frozen):** hash `1f934c1990ee6486…` (threshold 0.5 per concern).
 - **Generator:** template-expansion (Pharos engineering); no external LLM in the committed pipeline
 - **Native-language method:** Spanish/German suites are natively authored (not machine-translated); native-speaker review outstanding.
-- **Human review:** pending-qualified-review
+- **Human review:** waived-by-owner
 - **Shared-generator-family limitation:** Eval text is engineer-authored templates, not LLM-sampled — it shares no generator family with any later distilled model.
 - **Dataset hashes + hard-negative composition:**
   - finra-promissory: `aa08cd27d97ff55c…` · hard negatives 90.0%

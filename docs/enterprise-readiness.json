@@ -342,7 +342,7 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-10-03",
+    "generatedAt": "2026-10-04",
     "files": [
       {
         "path": ".github/CODEOWNERS",
@@ -406,7 +406,7 @@
       },
       {
         "path": "docs/benchmarks/judge-evals.md",
-        "sha256": "0d8157e1e217a86073cb2000dfff4db4c0cd80bd5aa923034a7c61370ea358af"
+        "sha256": "4eb8dc1b0e749921bfbbc4216f594b8de3b66d968d7782c08aa4e7b75366d9ce"
       },
       {
         "path": "docs/benchmarks/latency.md",
@@ -450,7 +450,7 @@
       },
       {
         "path": "docs/external-readiness/eng-judges.md",
-        "sha256": "197d970df2fc98b19e33704cba984bab2a3797ce70cec8e3948ccc818197eab9"
+        "sha256": "c1078f287fc8bf039a9708be405b04c5ff92840f9ebe143eb813f1a559aacb8f"
       },
       {
         "path": "docs/external-readiness/evidence-receipt.schema.json",
