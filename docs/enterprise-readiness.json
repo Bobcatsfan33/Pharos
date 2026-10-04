@@ -342,7 +342,7 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-10-03",
+    "generatedAt": "2026-10-04",
     "files": [
       {
         "path": ".github/CODEOWNERS",
@@ -370,7 +370,7 @@
       },
       {
         "path": ".github/workflows/judge-parity.yml",
-        "sha256": "9a1a1ce7e8fcf0a6efd94a522f2fa45bfb7c679cb3990a3e98f87255fc839dda"
+        "sha256": "f36571a19ab398782defbef60191b852a508339bc00b44ae7187012e3fd5d176"
       },
       {
         "path": ".github/workflows/release.yml",
@@ -542,7 +542,7 @@
       },
       {
         "path": "packages/judge/models/manifest.json",
-        "sha256": "0191f21faa2be75a474f6c3bff48cb12fce934f2cea368c54a018092f3007d36"
+        "sha256": "e09f3eac2c5422c9748ea94c00f104ddf6808b6efc1a19278104c8ae0436c191"
       },
       {
         "path": "packages/judge/src/onnxModel.ts",
@@ -562,7 +562,7 @@
       },
       {
         "path": "test/fixtures/onnx-parity-funds.json",
-        "sha256": "c7ec2bbe7d412065bd89c344a0ea54c9264c868336c5b0ae0ee99079a4b59603"
+        "sha256": "25f3b68bab5b0a2039a2b00757e102d32eb1061619f0a4a5d2c4634dc2eca8e0"
       },
       {
         "path": "test/observability.judge-drift.test.ts",
