@@ -342,7 +342,7 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-10-03",
+    "generatedAt": "2026-10-04",
     "files": [
       {
         "path": ".github/CODEOWNERS",
@@ -370,7 +370,7 @@
       },
       {
         "path": ".github/workflows/judge-parity.yml",
-        "sha256": "9a1a1ce7e8fcf0a6efd94a522f2fa45bfb7c679cb3990a3e98f87255fc839dda"
+        "sha256": "f36571a19ab398782defbef60191b852a508339bc00b44ae7187012e3fd5d176"
       },
       {
         "path": ".github/workflows/release.yml",
@@ -418,7 +418,7 @@
       },
       {
         "path": "docs/benchmarks/system-encoding-eval.md",
-        "sha256": "43031c09127466868d0c00565c7e2c296bbbda6830c3f9deefc13e1bcf9077b5"
+        "sha256": "ef6dede873dfbd1a7ab943573003d54781ce8749edefae7398bd7d5f8cae7b1b"
       },
       {
         "path": "docs/code-audit-durable-stores.md",
@@ -542,11 +542,11 @@
       },
       {
         "path": "packages/judge/models/manifest.json",
-        "sha256": "0191f21faa2be75a474f6c3bff48cb12fce934f2cea368c54a018092f3007d36"
+        "sha256": "e09f3eac2c5422c9748ea94c00f104ddf6808b6efc1a19278104c8ae0436c191"
       },
       {
         "path": "packages/judge/src/onnxModel.ts",
-        "sha256": "0e81ec4d09ec83027ebbdf29aed450f1537acc422c0a9e1335375cde7fb230de"
+        "sha256": "5452dc241a9e7d69afa8c0df66fd1bc93513a1996faf4c6e8baed82011bfee46"
       },
       {
         "path": "packages/observability/src/judgeDrift.ts",
@@ -562,7 +562,7 @@
       },
       {
         "path": "test/fixtures/onnx-parity-funds.json",
-        "sha256": "c7ec2bbe7d412065bd89c344a0ea54c9264c868336c5b0ae0ee99079a4b59603"
+        "sha256": "e4989d21bebb3d19d9ba81f9ea4b37e697b1a63b77112be27cdf5b23a4b2834c"
       },
       {
         "path": "test/observability.judge-drift.test.ts",
