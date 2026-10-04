@@ -138,7 +138,7 @@ export interface NearMissTaxonomy {
 
 /** Stratified human-review record (§7-10(a)); populated by the reviewer, not the generator. */
 export interface HumanReviewRecord {
-  status: "pending-qualified-review" | "reviewed";
+  status: "pending-qualified-review" | "reviewed" | "waived-by-owner";
   reviewer: string | null;
   qualification: string | null;
   reviewedAt: string | null;

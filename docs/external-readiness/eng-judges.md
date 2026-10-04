@@ -15,3 +15,11 @@ and re-evaluated without training against the observed lockbox.
 The receipt must identify the evaluator and promotion authority, target model hashes/runtime/commit,
 methodology, limitations, thresholds, retained artifact digests, and signed promotion decision.
 Repository CI and same-host parity are prerequisites, not independent efficacy approval.
+
+## Owner waiver of the dataset qualified-review sub-gate (2026-10-04)
+
+The §7-10(a) qualified compliance-literate review of the committed eval datasets was waived by the
+repository owner on 2026-10-04 (recorded owner instruction). The waiver is recorded in each
+dataset manifest's `humanReview` block as `waived-by-owner` — it is a waiver, not a review, and
+no review is claimed. Everything else on this page — the independent AI-risk evaluator, fresh
+lockboxes, signed promotion receipt — remains an external gate and is unchanged by the waiver.

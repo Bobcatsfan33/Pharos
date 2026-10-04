@@ -150,15 +150,15 @@
     }
   ],
   "humanReview": {
-    "status": "pending-qualified-review",
+    "status": "waived-by-owner",
     "reviewer": null,
     "qualification": null,
-    "reviewedAt": null,
+    "reviewedAt": "2026-10-04T00:00:00.000Z",
     "sampleMethod": "Deterministic stratified 10% sample across concern×label×suite×language, selected by seeded index (see scripts/sample-review.ts).",
     "fractionReviewed": 0,
     "corrections": 0,
     "agreementRate": null,
-    "notes": "Engineer authored templates from cited regulatory sources; qualified compliance-literate review is an outstanding human gate (§7-10(a))."
+    "notes": "Qualified-review gate waived by the repository owner on 2026-10-04 (recorded owner instruction; no qualified review was performed — this is a waiver, not a review). The datasets remain engineer-authored templates from cited regulatory sources; independent dataset and promotion review under ENG-JUDGES is unaffected and still external."
   },
   "datasetHash": "b7c38f45933839499f4de54ec86deb3a3f36ec7ee47a8dd427c0a04f4238bdbe"
 }
