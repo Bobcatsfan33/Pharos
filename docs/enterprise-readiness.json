@@ -546,7 +546,7 @@
       },
       {
         "path": "packages/judge/src/onnxModel.ts",
-        "sha256": "0e81ec4d09ec83027ebbdf29aed450f1537acc422c0a9e1335375cde7fb230de"
+        "sha256": "5452dc241a9e7d69afa8c0df66fd1bc93513a1996faf4c6e8baed82011bfee46"
       },
       {
         "path": "packages/observability/src/judgeDrift.ts",
@@ -562,7 +562,7 @@
       },
       {
         "path": "test/fixtures/onnx-parity-funds.json",
-        "sha256": "25f3b68bab5b0a2039a2b00757e102d32eb1061619f0a4a5d2c4634dc2eca8e0"
+        "sha256": "e4989d21bebb3d19d9ba81f9ea4b37e697b1a63b77112be27cdf5b23a4b2834c"
       },
       {
         "path": "test/observability.judge-drift.test.ts",
