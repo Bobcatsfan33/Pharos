@@ -19,7 +19,7 @@
     "@pharos/core": "workspace:*",
     "@pharos/identity": "workspace:*",
     "ioredis": "^6.0.0",
-    "pg": "^8.23.0"
+    "pg": "^8.23.1"
   },
   "devDependencies": {
     "@types/pg": "^8.23.1"
