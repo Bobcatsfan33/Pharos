@@ -89,7 +89,7 @@ jobs:
           if(!fs.existsSync('/app/node_modules/.bin/tsx')){process.exit(1)}"
 
       - name: generate SPDX SBOM
-        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c
         with:
           image: ${{ env.LOCAL_IMAGE }}
           format: spdx-json
@@ -111,7 +111,7 @@ jobs:
           exit-code: 0
 
       - name: retain pull-request assurance evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: pharos-image-assurance-${{ github.run_id }}
           path: |
@@ -160,7 +160,7 @@ jobs:
           docker run --rm --read-only --network none --cap-drop ALL \
             --security-opt no-new-privileges "${LOCAL_RUNTIME_IMAGE}" --help | grep -q "usage: pharos"
       - name: generate runtime SPDX SBOM
-        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c
         with:
           image: ${{ env.LOCAL_RUNTIME_IMAGE }}
           format: spdx-json
@@ -180,7 +180,7 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: 0
       - name: retain runtime assurance evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: pharos-runtime-image-assurance-${{ github.run_id }}
           path: |
@@ -258,7 +258,7 @@ jobs:
         run: cosign sign --yes "${IMAGE}@${{ steps.build.outputs.digest }}"
 
       - name: generate release SPDX SBOM
-        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c
         with:
           image: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
           registry-username: ${{ github.actor }}
@@ -321,7 +321,7 @@ jobs:
             }' > pharos-api.release.json
 
       - name: retain release evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: pharos-api-${{ github.ref_name }}
           path: |
@@ -380,7 +380,7 @@ jobs:
       - name: keylessly sign the runtime image
         run: cosign sign --yes "${RUNTIME_IMAGE}@${{ steps.runtime-build.outputs.digest }}"
       - name: generate runtime release SPDX SBOM
-        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c
         with:
           image: ${{ env.RUNTIME_IMAGE }}@${{ steps.runtime-build.outputs.digest }}
           registry-username: ${{ github.actor }}
@@ -424,7 +424,7 @@ jobs:
               release_tag: $release_tag
             }' > pharos-runtime.release.json
       - name: retain runtime release evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: pharos-runtime-${{ github.ref_name }}
           path: |
