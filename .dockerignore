@@ -11,5 +11,7 @@ examples
 test
 scripts
 deploy
+# The image entrypoint is the one file under deploy/ the build needs.
+!deploy/docker-entrypoint.sh
 sdks/python
 vitest-report.json
