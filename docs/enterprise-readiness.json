@@ -354,7 +354,7 @@
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "e95c65819002d246fd1ae91172f67122926b5611cc67f07dc9c62ed3300d53ac"
+        "sha256": "546223d0b48d8096332eff1a3b386137eeca2086cb908fa62b36910dffc2cd71"
       },
       {
         "path": ".github/workflows/codeql.yml",
@@ -558,7 +558,7 @@
       },
       {
         "path": "services/api/src/platform.ts",
-        "sha256": "5b395a5daa2fcf7fb2197523ce8ccfbcee6b2dfe59fbb194e36bb96cedc1528d"
+        "sha256": "38b49668655216bb707f855cb3b87fccdb022fa6d718d9a7cb2d1f21b38d7577"
       },
       {
         "path": "test/fixtures/onnx-parity-funds.json",

@@ -19,5 +19,6 @@
     "@getpharos/sdk": "workspace:*",
     "@pharos/storage": "workspace:*",
     "fastify": "^5.12.1"
-  }
+  },
+  "sideEffects": false
 }

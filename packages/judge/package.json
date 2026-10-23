@@ -17,5 +17,6 @@
   "dependencies": {
     "@pharos/core": "workspace:*",
     "onnxruntime-node": "1.30.0"
-  }
+  },
+  "sideEffects": false
 }

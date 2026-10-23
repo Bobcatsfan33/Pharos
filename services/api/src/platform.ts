@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { loadConfig, type PharosConfig } from "@pharos/config";
 import {
-  AwsKms,
   FileKeystore,
   LocalKms,
   ResilientSigner,
@@ -13,8 +12,6 @@ import { LocalTsa, Rfc3161Tsa, type TsaProvider } from "@pharos/evidence";
 import {
   AnchorScheduler,
   ChainIntegrityService,
-  buildEmbeddedStorage,
-  buildPostgresStorage,
   type AccessAuditLogPort,
   type ApiKeyStorePort,
   type AssuranceStorePort,
@@ -160,8 +157,17 @@ export async function buildJudgeRegistry(
   return registry;
 }
 
-export function buildSigner(config: PharosConfig): SigningProvider {
+/**
+ * Provider modules that pull cloud SDKs are imported lazily so a build that only runs the
+ * embedded on-ramp (the CLI bundle) never loads pg, ioredis, or the AWS SDKs.
+ */
+async function awsKmsModule() {
+  return import("@pharos/core/signing/awsKms");
+}
+
+export async function buildSigner(config: PharosConfig): Promise<SigningProvider> {
   if (config.kms.provider === "aws-kms") {
+    const { AwsKms } = await awsKmsModule();
     return new AwsKms({
       region: config.kms.awsRegion,
       endpoint: config.kms.awsEndpoint,
@@ -177,8 +183,9 @@ export function buildSigner(config: PharosConfig): SigningProvider {
 
 /** The timestamp authority uses an INDEPENDENT keystore so anchors don't trust platform keys. */
 /** The signing provider for the simulated (`local`) TSA — an INDEPENDENT keystore/namespace. */
-export function buildTsaSigner(config: PharosConfig): SigningProvider {
+export async function buildTsaSigner(config: PharosConfig): Promise<SigningProvider> {
   if (config.kms.provider === "aws-kms") {
+    const { AwsKms } = await awsKmsModule();
     // Separate alias namespace so the TSA keyset is isolated from the signing keyset.
     return new AwsKms({
       region: config.kms.awsRegion,
@@ -203,10 +210,10 @@ const DEFAULT_FREETSA_URL = "https://freetsa.org/tsr";
  * against its own certificate, so no keyset is published). `local` is the simulated TSA whose
  * public keyset IS published for offline verification.
  */
-export function buildTsaProvider(config: PharosConfig): {
+export async function buildTsaProvider(config: PharosConfig): Promise<{
   tsa: TsaProvider;
   keyset: () => Promise<PublicKeyEntry[]>;
-} {
+}> {
   if (config.tsa.provider === "rfc3161") {
     return {
       tsa: new Rfc3161Tsa(config.tsa.url ?? DEFAULT_FREETSA_URL, {
@@ -215,7 +222,7 @@ export function buildTsaProvider(config: PharosConfig): {
       keyset: async () => [],
     };
   }
-  const signer = buildTsaSigner(config);
+  const signer = await buildTsaSigner(config);
   return { tsa: new LocalTsa(signer, `tsa-${config.env}`), keyset: () => signer.publishKeyset() };
 }
 
@@ -241,12 +248,14 @@ export async function buildStorage(
   // Sprint 1: per-tenant signing keys (matches TenantStore.kmsKeyName).
   const resolveKeyName = (tenantId: string) => `tenant:${tenantId}`;
   if (config.storage.backend === "embedded") {
+    const { buildEmbeddedStorage } = await import("@pharos/storage/embedded");
     return buildEmbeddedStorage(
       { dataDir: config.storage.dataDir },
       { signer, resolveKeyName, notifier: REVIEW_NOTIFIER_OPTIONS },
     );
   }
   // loadConfig guarantees these for the postgres backend; the fallbacks only satisfy types.
+  const { buildPostgresStorage } = await import("@pharos/storage/postgres");
   return buildPostgresStorage(
     {
       pgUrl: config.pg.url ?? "",
@@ -273,10 +282,10 @@ export async function buildPlatform(
   // Wrap the seal-path signer with a circuit breaker: a KMS outage must fail the seal (and
   // therefore the whole govern-and-record transaction) rather than queue a "sign later" —
   // no verdict without a durable record. Surfaced as KmsUnavailableError -> 503 by the API.
-  const signer = new ResilientSigner(buildSigner(config), {
+  const signer = new ResilientSigner(await buildSigner(config), {
     onKmsUnavailable: () => metrics.kmsUnavailable.inc(),
   });
-  const { tsa, keyset: tsaKeyset } = buildTsaProvider(config);
+  const { tsa, keyset: tsaKeyset } = await buildTsaProvider(config);
 
   const storage = await buildStorage(config, signer);
   const { store, tenants, apiKeys, accessAudit, mandates, escalations, notifier } = storage;

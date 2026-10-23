@@ -10,6 +10,10 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
+    },
+    "./signing/awsKms": {
+      "types": "./src/signing/awsKms.ts",
+      "import": "./src/signing/awsKms.ts"
     }
   },
   "scripts": {
@@ -19,5 +23,6 @@
   "dependencies": {
     "@aws-sdk/client-kms": "^3.1144.0",
     "zod": "^4.6.5"
-  }
+  },
+  "sideEffects": false
 }

@@ -1,11 +1,4 @@
-import {
-  KMSClient,
-  CreateKeyCommand,
-  CreateAliasCommand,
-  ListAliasesCommand,
-  GetPublicKeyCommand,
-  SignCommand,
-} from "@aws-sdk/client-kms";
+import type { KMSClient } from "@aws-sdk/client-kms";
 import { verify as nodeVerify, createPublicKey } from "node:crypto";
 import { type SigningProvider, type PublicKeyEntry, makeKeyId, parseKeyId } from "./provider.js";
 
@@ -81,7 +74,36 @@ export function awsKmsAliasName(aliasPrefix: string, keyName: string, version: n
 
 export class AwsKms implements SigningProvider {
   readonly providerId = "aws-kms";
-  private readonly client: KMSClient;
+  // The AWS SDK is imported lazily on first use so a bundle that only runs the embedded
+  // on-ramp (the CLI) never loads it; the client is constructed exactly as before.
+  private sdkModule: Promise<typeof import("@aws-sdk/client-kms")> | null = null;
+  /** Created on first use (the SDK is imported lazily); tests may inspect it after a call. */
+  private client: KMSClient | null = null;
+
+  private sdk(): Promise<typeof import("@aws-sdk/client-kms")> {
+    this.sdkModule ??= import("@aws-sdk/client-kms");
+    return this.sdkModule;
+  }
+
+  private async kms(): Promise<KMSClient> {
+    if (!this.client) {
+      const { KMSClient } = await this.sdk();
+      this.client = new KMSClient({
+        region: this.cfg.region,
+        // With an endpoint set we are talking to a KMS emulator (dev/CI): supply dummy static
+        // credentials so the SDK doesn't require a real credential chain. Against real AWS
+        // (no endpoint) the SDK's default credential provider chain (env/role/SSO) is used.
+        ...(this.cfg.endpoint
+          ? {
+              endpoint: this.cfg.endpoint,
+              credentials: { accessKeyId: "local-kms", secretAccessKey: "local-kms" },
+            }
+          : {}),
+      });
+    }
+    return this.client;
+  }
+  private readonly cfg: AwsKmsConfig;
   private readonly aliasPrefix: string;
   private readonly allowKeyCreation: boolean;
   /** Public keys are immutable per keyId; cache to avoid repeat GetPublicKey calls. */
@@ -90,20 +112,9 @@ export class AwsKms implements SigningProvider {
   private readonly versionsCache = new Map<string, readonly number[]>();
 
   constructor(cfg: AwsKmsConfig) {
+    this.cfg = cfg;
     this.aliasPrefix = cfg.aliasPrefix ?? "pharos";
     this.allowKeyCreation = cfg.allowKeyCreation ?? false;
-    this.client = new KMSClient({
-      region: cfg.region,
-      // With an endpoint set we are talking to a KMS emulator (dev/CI): supply dummy static
-      // credentials so the SDK doesn't require a real credential chain. Against real AWS
-      // (no endpoint) the SDK's default credential provider chain (env/role/SSO) is used.
-      ...(cfg.endpoint
-        ? {
-            endpoint: cfg.endpoint,
-            credentials: { accessKeyId: "local-kms", secretAccessKey: "local-kms" },
-          }
-        : {}),
-    });
   }
 
   private aliasPrefixPath(): string {
@@ -139,7 +150,9 @@ export class AwsKms implements SigningProvider {
     const names: string[] = [];
     let marker: string | undefined;
     do {
-      const res = await this.client.send(new ListAliasesCommand({ Marker: marker, Limit: 100 }));
+      const res = await (
+        await this.kms()
+      ).send(new (await this.sdk()).ListAliasesCommand({ Marker: marker, Limit: 100 }));
       for (const a of res.Aliases ?? []) if (a.AliasName) names.push(a.AliasName);
       marker = res.Truncated ? res.NextMarker : undefined;
     } while (marker);
@@ -157,8 +170,10 @@ export class AwsKms implements SigningProvider {
           `(${this.aliasName(keyName, version)}); refusing to mint a colliding key`,
       );
     }
-    const key = await this.client.send(
-      new CreateKeyCommand({
+    const key = await (
+      await this.kms()
+    ).send(
+      new (await this.sdk()).CreateKeyCommand({
         KeySpec: "ECC_NIST_P256",
         KeyUsage: "SIGN_VERIFY",
         Description: `Pharos ${this.aliasPrefix} signing key ${keyName} v${version}`,
@@ -167,8 +182,10 @@ export class AwsKms implements SigningProvider {
     const kmsKeyId = key.KeyMetadata?.KeyId;
     if (!kmsKeyId) throw new Error("AWS KMS CreateKey returned no KeyId");
     // One alias per version so older versions remain individually addressable for verify.
-    await this.client.send(
-      new CreateAliasCommand({
+    await (
+      await this.kms()
+    ).send(
+      new (await this.sdk()).CreateAliasCommand({
         AliasName: this.aliasName(keyName, version),
         TargetKeyId: kmsKeyId,
       }),
@@ -230,8 +247,10 @@ export class AwsKms implements SigningProvider {
   }
 
   async sign(keyId: string, message: Buffer): Promise<string> {
-    const res = await this.client.send(
-      new SignCommand({
+    const res = await (
+      await this.kms()
+    ).send(
+      new (await this.sdk()).SignCommand({
         KeyId: this.aliasFor(keyId),
         Message: message,
         MessageType: "RAW", // KMS computes SHA-256 of the message (bounded: our messages are tiny)
@@ -263,7 +282,9 @@ export class AwsKms implements SigningProvider {
     const cached = this.publicKeyCache.get(keyId);
     if (cached) return cached;
     try {
-      const res = await this.client.send(new GetPublicKeyCommand({ KeyId: this.aliasFor(keyId) }));
+      const res = await (
+        await this.kms()
+      ).send(new (await this.sdk()).GetPublicKeyCommand({ KeyId: this.aliasFor(keyId) }));
       if (!res.PublicKey) return null;
       const entry: PublicKeyEntry = {
         keyId,

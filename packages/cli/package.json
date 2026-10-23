@@ -1,0 +1,61 @@
+{
+  "name": "@getpharos/cli",
+  "version": "0.0.0",
+  "description": "Pharos CLI \u2014 real-time policy verdicts for AI agents with a signed, hash-chained evidence record of every decision. Zero infrastructure: npx @getpharos/cli demo.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bobcatsfan33/Pharos.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/Bobcatsfan33/Pharos#readme",
+  "bugs": {
+    "url": "https://github.com/Bobcatsfan33/Pharos/issues"
+  },
+  "keywords": [
+    "ai-agents",
+    "agent-guardrails",
+    "mcp-security",
+    "claude-code-hooks",
+    "ai-agent-audit-log",
+    "policy-engine",
+    "governance",
+    "evidence",
+    "audit",
+    "llm"
+  ],
+  "type": "module",
+  "bin": {
+    "pharos": "./dist/bin/pharos.mjs"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "smoke": "bash ../../scripts/cli-smoke.sh"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.0",
+    "fastify": "^5.12.1"
+  },
+  "devDependencies": {
+    "@pharos/api": "workspace:*",
+    "@pharos/cascade": "workspace:*",
+    "@pharos/config": "workspace:*",
+    "@pharos/core": "workspace:*",
+    "@pharos/evidence": "workspace:*",
+    "@pharos/judge": "workspace:*",
+    "@pharos/policy": "workspace:*",
+    "@pharos/storage": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false
+}
