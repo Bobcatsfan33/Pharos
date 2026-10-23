@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
+import type { EvidenceOpsStorePort } from "./ports.js";
 
 export interface LegalHold {
   id: string;
@@ -45,7 +46,7 @@ export interface ClaimsPackRow {
  * anchors, and claims packs. The evidence chain itself stays in action_records / WORM; this
  * holds the workflow state around incidents and exports.
  */
-export class EvidenceOpsStore {
+export class EvidenceOpsStore implements EvidenceOpsStorePort {
   constructor(private readonly pool: Pool) {}
 
   // --- Litigation holds ---

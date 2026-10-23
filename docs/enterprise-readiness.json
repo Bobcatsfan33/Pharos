@@ -342,7 +342,7 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-10-04",
+    "generatedAt": "2026-10-23",
     "files": [
       {
         "path": ".github/CODEOWNERS",
@@ -558,7 +558,7 @@
       },
       {
         "path": "services/api/src/platform.ts",
-        "sha256": "e5366cf2c7f4c52d2c65e11a1af22b5fb4cb4ba291d2effbd3530f0f983b5fdd"
+        "sha256": "450fccfcc4cc11a3228b13ab77bf9e1a8c3c80a54b1d259f6b23bf4a3047d038"
       },
       {
         "path": "test/fixtures/onnx-parity-funds.json",

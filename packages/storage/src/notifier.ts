@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
+import type { ReviewNotifierPort } from "./ports.js";
 
 export type NotificationChannel = "email" | "slack" | "teams" | "webhook";
 export type NotificationEvent = "assigned" | "at_risk" | "breached" | "resolved" | "digest";
@@ -31,7 +32,7 @@ export interface ReviewNotifierOptions {
   fetchImpl?: typeof fetch;
 }
 
-export class ReviewNotifier {
+export class ReviewNotifier implements ReviewNotifierPort {
   private readonly fetchImpl: typeof fetch;
   constructor(
     private readonly pool: Pool,

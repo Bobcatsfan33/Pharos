@@ -11,23 +11,23 @@ import {
 } from "@pharos/core";
 import { LocalTsa, Rfc3161Tsa, type TsaProvider } from "@pharos/evidence";
 import {
-  AccessAuditLog,
   AnchorScheduler,
-  ApiKeyStore,
-  AssuranceStore,
   ChainIntegrityService,
-  EscalationStore,
-  EvidenceOpsStore,
-  EvidenceStore,
-  MandateStore,
-  PolicyStore,
-  ReviewNotifier,
-  TenantStore,
-  VerdictCache,
-  WormStore,
-  createPool,
-  runMigrations,
+  buildPostgresStorage,
+  type AccessAuditLogPort,
+  type ApiKeyStorePort,
+  type AssuranceStorePort,
+  type CounterStorePort,
+  type EscalationStorePort,
+  type EvidenceOpsStorePort,
+  type EvidenceStorePort,
+  type MandateStorePort,
+  type PolicyStorePort,
   type Pool,
+  type ReviewNotifierOptions,
+  type ReviewNotifierPort,
+  type StorageBackend,
+  type TenantStorePort,
 } from "@pharos/storage";
 import { OidcVerifier, type OidcIssuerConfig } from "@pharos/identity";
 import {
@@ -59,18 +59,20 @@ import { ReviewSlaService } from "./reviewSla.js";
  */
 export interface Platform {
   config: PharosConfig;
-  pool: Pool;
+  /** The storage backend behind every store below, with its stated evidence posture. */
+  storage: StorageBackend;
+  /** Raw Postgres pool — present only on the Postgres backend (tests and the gateway use it). */
+  pool?: Pool;
   signer: SigningProvider;
-  worm: WormStore;
-  cache: VerdictCache;
-  store: EvidenceStore;
+  cache: CounterStorePort;
+  store: EvidenceStorePort;
   engine: VerdictEngine;
   registry: ModelRegistry;
   cascade: VerdictCascade;
   integrity: ChainIntegrityService;
-  evidenceOps: EvidenceOpsStore;
-  policyStore: PolicyStore;
-  assurance: AssuranceStore;
+  evidenceOps: EvidenceOpsStorePort;
+  policyStore: PolicyStorePort;
+  assurance: AssuranceStorePort;
   /** Active policy artifacts for a tenant (shipped packs + active custom policies). */
   activePolicyArtifacts: (tenantId: string) => Promise<PolicyArtifact[]>;
   metrics: MetricsRegistry;
@@ -84,12 +86,12 @@ export interface Platform {
   anchorHead: (tenantId: string) => Promise<{ sequence: number; headHash: string } | null>;
   /** Scheduled per-tenant anchoring (default hourly); started by the server entrypoint. */
   anchorScheduler: AnchorScheduler;
-  tenants: TenantStore;
-  apiKeys: ApiKeyStore;
-  accessAudit: AccessAuditLog;
-  mandates: MandateStore;
-  escalations: EscalationStore;
-  notifier: ReviewNotifier;
+  tenants: TenantStorePort;
+  apiKeys: ApiKeyStorePort;
+  accessAudit: AccessAuditLogPort;
+  mandates: MandateStorePort;
+  escalations: EscalationStorePort;
+  notifier: ReviewNotifierPort;
   reviewSla: ReviewSlaService;
   oidc: OidcVerifier;
   close: () => Promise<void>;
@@ -213,13 +215,52 @@ export function buildTsaProvider(config: PharosConfig): {
   return { tsa: new LocalTsa(signer, `tsa-${config.env}`), keyset: () => signer.publishKeyset() };
 }
 
+/** Per-queue notification channels (Sprint 4 policy); shared by every backend. */
+const REVIEW_NOTIFIER_OPTIONS: ReviewNotifierOptions = {
+  queuePolicy: {
+    "treasury-control": ["email", "slack"],
+    "privacy-office": ["email"],
+    "registered-principal": ["email", "teams"],
+  },
+  defaultChannels: ["email"],
+};
+
+/**
+ * Build the storage backend from configuration. Postgres + S3 WORM + Redis is the only
+ * backend today and remains the production path; it is selected here, in one place, so a
+ * lighter backend can be added behind the same ports without touching the routes.
+ */
+export async function buildStorage(
+  config: PharosConfig,
+  signer: SigningProvider,
+): Promise<StorageBackend> {
+  return buildPostgresStorage(
+    {
+      pgUrl: config.pg.url,
+      redisUrl: config.redis.url,
+      s3: {
+        endpoint: config.s3.endpoint,
+        region: config.s3.region,
+        bucket: config.s3.bucket,
+        accessKey: config.s3.accessKey,
+        secretKey: config.s3.secretKey,
+        forcePathStyle: config.s3.forcePathStyle,
+        retentionDays: config.s3.wormRetentionDays,
+      },
+    },
+    {
+      signer,
+      // Sprint 1: per-tenant signing keys (matches TenantStore.kmsKeyName).
+      resolveKeyName: (tenantId) => `tenant:${tenantId}`,
+      notifier: REVIEW_NOTIFIER_OPTIONS,
+    },
+  );
+}
+
 export async function buildPlatform(
   config: PharosConfig = loadConfig(),
   options: BuildPlatformOptions = {},
 ): Promise<Platform> {
-  const pool = createPool(config.pg.url);
-  await runMigrations(pool);
-
   const metrics = new MetricsRegistry();
   // Wrap the seal-path signer with a circuit breaker: a KMS outage must fail the seal (and
   // therefore the whole govern-and-record transaction) rather than queue a "sign later" —
@@ -229,23 +270,9 @@ export async function buildPlatform(
   });
   const { tsa, keyset: tsaKeyset } = buildTsaProvider(config);
 
-  const worm = new WormStore({
-    endpoint: config.s3.endpoint,
-    region: config.s3.region,
-    bucket: config.s3.bucket,
-    accessKey: config.s3.accessKey,
-    secretKey: config.s3.secretKey,
-    forcePathStyle: config.s3.forcePathStyle,
-    retentionDays: config.s3.wormRetentionDays,
-  });
-  await worm.ensureBucket();
-
-  const cache = new VerdictCache(config.redis.url);
-
-  // Sprint 1: per-tenant signing keys (matches TenantStore.kmsKeyName).
-  const resolveKeyName = (tenantId: string) => `tenant:${tenantId}`;
-
-  const store = new EvidenceStore({ pool, worm, signer, resolveKeyName });
+  const storage = await buildStorage(config, signer);
+  const { store, tenants, apiKeys, accessAudit, mandates, escalations, notifier } = storage;
+  const { evidenceOps, policyStore, assurance, counters: cache } = storage;
   const engine = new VerdictEngine({ deadlineMs: config.api.verdictDeadlineMs });
   // Preload and verify the complete configured model set before the service can become healthy.
   // A partial production judge fleet is a startup failure, never a silent fallback to linear.
@@ -282,28 +309,12 @@ export async function buildPlatform(
       }
     },
   });
-  const policyStore = new PolicyStore(pool);
-  const assurance = new AssuranceStore(pool);
   const tracer = new Tracer();
   const activePolicyArtifacts = async (tenantId: string): Promise<PolicyArtifact[]> => [
     ...shippedArtifacts,
     ...((await policyStore.getActiveArtifacts(tenantId)) as PolicyArtifact[]),
   ];
-  const tenants = new TenantStore(pool);
-  const apiKeys = new ApiKeyStore(pool);
-  const accessAudit = new AccessAuditLog(pool);
-  const mandates = new MandateStore(pool);
-  const escalations = new EscalationStore(pool);
-  const notifier = new ReviewNotifier(pool, {
-    queuePolicy: {
-      "treasury-control": ["email", "slack"],
-      "privacy-office": ["email"],
-      "registered-principal": ["email", "teams"],
-    },
-    defaultChannels: ["email"],
-  });
   const reviewSla = new ReviewSlaService({ tenants, escalations, notifier });
-  const evidenceOps = new EvidenceOpsStore(pool);
 
   const integrity = new ChainIntegrityService({
     store,
@@ -347,9 +358,9 @@ export async function buildPlatform(
 
   return {
     config,
-    pool,
+    storage,
+    ...("pool" in storage ? { pool: (storage as { pool: Pool }).pool } : {}),
     signer,
-    worm,
     cache,
     store,
     engine,
@@ -379,8 +390,7 @@ export async function buildPlatform(
       integrity.stop();
       anchorScheduler.stop();
       reviewSla.stop();
-      await cache.close().catch(() => {});
-      await pool.end();
+      await storage.close();
     },
   };
 }

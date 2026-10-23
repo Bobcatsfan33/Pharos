@@ -1,4 +1,27 @@
 export { createPool, type Pool } from "./pg.js";
+export type {
+  AccessAuditLogPort,
+  ApiKeyStorePort,
+  AssuranceStorePort,
+  CounterStorePort,
+  EscalationStorePort,
+  EvidenceOpsStorePort,
+  EvidencePosture,
+  EvidenceReconciliation,
+  EvidenceStorePort,
+  MandateStorePort,
+  PolicyStorePort,
+  ReviewNotifierPort,
+  StorageBackend,
+  TenantStorePort,
+} from "./ports.js";
+export {
+  buildPostgresStorage,
+  POSTGRES_EVIDENCE_POSTURE,
+  type PostgresStorageBackend,
+  type PostgresStorageConfig,
+  type PostgresStorageDeps,
+} from "./postgresBackend.js";
 export { runMigrations, MIGRATIONS, type Migration } from "./migrations.js";
 export {
   WormStore,

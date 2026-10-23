@@ -161,7 +161,7 @@ describe("Gatehouse — tenant isolation attack suite", () => {
 
   it("RLS backstops at the database: tenant-A context cannot see tenant-B rows", async (ctx) => {
     if (!available) return ctx.skip();
-    const client = await platform!.pool.connect();
+    const client = await platform!.pool!.connect();
     try {
       await client.query("BEGIN");
       await client.query("SELECT set_config('pharos.tenant_id', $1, true)", [TA]);
@@ -247,7 +247,7 @@ describe("Gatehouse — access audit chain", () => {
   it("detects tampering with an audit entry", async (ctx) => {
     if (!available) return ctx.skip();
     // Tamper directly in the DB (as an attacker with DB access would).
-    const client = await platform!.pool.connect();
+    const client = await platform!.pool!.connect();
     try {
       await client.query("BEGIN");
       await client.query("SELECT set_config('pharos.tenant_id', $1, true)", [TB]);

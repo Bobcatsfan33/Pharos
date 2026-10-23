@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import type { ApiKeyStorePort } from "./ports.js";
 import {
   type GeneratedApiKey,
   type Permission,
@@ -40,7 +41,7 @@ interface KeyRow {
  * active key without revoking the old one, so callers can roll forward with zero dropped
  * ingestion; the old key is revoked explicitly once traffic has moved.
  */
-export class ApiKeyStore {
+export class ApiKeyStore implements ApiKeyStorePort {
   constructor(private readonly pool: Pool) {}
 
   async create(

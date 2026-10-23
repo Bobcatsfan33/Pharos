@@ -13,6 +13,7 @@ import {
   disclosureBindingMessage,
 } from "@pharos/core";
 import type { WormStore, WormReconciliation } from "./wormStore.js";
+import type { EvidenceStorePort } from "./ports.js";
 
 export interface AppendInput {
   tenantId: string;
@@ -75,7 +76,7 @@ export interface EvidenceStoreDeps {
  * evidence commit together or not at all. A WORM object orphaned by a post-PUT commit
  * failure is harmless: it is content-addressed and detected by reconcile().
  */
-export class EvidenceStore {
+export class EvidenceStore implements EvidenceStorePort {
   constructor(private readonly deps: EvidenceStoreDeps) {}
 
   private now(): Date {
@@ -299,7 +300,7 @@ export class EvidenceStore {
    * authoritative Postgres side — every committed record and the object key it named —
    * and delegates the comparison to the object store.
    */
-  async reconcileWorm(tenantId: string): Promise<WormReconciliation> {
+  async reconcileEvidence(tenantId: string): Promise<WormReconciliation> {
     const committed = await this.withTenant(tenantId, async (client) => {
       const res = await client.query<{ sequence: string; worm_key: string }>(
         `SELECT sequence, worm_key FROM action_records WHERE tenant_id = $1 ORDER BY sequence ASC`,
@@ -308,6 +309,11 @@ export class EvidenceStore {
       return res.rows.map((r) => ({ sequence: Number(r.sequence), wormKey: r.worm_key }));
     });
     return this.deps.worm.reconcile(tenantId, committed);
+  }
+
+  /** @deprecated use reconcileEvidence (same behaviour; the port is backend-neutral). */
+  async reconcileWorm(tenantId: string): Promise<WormReconciliation> {
+    return this.reconcileEvidence(tenantId);
   }
 
   async getRecordById(tenantId: string, id: string): Promise<ActionRecord | null> {

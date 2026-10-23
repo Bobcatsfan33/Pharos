@@ -1,4 +1,4 @@
-import type { EscalationStore, ReviewNotifier, TenantStore } from "@pharos/storage";
+import type { EscalationStorePort, ReviewNotifierPort, TenantStorePort } from "@pharos/storage";
 
 /**
  * SLA engine. Periodically finds pending escalations that have breached their SLA and fires
@@ -10,9 +10,9 @@ export class ReviewSlaService {
 
   constructor(
     private readonly deps: {
-      tenants: TenantStore;
-      escalations: EscalationStore;
-      notifier: ReviewNotifier;
+      tenants: TenantStorePort;
+      escalations: EscalationStorePort;
+      notifier: ReviewNotifierPort;
       now?: () => Date;
     },
   ) {}
