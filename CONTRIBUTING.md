@@ -14,7 +14,7 @@ the local Postgres / Redis / MinIO stack).
 pnpm install
 python3 -m venv runtime/python/.venv
 runtime/python/.venv/bin/pip install -e "runtime/python[dev,viewer]"
-pnpm infra:up          # Postgres + Redis + MinIO via docker compose
+pnpm infra:up          # Postgres + Redis + MinIO + the KMS emulator (port 8088) via docker compose
 cp .env.example .env
 pnpm test              # control-plane suite
 PATH="$PWD/runtime/python/.venv/bin:$PATH" pnpm runtime:check
@@ -22,7 +22,9 @@ pnpm api:dev           # API on :4000
 ```
 
 If `pnpm test` is not fully green on your machine, stop and fix your environment before
-doing anything else. See [`docs/ONBOARDING.md`](docs/ONBOARDING.md) for a verified
+doing anything else. The AWS KMS conformance and key-migration suites need the KMS emulator
+that `pnpm infra:up` starts on port 8088 (`nsmithuk/local-kms`, the same pinned image CI
+uses); `ECONNREFUSED 127.0.0.1:8088` means it is not running. See [`docs/ONBOARDING.md`](docs/ONBOARDING.md) for a verified
 clean-machine transcript.
 
 ## Ground rules
