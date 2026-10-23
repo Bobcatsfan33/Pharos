@@ -32,3 +32,11 @@ export {
   sr117ModelRiskExport,
   generateRegulatoryExport,
 } from "./exports.js";
+export {
+  readEvidenceBundle,
+  verifyEvidenceBundle,
+  type AnchorVerification,
+  type BundleTrustPolicy,
+  type BundleVerification,
+  type EvidenceBundle,
+} from "./bundle.js";

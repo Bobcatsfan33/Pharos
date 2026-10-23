@@ -31,6 +31,9 @@ importers:
       '@types/node':
         specifier: ^26.6.3
         version: 26.6.3
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
       eslint:
         specifier: ^10.11.0
         version: 10.11.0
@@ -105,6 +108,40 @@ importers:
       '@pharos/policy':
         specifier: workspace:*
         version: link:../policy
+
+  packages/cli:
+    dependencies:
+      '@fastify/cors':
+        specifier: ^11.3.0
+        version: 11.3.0
+      fastify:
+        specifier: ^5.12.1
+        version: 5.12.5
+    devDependencies:
+      '@pharos/api':
+        specifier: workspace:*
+        version: link:../../services/api
+      '@pharos/cascade':
+        specifier: workspace:*
+        version: link:../cascade
+      '@pharos/config':
+        specifier: workspace:*
+        version: link:../config
+      '@pharos/core':
+        specifier: workspace:*
+        version: link:../core
+      '@pharos/evidence':
+        specifier: workspace:*
+        version: link:../evidence
+      '@pharos/judge':
+        specifier: workspace:*
+        version: link:../judge
+      '@pharos/policy':
+        specifier: workspace:*
+        version: link:../policy
+      '@pharos/storage':
+        specifier: workspace:*
+        version: link:../storage
 
   packages/config:
     dependencies:

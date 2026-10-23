@@ -12,11 +12,8 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { ActionRecordSchema, sha256Hex, type ActionRecord } from "@pharos/core";
-import {
-  WormIntegrityError,
-  type CommittedRecordRef,
-  type WormReconciliation,
-} from "../wormStore.js";
+import { WormIntegrityError } from "../evidenceErrors.js";
+import type { CommittedRecordRef, WormReconciliation } from "../wormStore.js";
 
 /**
  * Content-addressed record files on the local filesystem — the embedded stand-in for the

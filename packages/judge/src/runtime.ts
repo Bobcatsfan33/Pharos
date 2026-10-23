@@ -1,10 +1,7 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import type { ModelManifest } from "./artifactStore.js";
-
-const PACKAGE_JSON = JSON.parse(
-  readFileSync(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"),
-) as { dependencies?: Record<string, string> };
+// A static JSON import (not a runtime readFileSync of ../package.json) so a bundler such as
+// the CLI's esbuild build inlines the pin instead of resolving a path that no longer exists.
+import PACKAGE_JSON from "../package.json" with { type: "json" };
 
 const ORT_VERSION = PACKAGE_JSON.dependencies?.["onnxruntime-node"];
 if (!ORT_VERSION || !/^\d+\.\d+\.\d+$/.test(ORT_VERSION)) {

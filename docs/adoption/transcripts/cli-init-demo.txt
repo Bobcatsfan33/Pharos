@@ -1,0 +1,91 @@
+# Transcript — @getpharos/cli: init, demo, log, verify, export, and a tampered bundle
+#
+# Produced by running the built bundle (packages/cli/dist/bin/pharos.mjs) in an empty git
+# repository on 2026-10-23, macOS/arm64, Node v25.9.0, NO containers, NO env vars.
+# Colour disabled (NO_COLOR=1) for the transcript.
+
+$ pharos init
+✔ wrote pharos.yaml
+✔ added .pharos/ to .gitignore
+✔ embedded storage ready in /private/tmp/pharos-cli-transcript.WDic/.pharos
+  tenant     local
+  signing    tenant:local#v1 (Ed25519, local keystore)
+  backend    embedded — tamper-evident, offline-verifiable; not WORM
+
+Next: pharos demo seals three verdicts and verifies the chain.
+
+$ pharos demo
+Pharos demo — tenant local · embedded storage · local Ed25519 signing · nothing leaves this machine
+
+── Act 1 · a routine, reversible action
+
+  treasury-bot emails a vendor a shipping update.
+
+  ALLOW    tier 3  email.send
+  sealed #0  282b4ebac6b6…  prev 000000000000…
+
+── Act 2 · a transfer over its mandate
+
+  treasury-bot tries to wire $30,000. Its mandate allows $25,000.
+
+  BLOCK    tier 1  payment.transfer  cited mandate-limit-exceeded
+  Action blast radius 30000 USD exceeds mandate m-funds limit of 25000.
+  sealed #1  81650534e5aa…  prev 282b4ebac6b6…
+
+── Act 3 · a transfer with no mandate at all
+
+  treasury-bot tries to wire $4,800 to a new payee with no authority to move funds.
+
+  ESCALATE tier 3  payment.transfer  cited finra-3110-funds-movement
+  Movement of customer funds requires supervisory review. Unmandated funds-movement intent is escalated to a registered principal under Rule 3110 supervision.
+  sealed #2  d7ce5b03c219…  prev 81650534e5aa…
+
+── Verify · genesis → head, offline
+
+  ✔ seq  0  hash ok   sig ok   link ok 
+  ✔ seq  1  hash ok   sig ok   link ok 
+  ✔ seq  2  hash ok   sig ok   link ok 
+
+✔ chain verified: 3 records, every hash, signature and link
+✔ head #2 anchored in trusted time (local TSA, independent keys)
+✔ wrote evidence-bundle.json — 3 records + public keys only; re-verified offline
+
+  elapsed    109 ms
+
+Next: pharos log to read the chain · pharos verify evidence-bundle.json to check it anywhere · change one character in the bundle and watch it fail.
+Embedded storage is tamper-evident and offline-verifiable, not WORM. Retention needs the Postgres + S3 Object Lock backend.
+
+$ pharos log
+local  3 records · head #2 d7ce5b03c219… · embedded storage
+
+seq  verdict   tier  action            cited rule                 sealed at            hash
+#0   ALLOW     3     email.send        —                          2026-10-23 02:43:52  282b4ebac6b6…
+#1   BLOCK     1     payment.transfer  mandate-limit-exceeded     2026-10-23 02:43:52  81650534e5aa…
+#2   ESCALATE  3     payment.transfer  finra-3110-funds-movement  2026-10-23 02:43:52  d7ce5b03c219…
+
+$ pharos verify evidence-bundle.json ; echo "exit $?"
+Verifying evidence-bundle.json — public keys only, no Pharos required
+
+  ✔ seq   0  hash ok   sig ok   link ok 
+  ✔ seq   1  hash ok   sig ok   link ok 
+  ✔ seq   2  hash ok   sig ok   link ok 
+
+✔ chain: PASS — 3 records, admissible
+  ✔ anchor [local] d7ce5b03c219… @ 2026-10-23T02:43:52.517Z  (head)
+✔ anchors: PASS — the head existed before the stamped time
+
+exit 0
+
+$ sed -i "s/\"amount\": 30000/\"amount\": 99999/" evidence-bundle.json   # tamper with one record
+$ pharos verify evidence-bundle.json ; echo "exit $?"
+Verifying evidence-bundle.json — public keys only, no Pharos required
+
+  ✔ seq   0  hash ok   sig ok   link ok 
+  ✘ seq   1  hash BAD  sig ok   link ok 
+  ✔ seq   2  hash ok   sig ok   link ok 
+
+✘ chain: FAIL — sequence 1: content hash mismatch: recomputed 40385d80a8db11e44c63401bad3aade898be375aa8689858f3e25a62821ea4ca != sealed 81650534e5aad36f6b78b98df7f86e3f77d7636130a61a9660253fc686ae0934
+  ✔ anchor [local] d7ce5b03c219… @ 2026-10-23T02:43:52.517Z  (head)
+✔ anchors: PASS — the head existed before the stamped time
+
+exit 1
