@@ -104,3 +104,15 @@ export {
   type HeldRequestKeyUsage,
   type HeldRequestStore,
 } from "./heldRequestStore.js";
+
+// Storage-backend registry (the shipped backends register themselves on import).
+export {
+  registerStorageBackend,
+  createStorageBackend,
+  hasStorageBackend,
+  listStorageBackends,
+  type StorageBackendSettings,
+  type StorageBackendContext,
+  type StorageBackendFactory,
+} from "./registry.js";
+import "./providers.js";
