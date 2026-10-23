@@ -59,7 +59,7 @@ paid service.
 git clone https://github.com/Bobcatsfan33/Pharos.git && cd Pharos
 pnpm install
 cp .env.example .env
-pnpm infra:up          # Postgres + Redis + MinIO (S3 WORM) via docker compose
+pnpm infra:up          # Postgres + Redis + MinIO (S3 WORM) + KMS emulator via docker compose
 ```
 
 Govern three agent actions and seal them:
