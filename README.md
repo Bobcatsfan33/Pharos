@@ -221,7 +221,7 @@ should be willing to be evidence about itself.
 | | |
 |---|---|
 | **Works today, tested** | Verdict cascade · sealing · hash chain · WORM · offline verification · TS + Python SDKs · framework middlewares · zero-code gateway · OPA/Cedar interchange · signed policy bundles · MCP/tool governance · governed connectors · approval policy · causal evidence graph · assurance promotion/rollback · technical control mappings · open governed-action protocol |
-| **Test suite** | 545 control-plane tests plus the complete runtime and Python SDK suites—run against **real** Postgres / Redis / MinIO. CI fails the build if integration tests are skipped rather than run |
+| **Test suite** | 547 control-plane tests plus the complete runtime and Python SDK suites—run against **real** Postgres / Redis / MinIO. CI fails the build if integration tests are skipped rather than run |
 | **Not production-approved** | [`docs/enterprise-readiness.json`](docs/enterprise-readiness.json) · [`docs/procurement-readiness.md`](docs/procurement-readiness.md) |
 | **Every known gap** | [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) |
 
