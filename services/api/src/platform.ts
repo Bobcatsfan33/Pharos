@@ -151,7 +151,7 @@ export function buildTsaSigner(config: PharosConfig): SigningProvider {
  * TSA whose tokens self-verify (no keyset is published); `local` is the simulated TSA whose
  * public keyset IS published for offline verification.
  */
-export function buildTsaProvider(config: PharosConfig): {
+export async function buildTsaProvider(config: PharosConfig): Promise<{
   tsa: TsaProvider;
   keyset: () => Promise<PublicKeyEntry[]>;
 } {
@@ -218,10 +218,10 @@ export async function buildPlatform(
   // Wrap the seal-path signer with a circuit breaker: a KMS outage must fail the seal (and
   // therefore the whole govern-and-record transaction) rather than queue a "sign later" —
   // no verdict without a durable record. Surfaced as KmsUnavailableError -> 503 by the API.
-  const signer = new ResilientSigner(buildSigner(config), {
+  const signer = new ResilientSigner(await buildSigner(config), {
     onKmsUnavailable: () => metrics.kmsUnavailable.inc(),
   });
-  const { tsa, keyset: tsaKeyset } = buildTsaProvider(config);
+  const { tsa, keyset: tsaKeyset } = await buildTsaProvider(config);
 
   const storage = await buildStorage(config, signer);
   const { store, tenants, apiKeys, accessAudit, mandates, escalations, notifier } = storage;

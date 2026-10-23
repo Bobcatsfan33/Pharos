@@ -17,5 +17,6 @@
   "dependencies": {
     "@pharos/core": "workspace:*",
     "@pharos/policy": "workspace:*"
-  }
+  },
+  "sideEffects": false
 }

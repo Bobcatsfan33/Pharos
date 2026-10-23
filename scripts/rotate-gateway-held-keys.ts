@@ -32,7 +32,7 @@ async function main(): Promise<void> {
     throw new Error("configure a versioned key ring with a non-legacy active key first");
   }
 
-  const pool = createPool(config.pgUrl);
+  const pool = await createPool(config.pgUrl);
   try {
     await runMigrations(pool);
     const store = new PostgresHeldRequestStore(
