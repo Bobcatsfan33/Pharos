@@ -101,6 +101,12 @@ export interface Platform {
 export interface BuildPlatformOptions {
   /** Override OIDC issuer configs (tests inject local JWKS issuers). */
   oidcIssuers?: OidcIssuerConfig[];
+  /**
+   * The shipped policy packs every tenant is evaluated against (default: all of
+   * `SHIPPED_PACKS`). The CLI passes the project's selection — the regulation packs' judges
+   * are tuned for communications and payments and over-flag shell commands.
+   */
+  policyPacks?: PolicyArtifact[];
   /** Injected only by startup tests; production uses the hash-verifying ONNX loader. */
   loadJudge?: JudgeLoader;
 }
@@ -306,7 +312,7 @@ export async function buildPlatform(
       })),
     );
   }
-  const shippedArtifacts = Object.values(SHIPPED_PACKS);
+  const shippedArtifacts = options.policyPacks ?? Object.values(SHIPPED_PACKS);
   const cascade = new VerdictCascade({
     engine,
     registry,

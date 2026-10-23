@@ -1,6 +1,6 @@
 import { loadConfig } from "@pharos/config";
 import { buildPlatform, type Platform } from "@pharos/api";
-import type { Project } from "./project.js";
+import { projectPolicies, type Project } from "./project.js";
 
 /**
  * Open the project's embedded platform: the same `buildPlatform` the API server uses, over
@@ -21,7 +21,7 @@ export async function openPlatform(
     ...extra,
   };
   const config = loadConfig(env);
-  return buildPlatform(config);
+  return buildPlatform(config, { policyPacks: projectPolicies(project) });
 }
 
 export const resolveKeyName = (tenantId: string): string => `tenant:${tenantId}`;

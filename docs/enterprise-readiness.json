@@ -558,7 +558,7 @@
       },
       {
         "path": "services/api/src/platform.ts",
-        "sha256": "38b49668655216bb707f855cb3b87fccdb022fa6d718d9a7cb2d1f21b38d7577"
+        "sha256": "d296da3406c4d12e49b0c7b7d16cc06658f8176741681319f5c7785c130019eb"
       },
       {
         "path": "test/fixtures/onnx-parity-funds.json",

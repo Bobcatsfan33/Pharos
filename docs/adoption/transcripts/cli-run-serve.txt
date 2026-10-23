@@ -1,0 +1,79 @@
+# Transcript — pharos run and pharos serve (embedded, no containers, no env)
+#
+# Produced from the built bundle on 2026-10-23, macOS/arm64, Node v25.9.0, after `pharos init`
+# (pharos.yaml policies: coding-agent-safety).
+# Exit codes: 0 = ran, 2 = blocked, 3 = escalated (held). The record is sealed before anything executes.
+
+$ pharos run -- git push --force origin main
+BLOCK    git push --force origin main
+  cited cas-git-force-push-protected · CAS-2 protected branches
+  A force-push to main or master rewrites shared history that other people and CI depend on. Blocked; open a pull request instead.
+  sealed #0 9438ea0dad38…
+exit 2
+
+$ pharos run -- rm -rf build
+ESCALATE rm -rf build
+  cited cas-rm-recursive · CAS-1 destructive filesystem
+  A recursive force-delete inside the working tree may be legitimate (build output) or may erase work that is not committed. Held for a human to confirm.
+  held — not executed; a human must confirm this one. sealed #1 3fb922eee8a9…
+exit 3
+
+$ pharos run -- cat ~/.ssh/id_rsa
+BLOCK    cat ~/.ssh/id_rsa
+  cited cas-secret-read · CAS-3 secret material (OWASP LLM02)
+  Reading .env files, SSH private keys, cloud credential files, or the OS keychain exposes secrets to the model context and to any tool that sees the transcript. Blocked.
+  sealed #2 4de7360d77bb…
+exit 2
+
+$ pharos run -- npm publish
+ESCALATE npm publish
+  cited cas-package-publish · CAS-5 registry publish
+  Publishing a package is irreversible on every public registry. Held for a human to confirm.
+  held — not executed; a human must confirm this one. sealed #3 e4d15512fd8c…
+exit 3
+
+$ pharos run -- echo hello from a governed shell
+ALLOW    echo hello from a governed shell  sealed #4 0cc7c708e012…
+hello from a governed shell
+exit 0
+
+$ pharos log
+local  5 records · head #4 0cc7c708e012… · embedded storage
+
+seq  verdict   tier  action      cited rule                    sealed at            hash
+#0   BLOCK     3     shell.exec  cas-git-force-push-protected  2026-10-23 02:54:49  9438ea0dad38…
+#1   ESCALATE  3     shell.exec  cas-rm-recursive              2026-10-23 02:54:50  3fb922eee8a9…
+#2   BLOCK     3     shell.exec  cas-secret-read               2026-10-23 02:54:50  4de7360d77bb…
+#3   ESCALATE  3     shell.exec  cas-package-publish           2026-10-23 02:54:50  e4d15512fd8c…
+#4   ALLOW     3     shell.exec  —                             2026-10-23 02:54:50  0cc7c708e012…
+
+$ pharos serve --port 4555 &
+✔ Pharos API listening on http://127.0.0.1:4555
+  tenant     local
+  storage    embedded — tamper-evident, offline-verifiable; not WORM
+  api key    /private/tmp/pharos-cli-run.RLHG/.pharos/api-key  (pk_94fbd…)
+
+  export PHAROS_URL=http://127.0.0.1:4555
+  export PHAROS_API_KEY=$(cat /private/tmp/pharos-cli-run.RLHG/.pharos/api-key)
+  export PHAROS_TENANT=local
+
+  POST /v1/actions with x-api-key; GET /healthz; GET /v1/keyset. Ctrl-C to stop.
+
+
+$ curl -s http://127.0.0.1:4555/healthz
+{"status":"ok","env":"local","redis":true,"counters":true,"storage":{"backend":"embedded","worm":false,"rowLevelSecurity":false}}
+
+$ curl -s -X POST http://127.0.0.1:4555/v1/actions -H "x-api-key: $(cat .pharos/api-key)" -H "content-type: application/json" \
+    -d '{"tenantId":"local","action":{"type":"shell.exec","agentId":"my-agent","payload":{"command":"cat .env"}},"liability":{"mandate":null,"oversightMode":"human_in_loop","blastRadius":{"financialAmount":0,"currency":"USD","reversibility":"irreversible"},"modelMetadata":null}}' | jq .data.verdict
+{
+  "decision": "block",
+  "tierReached": 3,
+  "ruleCitations": [
+    {
+      "ruleId": "cas-secret-read",
+      "pack": "coding-agent-safety",
+      "clause": "CAS-3 secret material (OWASP LLM02)",
+      "description": "Reading .env files, SSH private keys, cloud credential files, or the OS keychain exposes secrets to the model context and to any tool that sees the transcript. Blocked."
+    }
+  ]
+}
