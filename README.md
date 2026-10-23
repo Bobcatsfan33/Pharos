@@ -37,7 +37,7 @@ account, no API key.
 ```bash
 git clone https://github.com/Bobcatsfan33/Pharos.git && cd Pharos
 pnpm install && cp .env.example .env
-pnpm infra:up              # Postgres + Redis + MinIO (S3 WORM) via docker compose
+pnpm infra:up              # Postgres + Redis + MinIO (S3 WORM) + KMS emulator
 pnpm demo                  # the funds-transfer story above
 pnpm verify:bundle evidence-bundle.json   # verify it with no Pharos running
 ```
