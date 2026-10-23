@@ -59,7 +59,7 @@
     "tsx": "^4.23.15",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.71.0",
-    "vite": "8.3.1",
+    "vite": "8.3.3",
     "vitest": "^5.0.3"
   },
   "pnpm": {
@@ -72,7 +72,8 @@
       "js-yaml@4": "^4.3.1",
       "nanoid@3": "^3.3.17",
       "sharp": ">=0.35.0",
-      "postcss": ">=8.5.18"
+      "postcss": ">=8.5.18",
+      "launch-editor": ">=2.14.2"
     }
   }
 }
