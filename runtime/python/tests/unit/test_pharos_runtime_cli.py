@@ -12,7 +12,7 @@ def test_pharos_command_uses_product_name(capsys: pytest.CaptureFixture[str]) ->
         main(["--help"])
 
     assert raised.value.code == 0
-    assert capsys.readouterr().out.startswith("usage: pharos")
+    assert capsys.readouterr().out.startswith("usage: pharos-runtime")
 
 
 def test_branded_namespace_exposes_runtime_modules() -> None:

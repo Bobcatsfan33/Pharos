@@ -444,8 +444,10 @@ def _print_summary(run_id: str, state: Any) -> None:
 
 
 def _program_name() -> str:
+    # The branded console script is `pharos-runtime` (ADR 0006 §3: bare `pharos` is the
+    # control-plane CLI). Anything invoked as pharos* reports the branded name.
     executable = Path(sys.argv[0]).name.lower()
-    return "pharos" if executable.startswith("pharos") else "keel"
+    return "pharos-runtime" if executable.startswith("pharos") else "keel"
 
 
 def _die(msg: str) -> NoReturn:

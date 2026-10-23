@@ -205,10 +205,12 @@ one product, release boundary, and end-to-end CI proof.
 
 ```bash
 python3 -m pip install -e "runtime/python[viewer]"
-pharos run --mock runtime/python/examples/pharos_governed.py --run-id governed-demo
+pharos-runtime run --mock runtime/python/examples/pharos_governed.py --run-id governed-demo
 ```
 
-The legacy `keel` command remains available for compatibility. See the
+The runtime's command is `pharos-runtime` (the bare `pharos` command is the control-plane CLI,
+[ADR 0006](docs/adr/0006-cli-package-and-bin-names.md)); the legacy `keel` command remains
+available for compatibility. See the
 [Pharos Runtime contract and quickstart](docs/runtime.md).
 
 ## Status — what is and isn't proven

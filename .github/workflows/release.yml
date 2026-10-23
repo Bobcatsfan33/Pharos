@@ -126,7 +126,7 @@ jobs:
         run: |
           python -m venv /tmp/pharos-runtime-release-smoke
           /tmp/pharos-runtime-release-smoke/bin/pip install runtime/python/dist/*.whl
-          /tmp/pharos-runtime-release-smoke/bin/pharos --help | grep -q "usage: pharos"
+          /tmp/pharos-runtime-release-smoke/bin/pharos-runtime --help | grep -q "usage: pharos-runtime"
           /tmp/pharos-runtime-release-smoke/bin/keel --help | grep -q "usage: keel"
       - name: retain the verified runtime distribution
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4
