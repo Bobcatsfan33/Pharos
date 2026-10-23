@@ -70,7 +70,7 @@ async function startReplica(): Promise<{ app: FastifyInstance; url: string }> {
     agentId: "unmodified-agent",
     target: targetUrl,
     heldRequestStore: new PostgresHeldRequestStore(
-      platform!.pool,
+      platform!.pool!,
       heldRequestKeyProviderFromMaster(holdMasterKey),
       // Long lease: a stale lease is a different scenario (recovery), not duplicate resume.
       { leaseMs: 30_000 },
