@@ -31,8 +31,38 @@ recorded without its governing context.
 
 ## Quickstart
 
-Three governed actions and a verified chain, on your machine, in about a minute. No cloud
-account, no API key.
+Three governed actions and a verified chain with nothing installed but Node. No clone, no
+Docker, no cloud account, no API key.
+
+```bash
+npx @getpharos/cli init && npx @getpharos/cli demo
+```
+
+**961 ms** from `npm install` to a chain that verifies offline, measured on an Apple M2 by
+[`scripts/cli-smoke.sh`](scripts/cli-smoke.sh), which packs the tarball, installs it into an
+empty project with npm, and runs every command below. Numbers and the full transcript:
+[docs/adoption/](docs/adoption/). `@getpharos/cli` is not on npm yet — publishing it is the
+one remaining maintainer step — so until then the same path runs from a clone with
+`pnpm --filter @getpharos/cli build`.
+
+Then govern the things a coding agent actually does:
+
+```bash
+npx @getpharos/cli run -- git push --force origin main   # BLOCK    cited cas-git-force-push-protected · exit 2
+npx @getpharos/cli run -- rm -rf build                   # ESCALATE held for a human, cited cas-rm-recursive · exit 3
+npx @getpharos/cli run -- pnpm test                      # ALLOW    runs — and the record was sealed first
+npx @getpharos/cli verify evidence-bundle.json           # every hash, signature, link and time anchor; exit 0 / 1
+```
+
+That path runs the **embedded** backend: SQLite plus content-addressed record files,
+tamper-evident and offline-verifiable, **not WORM** — the honest label and its consequences
+are in [LIMITATIONS §10](docs/LIMITATIONS.md#10-embedded-mode-sqlite--local-files-is-an-on-ramp-not-a-retention-tier).
+
+### The production stack, locally
+
+Postgres (row-level security) + S3 Object Lock (COMPLIANCE-mode WORM) + Redis + KMS + RFC 3161
+trusted time, selected by one variable. Both backends run the same storage conformance suite
+and the same offline verifier.
 
 ```bash
 git clone https://github.com/Bobcatsfan33/Pharos.git && cd Pharos
