@@ -342,7 +342,7 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-10-04",
+    "generatedAt": "2026-10-23",
     "files": [
       {
         "path": ".github/CODEOWNERS",
@@ -602,7 +602,7 @@
       },
       {
         "path": "training/uv.lock",
-        "sha256": "2e511bc76a47e09a5e5652548bc81ebea0fb8f81e5ea13f2b33766d412b6352e"
+        "sha256": "9bbea8f1880bd75c360aa8a13815e924e8937c680b5ae50d92c2c43e3c6c65eb"
       }
     ]
   }
