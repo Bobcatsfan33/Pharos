@@ -38,7 +38,12 @@ Docker, no cloud account, no API key.
 npx @getpharos/cli init && npx @getpharos/cli demo
 ```
 
-**961 ms** from `npm install` to a chain that verifies offline, measured on an Apple M2 by
+<p align="center">
+  <img src="docs/media/pharos-demo.svg" alt="npx @getpharos/cli init && npx @getpharos/cli demo: three governed actions sealed and the chain verified offline, with no infrastructure" width="860">
+</p>
+
+**0.96 s** from `npm install` to a chain that verifies offline (962 / 968 / 969 ms over three
+runs), measured on an Apple M2 by
 [`scripts/cli-smoke.sh`](scripts/cli-smoke.sh), which packs the tarball, installs it into an
 empty project with npm, and runs every command below. Numbers and the full transcript:
 [docs/adoption/](docs/adoption/). `@getpharos/cli` is not on npm yet — publishing it is the
