@@ -1,38 +1,66 @@
 # Pharos
 
-**Real-time policy verdicts for AI agents, with cryptographic evidence of every decision.**
+**Your coding agent has shell, git, and MCP access. Pharos gives every tool call a policy verdict and a signed, hash-chained record — before it runs.**
 
-*Pharos decides. Pharos proves.*
+```bash
+npx @getpharos/cli init && npx @getpharos/cli demo
+```
+
+<p align="center">
+  <img src="docs/media/pharos-demo.svg" alt="Terminal recording: pharos demo seals three verdicts (allow, block citing mandate-limit-exceeded, escalate citing finra-3110-funds-movement), verifies the chain genesis to head, exports an evidence bundle, and a tampered bundle fails verification" width="900">
+</p>
+
+Three governed actions, each with the rule it cited, each sealed into a local chain; the chain
+verified genesis→head; an `evidence-bundle.json` anyone can check **offline, with no Pharos
+running** — and a tampered bundle failing. Nothing installed but Node ≥ 22.13, no Docker, no
+account, no API key. Measured: **1.2 s** from `npm install` of the tarball to the verified chain
+([transcript](docs/adoption/transcripts/cli-init-demo.txt), [how it was measured](docs/adoption/01-phase-a-results.md)).
+
+```bash
+npx @getpharos/cli run -- git push --force origin main   # BLOCK    cited cas-git-force-push-protected · exit 2
+npx @getpharos/cli run -- rm -rf build                   # ESCALATE held for a human, cited cas-rm-recursive · exit 3
+npx @getpharos/cli run -- pnpm test                      # ALLOW    runs — and the record was sealed first
+npx @getpharos/cli verify evidence-bundle.json           # every hash, signature, link and time anchor; exit 0 / 1
+```
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![CI](https://github.com/Bobcatsfan33/Pharos/actions/workflows/ci.yml/badge.svg)](https://github.com/Bobcatsfan33/Pharos/actions/workflows/ci.yml)
+[![npm @getpharos/sdk](https://img.shields.io/npm/v/@getpharos/sdk?label=%40getpharos%2Fsdk)](https://www.npmjs.com/package/@getpharos/sdk)
+[![PyPI getpharos](https://img.shields.io/pypi/v/getpharos?label=getpharos)](https://pypi.org/project/getpharos/)
+
+**Works with** · [LangChain / LangGraph](docs/sdks-and-integration.md#framework-middlewares-one-conformance-contract) · [OpenAI Agents SDK](docs/sdks-and-integration.md#framework-middlewares-one-conformance-contract) · [Anthropic SDK](docs/sdks-and-integration.md#framework-middlewares-one-conformance-contract) · [CrewAI](docs/sdks-and-integration.md#framework-middlewares-one-conformance-contract) · [Microsoft Agent Framework](docs/sdks-and-integration.md#framework-middlewares-one-conformance-contract) · [any HTTP agent, zero code](docs/sdks-and-integration.md#zero-code-gateway) · [`pharos serve` + the SDKs](packages/cli/README.md) · Claude Code hook and MCP proxy: *next* ([Phase A results and what is deferred](docs/adoption/01-phase-a-results.md))
 
 ---
 
-When an AI agent is about to do something consequential — move money, send PHI, change a
-record — Pharos answers two questions in one call. **Can it?** A policy verdict (allow,
-block, modify, escalate) citing the specific rule clause it relied on. **What happened?** A
-signed, hash-chained evidence record binding that action to its mandate, its verdict, and
-its blast radius — written to WORM storage and verifiable by anyone, offline, later.
+## What it is
 
-One pipeline, two outputs, and that is the whole point: **an agent action can never be
-governed without being recorded, or recorded without its governing context.**
+When an AI agent is about to do something consequential — run a command, push a branch, move
+money, send PHI — Pharos answers two questions in one call. **Can it?** A policy verdict
+(allow, block, modify, escalate) citing the specific rule it relied on. **What happened?** A
+signed, hash-chained evidence record binding that action to its mandate, its verdict, and its
+blast radius — written in the **same transaction** as the verdict and verifiable by anyone,
+offline, later.
 
-**Who it's for.** Teams putting agents somewhere consequential — payments, healthcare,
-regulated workflows — who will need to answer *"why did the agent do that?"* months later,
-to someone who will not simply take your word for it.
+One pipeline, two outputs: **an agent action can never be governed without being recorded, or
+recorded without its governing context.** Guardrail libraries block bad output but leave no
+durable trail; governance tooling documents policy but never touches runtime. Pharos closes the
+loop — the event that *decides* is the one that *proves*.
 
-**Why it's different.** Guardrail libraries block bad output but leave no durable trail.
-Governance tooling documents policy but never touches runtime. Pharos closes the loop: the
-same event that *decides* is the one that *proves*, signed once and chained once.
+**Two storage postures, one pipeline.** The `npx` path above runs the **embedded** backend:
+SQLite plus content-addressed record files, tamper-evident and offline-verifiable, **not
+WORM** — the honest label is in [LIMITATIONS §8](docs/LIMITATIONS.md#8-embedded-mode-sqlite--local-files-is-an-on-ramp-not-a-retention-tier).
+The production backend is Postgres (row-level security) + **S3 Object Lock** (COMPLIANCE-mode
+WORM) + Redis + AWS KMS + RFC 3161 trusted time, selected by one variable
+(`PHAROS_STORAGE_BACKEND`); both run the same storage conformance suite and the same
+verifier.
 
 ```mermaid
 flowchart LR
-    A["Agent<br/><i>any framework</i>"] -->|SDK or gateway| B
+    A["Agent<br/><i>any framework · shell · MCP</i>"] -->|CLI · SDK · gateway| B
 
     subgraph decide ["DECIDE — a verdict, in one call"]
         direction TB
-        B["Tier 1<br/>deterministic rules<br/><i>mandates, limits</i>"] --> C["Tier 2<br/>statistical risk"]
+        B["Tier 1<br/>deterministic rules<br/><i>mandates, limits, packs</i>"] --> C["Tier 2<br/>statistical risk"]
         C --> D["Tier 3<br/>judge model"]
     end
 
@@ -42,112 +70,39 @@ flowchart LR
     subgraph prove ["PROVE — evidence that outlives the request"]
         direction TB
         F --> G[("Hash chain<br/>genesis → head")]
-        G --> H[("WORM storage<br/>S3 Object Lock")]
-        G --> I["RFC 3161<br/>trusted-time anchor"]
+        G --> H[("Embedded: local files<br/>Production: S3 Object Lock")]
+        G --> I["Trusted-time anchor<br/><i>local TSA · RFC 3161</i>"]
     end
 
     H --> J["Offline verification<br/><i>no Pharos required</i>"]
     I --> J
 ```
 
-## Quickstart
+## The production stack, locally
 
-A governed action and a verified evidence chain, locally. No cloud account, no API key, no
-paid service.
+The full path — Postgres, Redis, MinIO with Object Lock, the KMS emulator — in Docker:
 
 ```bash
 git clone https://github.com/Bobcatsfan33/Pharos.git && cd Pharos
-pnpm install
-cp .env.example .env
-pnpm infra:up          # Postgres + Redis + MinIO (S3 WORM) via docker compose
-```
-
-Govern three agent actions and seal them:
-
-```bash
-pnpm demo:durability
-```
-
-```
-=== Submitting 3 demo actions for tenant "demo-tenant" ===
-  seq 0  email.send          -> ALLOW      hash 7928edf0c664…
-  seq 1  payment.transfer    -> BLOCK      hash 858d1aae0430…
-  seq 2  crm.update          -> ALLOW      hash 7d3ac5477574…
-
-Chain head: sequence 2 hash 7d3ac54775745ded…
-```
-
-That `payment.transfer -> BLOCK` is a Tier-1 deterministic rule: the action exceeded its
-mandate's limit. The verdict and the sealed record came out of the same transaction.
-
-Now prove the evidence survived a restart and the chain is intact genesis-to-head:
-
-```bash
-pnpm demo:durability --verify
-```
-
-```
-=== Cold verification for tenant "demo-tenant" (simulated restart) ===
-Found 3 persisted records after restart.
-Genesis-to-head chain verification: PASS ✅
-  records checked: 3
-```
-
-**Measured on a clean checkout** (2026-08-02, warm pnpm store, Docker images already
-pulled): `pnpm install` 2s · `infra:up` 1s · demo 2s · verify 1s. Budget about five
-minutes for a genuinely first run — almost all of it Docker pulling the Postgres, Redis and
-MinIO images; the commands themselves take seconds.
-
-> **If `--verify` reports a chain break**, you are pointing a fresh checkout at a database
-> seeded by a different one. That is correct behaviour rather than a bug — the earlier
-> records were signed by a keystore that no longer exists, so their signatures no longer
-> verify. Start from a clean database, or remove `.pharos-keystore` and re-run.
-
-### Then see the whole story
-
-```bash
-pnpm demo
-```
-
-An agent tries to wire $4,800 with no mandate. Pharos refuses and cites the rule:
-
-```
-── Act 1 ─ the agent acts without authority
-
-  Verdict:   ESCALATE   tier 3
-  Cited:     finra-3110-funds-movement  FINRA Rule 3110 (supervision) / 2150 (funds handling)
-             Movement of customer funds requires supervisory review. Unmandated
-             funds-movement intent is escalated to a registered principal.
-```
-
-Treasury grants a mandate. Same transfer, same agent, same amount — the verdict flips:
-
-```
-── Act 2 ─ treasury grants a mandate
-
-  Verdict:   ALLOW   tier 3
-```
-
-Both decisions are sealed, anchored in trusted time, and written to a bundle that anyone
-can check **offline, with no Pharos infrastructure**:
-
-```bash
+pnpm install && cp .env.example .env
+pnpm infra:up          # Postgres + Redis + MinIO (S3 WORM) + KMS emulator via docker compose
+pnpm demo:durability   # three verdicts sealed to Postgres + WORM
+pnpm demo:durability --verify   # cold restart, chain verifies genesis→head
+pnpm demo              # the funds-transfer story: escalate, mandate, allow, anchor, bundle
 pnpm verify:bundle evidence-bundle.json
 ```
 
-```
-Chain verification: PASS - admissible
-
-Trusted-time anchors (1):
-  OK  anchor [local] 8880a43f2d33… @ 2026-08-02T20:53:45.971Z  (head)
-
-Anchor verification: PASS - head existed before the stamped time
-```
-
-Full walkthrough, including how to **tamper with the bundle and watch it fail**:
-**[docs/demo.md](docs/demo.md)**.
+The commands take seconds once the images are pulled; the pull is the slow part. The
+walkthrough, including **tampering with the bundle and watching it fail**, is in
+[docs/demo.md](docs/demo.md).
 
 ## Use it from your agent
+
+```bash
+npm install @getpharos/sdk        # TypeScript
+pip install getpharos             # Python (import pharos_sdk)
+npx @getpharos/cli serve          # the API over embedded storage on 127.0.0.1:4000, with an API key
+```
 
 ```typescript
 import { PharosClient } from "@getpharos/sdk";
