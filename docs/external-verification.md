@@ -5,7 +5,8 @@ follows to validate a Pharos evidence chain **without trusting Pharos infrastruc
 It requires only two inputs, an evidence bundle delivered out of band:
 
 1. **Records** — the tenant's `ActionRecord`s as JSON, ordered by `sequence`.
-2. **Keyset** — the published Ed25519 public keys (`keyId → publicKey`).
+2. **Keyset** — the published public keys (`keyId → { publicKey, algorithm }`, where
+   `algorithm` is `ed25519` or `ecdsa-p256`).
 
 No database, no Pharos service, and no secret material are needed. The verifier
 reimplements the algorithm below (or runs the reference implementation in
@@ -20,9 +21,27 @@ For each record, in `sequence` order starting at 0:
 2. **Content hash** — compute `sha256(canonical(record.content))` and confirm it equals
    `record.seal.contentHash`. Canonicalization = sorted object keys, minified, arrays in
    order, `undefined` dropped.
-3. **Signature** — verify `record.seal.signature` (base64 Ed25519) over the ASCII bytes
-   of `record.seal.contentHash`, using the public key for `record.seal.keyId` from the
-   keyset.
+3. **Signature** — base64-decode `record.seal.signature` and verify it over the seal's
+   signing message with the keyset entry for `record.seal.keyId`. The message depends on
+   `record.seal.sigVersion`:
+   - **v2 (current; `sigVersion === 2`)** — the UTF-8 bytes of
+     `pharos:record-seal:v2\n{sequence}\n{prevHash}\n{contentHash}`: the fixed prefix
+     line, the decimal `record.content.sequence`, the 64-hex `seal.prevHash`, and the
+     64-hex `seal.contentHash`, joined by single `\n` newlines. Signing the chain
+     position means a record cannot be spliced into another position or tenant.
+   - **v1 (legacy; `sigVersion` absent or `1`)** — the ASCII bytes of the 64-char hex
+     `record.seal.contentHash` only. Records sealed before v2 still verify this way.
+
+   The verification primitive is chosen by the **keyset entry's** `algorithm` — not by
+   `record.seal.algorithm`, which is a known misstatement
+   ([issue #67](https://github.com/Bobcatsfan33/Pharos/issues/67)): `ed25519` verifies the
+   raw 64-byte signature directly over the message (no digest); `ecdsa-p256` (AWS KMS)
+   verifies a DER-encoded signature over SHA-256 of the message. Reference:
+   `sealSigningMessage` / `signingMessageV2` in
+   [`provider.ts`](../packages/core/src/signing/provider.ts), the dispatch in
+   [`verify.ts`](../packages/core/src/chain/verify.ts), and
+   [crypto-review-package.md §5](./security/crypto-review-package.md#5-seal-signature--v1-vs-v2),
+   which includes a runnable hand-verification recipe.
 4. **Chain link** — confirm `record.seal.prevHash` equals the previous record's
    `contentHash` (for `sequence 0`, the genesis hash of 64 zeros).
 5. **Sequence** — confirm `sequence` increments by exactly 1 with no gaps, and all
@@ -60,6 +79,14 @@ The offline bundle format is intentionally small:
   "keyset": ["<PublicKeyEntry>", "..."]
 }
 ```
+
+Two further top-level keys are **optional** (see the `EvidenceBundle` type in
+[`scripts/external-verify.ts`](../scripts/external-verify.ts)): `anchors` — trusted-time
+anchors over chain heads, either local-signed or RFC 3161 timestamp tokens — and `tsaKeyset`
+— the published TSA public keys needed to check `local` anchors (RFC 3161 tokens self-verify
+against the pinned TSA certificate). Chain verification needs neither; they add trusted time.
+The signed fixture bundles in
+[crypto-review-package.md](./security/crypto-review-package.md) show both shapes.
 
 Expected output:
 

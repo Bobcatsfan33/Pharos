@@ -11,7 +11,7 @@ asking anyone anything.
 
 | Tool | Version used to verify | Notes |
 |---|---|---|
-| Node.js | ≥ 20 (verified on 25.x) | `node -v` |
+| Node.js | ≥ 22 (verified on 25.x) | `node -v` |
 | pnpm | 10.32.1 | `corepack enable` or `npm i -g pnpm@10.32.1` |
 | Python | ≥ 3.11 | Pharos Runtime and its tests |
 | Docker | Desktop / Engine with `docker compose` | provides Postgres + Redis + MinIO |
@@ -78,7 +78,7 @@ pnpm test
 PATH="$PWD/runtime/python/.venv/bin:$PATH" pnpm runtime:check
 ```
 
-Expected: 520 control-plane tests with **0 skipped** plus the complete runtime suite. CI fails
+Expected: 547 control-plane tests with **0 skipped** plus the complete runtime suite. CI fails
 if a control-plane integration test skips:
 
 ```
@@ -86,8 +86,8 @@ if a control-plane integration test skips:
  ✓ test/core.signing.test.ts (5 tests)
  ...
 
- Test Files  74 passed (74)
-      Tests  520 passed (520)
+ Test Files  84 passed (84)
+      Tests  547 passed (547)
 ```
 
 > Note: `test/integration.causeway.test.ts` is mildly timing-sensitive; on a busy machine it
