@@ -4,6 +4,8 @@ import { demo, demoHelp } from "./commands/demo.js";
 import { log, logHelp } from "./commands/log.js";
 import { verify, verifyHelp } from "./commands/verify.js";
 import { exportBundle, exportHelp } from "./commands/export.js";
+import { run, runHelp } from "./commands/run.js";
+import { serve, serveHelp } from "./commands/serve.js";
 
 const VERSION = process.env.PHAROS_CLI_VERSION ?? "dev";
 
@@ -23,6 +25,16 @@ const COMMANDS: Record<string, Command> = {
     summary: "verify a bundle (or the local chain) offline; exit 0/1",
   },
   export: { run: exportBundle, help: exportHelp, summary: "write the evidence bundle" },
+  run: {
+    run,
+    help: runHelp,
+    summary: "govern a shell command: verdict, sealed record, then execute (or not)",
+  },
+  serve: {
+    run: serve,
+    help: serveHelp,
+    summary: "start the Pharos API over embedded storage",
+  },
 };
 
 function usage(): string {

@@ -100,6 +100,12 @@ export interface Platform {
 export interface BuildPlatformOptions {
   /** Override OIDC issuer configs (tests inject local JWKS issuers). */
   oidcIssuers?: OidcIssuerConfig[];
+  /**
+   * The shipped policy packs every tenant is evaluated against (default: all of
+   * `SHIPPED_PACKS`). The CLI passes the project's selection — the regulation packs' judges
+   * are tuned for communications and payments and over-flag shell commands.
+   */
+  policyPacks?: PolicyArtifact[];
   /** Injected only by startup tests; production uses the hash-verifying ONNX loader. */
   loadJudge?: JudgeLoader;
 }
@@ -242,7 +248,10 @@ export async function buildPlatform(
       })),
     );
   }
-  const shippedArtifacts = artifactsOf(SHIPPED_PACKS);
+  // Discovered packs by default (artifactsOf walks the shipped pack files); a host may select a
+  // narrower set — the CLI ships coding-agent-safety only, so the FINRA/HIPAA content judges
+  // never score an ordinary shell command.
+  const shippedArtifacts = options.policyPacks ?? artifactsOf(SHIPPED_PACKS);
   const cascade = new VerdictCascade({
     engine,
     registry,

@@ -1,9 +1,15 @@
 import { readFileSync, writeFileSync, appendFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
+import { SHIPPED_PACKS, type PolicyArtifact } from "@pharos/policy";
 
 export const PROJECT_FILE = "pharos.yaml";
 export const DEFAULT_DATA_DIR = ".pharos";
 export const DEFAULT_TENANT = "local";
+/**
+ * The wedge pack only. `finra` and `hipaa` are opt-in: their Tier-3 judges are bag-of-words
+ * models tuned for communications and payments and over-flag ordinary shell commands.
+ */
+export const DEFAULT_POLICIES = ["coding-agent-safety"];
 
 /** What `pharos.yaml` holds today. Phase C adds YAML policy packs under `policies:`. */
 export interface ProjectConfig {
@@ -34,7 +40,7 @@ export function renderProjectFile(config: ProjectConfig): string {
     "storage:",
     `  backend: ${config.storage.backend}`,
     `  dataDir: ${config.storage.dataDir}`,
-    "policies:",
+    `policies:   # shipped packs: ${Object.keys(SHIPPED_PACKS).join(", ")}`,
     ...config.policies.map((p) => `  - ${p}`),
     "",
   ].join("\n");
@@ -100,7 +106,7 @@ function validate(raw: Record<string, unknown>): ProjectConfig {
       `${PROJECT_FILE}: storage.backend must be "embedded" (the CLI runs the zero-infrastructure backend; use the API server for postgres)`,
     );
   }
-  const policies = Array.isArray(raw.policies) ? raw.policies.map(String) : ["finra", "hipaa"];
+  const policies = Array.isArray(raw.policies) ? raw.policies.map(String) : [...DEFAULT_POLICIES];
   return {
     version: 1,
     tenant: typeof raw.tenant === "string" && raw.tenant ? raw.tenant : DEFAULT_TENANT,
@@ -121,6 +127,19 @@ export function readIfPresent(file: string): string | null {
     if ((err as { code?: string }).code === "ENOENT") return null;
     throw err;
   }
+}
+
+/** Resolve the project's `policies:` list to shipped pack artifacts; unknown names fail loudly. */
+export function projectPolicies(project: Project): PolicyArtifact[] {
+  return project.config.policies.map((name) => {
+    const pack = SHIPPED_PACKS[name];
+    if (!pack) {
+      throw new Error(
+        `${PROJECT_FILE} lists unknown policy pack "${name}" (shipped: ${Object.keys(SHIPPED_PACKS).join(", ")})`,
+      );
+    }
+    return pack;
+  });
 }
 
 export function findProject(cwd = process.cwd()): Project | null {
