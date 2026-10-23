@@ -1,0 +1,224 @@
+{
+  "tenantId": "local",
+  "records": [
+    {
+      "content": {
+        "schemaVersion": "1.1.0",
+        "id": "2372f6c9-d1cd-4f43-b6f5-78719fff8a2e",
+        "tenantId": "local",
+        "sequence": 0,
+        "action": {
+          "type": "email.send",
+          "agentId": "treasury-bot",
+          "payload": {
+            "to": "ops@vendor.example",
+            "subject": "Shipping update"
+          },
+          "emittedAt": "2026-10-23T03:05:07.785Z"
+        },
+        "verdict": {
+          "decision": "allow",
+          "tierReached": 3,
+          "ruleCitations": [],
+          "riskScore": 0.5160792037180469,
+          "failMode": null,
+          "judgeVersion": "funds-movement-intent@c0533ac4a1dd",
+          "judgeRuntime": null,
+          "latency": {
+            "totalMs": 2.0732909999999998,
+            "perTier": {
+              "1": 0.084708,
+              "2": 0.0395,
+              "3": 1.949083
+            },
+            "deadlineMs": 800,
+            "deadlineBreached": false
+          }
+        },
+        "liability": {
+          "mandate": {
+            "id": "m-comms",
+            "scope": "vendor communications",
+            "limits": {},
+            "grantor": "ops-lead",
+            "expiresAt": null,
+            "version": "1"
+          },
+          "oversightMode": "human_on_loop",
+          "blastRadius": {
+            "financialAmount": 0,
+            "currency": "USD",
+            "reversibility": "reversible"
+          },
+          "modelMetadata": null
+        },
+        "sealedAt": "2026-10-23T03:05:07.787Z"
+      },
+      "seal": {
+        "contentHash": "80c66f090d07e50f46c50eef04d5ddb28c7332f7c46206284f0b3d66b6bd4c78",
+        "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "algorithm": "ed25519",
+        "keyId": "tenant:local#v1",
+        "signature": "6Fz/ocfe2rUZqlPlF5KH4jTEHOLGQvv7/DntOyiDxiMJnjhWskrzRzec94e89s5vBj5teQFTl8LtmhspCRACBg==",
+        "sigVersion": 2
+      }
+    },
+    {
+      "content": {
+        "schemaVersion": "1.1.0",
+        "id": "c8c51df9-fe4b-4761-b5f6-9bdd1ea09831",
+        "tenantId": "local",
+        "sequence": 1,
+        "action": {
+          "type": "payment.transfer",
+          "agentId": "treasury-bot",
+          "payload": {
+            "amount": 30000,
+            "to": "acct-7781",
+            "memo": "vendor invoice"
+          },
+          "emittedAt": "2026-10-23T03:05:07.846Z"
+        },
+        "verdict": {
+          "decision": "block",
+          "tierReached": 1,
+          "ruleCitations": [
+            {
+              "ruleId": "mandate-limit-exceeded",
+              "pack": "core",
+              "clause": "mandate.limits.maxAmount",
+              "description": "Action blast radius 30000 USD exceeds mandate m-funds limit of 25000."
+            }
+          ],
+          "riskScore": 1,
+          "failMode": null,
+          "judgeVersion": null,
+          "judgeRuntime": null,
+          "latency": {
+            "totalMs": 0.012292,
+            "perTier": {
+              "1": 0.012292
+            },
+            "deadlineMs": 800,
+            "deadlineBreached": false
+          }
+        },
+        "liability": {
+          "mandate": {
+            "id": "m-funds",
+            "scope": "vendor payments up to $25,000",
+            "limits": {
+              "maxAmount": 25000,
+              "currency": "USD"
+            },
+            "grantor": "treasury-controller",
+            "expiresAt": null,
+            "version": "1"
+          },
+          "oversightMode": "human_in_loop",
+          "blastRadius": {
+            "financialAmount": 30000,
+            "currency": "USD",
+            "reversibility": "irreversible"
+          },
+          "modelMetadata": null
+        },
+        "sealedAt": "2026-10-23T03:05:07.846Z"
+      },
+      "seal": {
+        "contentHash": "f2e528a2388d2574d3ce5e544fc27840e62f21e8b1c3c876e456f27f1283d62a",
+        "prevHash": "80c66f090d07e50f46c50eef04d5ddb28c7332f7c46206284f0b3d66b6bd4c78",
+        "algorithm": "ed25519",
+        "keyId": "tenant:local#v1",
+        "signature": "1HCuK/1pF9A5pcbp0qsiIvRfCUe4dLRU309bU/yJ52UCF5svZQR/avl3vNpF88wkRIDjGPa/ZlIOqAOjEvLMBA==",
+        "sigVersion": 2
+      }
+    },
+    {
+      "content": {
+        "schemaVersion": "1.1.0",
+        "id": "8484671d-5ab3-421d-a735-a6ae1cd1feac",
+        "tenantId": "local",
+        "sequence": 2,
+        "action": {
+          "type": "payment.transfer",
+          "agentId": "treasury-bot",
+          "payload": {
+            "amount": 4800,
+            "to": "new-vendor-8812",
+            "memo": "please wire the funds to the new vendor today"
+          },
+          "emittedAt": "2026-10-23T03:05:07.868Z"
+        },
+        "verdict": {
+          "decision": "escalate",
+          "tierReached": 3,
+          "ruleCitations": [
+            {
+              "ruleId": "finra-3110-funds-movement",
+              "pack": "finra",
+              "clause": "FINRA Rule 3110 (supervision) / 2150 (funds handling)",
+              "description": "Movement of customer funds requires supervisory review. Unmandated funds-movement intent is escalated to a registered principal under Rule 3110 supervision."
+            }
+          ],
+          "riskScore": 0.9726268260901639,
+          "failMode": null,
+          "judgeVersion": "funds-movement-intent@c0533ac4a1dd",
+          "judgeRuntime": null,
+          "latency": {
+            "totalMs": 1.090542,
+            "perTier": {
+              "1": 0.006084,
+              "2": 0.012791,
+              "3": 1.071667
+            },
+            "deadlineMs": 800,
+            "deadlineBreached": false
+          }
+        },
+        "liability": {
+          "mandate": null,
+          "oversightMode": "autonomous",
+          "blastRadius": {
+            "financialAmount": 4800,
+            "currency": "USD",
+            "reversibility": "reversible"
+          },
+          "modelMetadata": null
+        },
+        "sealedAt": "2026-10-23T03:05:07.869Z"
+      },
+      "seal": {
+        "contentHash": "b936a6f49b7e51c58f2ada912bc9f4a36cd057ea7b0a2a2135bc482c170e73bd",
+        "prevHash": "f2e528a2388d2574d3ce5e544fc27840e62f21e8b1c3c876e456f27f1283d62a",
+        "algorithm": "ed25519",
+        "keyId": "tenant:local#v1",
+        "signature": "HooYVfkioDG91S6Y0jjZj89/AYWxLIovJl/cdX79G/jxnFFSkmO/5ptpx9tobAySM1Xz6xUEoS53RtPHIcr9Bw==",
+        "sigVersion": 2
+      }
+    }
+  ],
+  "keyset": [
+    {
+      "keyId": "tenant:local#v1",
+      "publicKey": "MCowBQYDK2VwAyEAbKc7frJJjgmqP54iqYBuVMDmyJKifJXQVJHRrmIzvHQ=",
+      "algorithm": "ed25519"
+    }
+  ],
+  "tsaKeyset": [
+    {
+      "keyId": "tsa-local#v1",
+      "publicKey": "MCowBQYDK2VwAyEA1RoM+G20JJNambBRHUqQyQH9hzJCaxpkmcE67L9P4jI=",
+      "algorithm": "ed25519"
+    }
+  ],
+  "anchors": [
+    {
+      "hash": "b936a6f49b7e51c58f2ada912bc9f4a36cd057ea7b0a2a2135bc482c170e73bd",
+      "time": "2026-10-23T03:05:07.876Z",
+      "provider": "local",
+      "keyId": "tsa-local#v1",
+      "signature": "8nz76MoIAvB9obt1F6afWHnVc+Rl7P90inwVAxbk6TMHtHubXOvJWU/h/ZneaDhrH9a0K2q5oxxV+4vxzq8nCQ=="
+    }
+  ]
+}
