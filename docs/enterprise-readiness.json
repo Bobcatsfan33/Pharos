@@ -354,7 +354,7 @@
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "546223d0b48d8096332eff1a3b386137eeca2086cb908fa62b36910dffc2cd71"
+        "sha256": "1013fd60003027b194a682f3ba18100ad5a8faf4862c1290e4c04bc2928f6000"
       },
       {
         "path": ".github/workflows/codeql.yml",
@@ -366,7 +366,7 @@
       },
       {
         "path": ".github/workflows/image.yml",
-        "sha256": "b1869bec6c0a175b6e907d2407e59bcb55c85858af4cae7be507c4d8c608d70a"
+        "sha256": "5fb30e024c103d65b4cc3e1f92f2ca786216dbf0b68e2bf0acc9c9dfff721333"
       },
       {
         "path": ".github/workflows/judge-parity.yml",
@@ -374,7 +374,7 @@
       },
       {
         "path": ".github/workflows/release.yml",
-        "sha256": "55a9e5a68b2389bf0827e98a1d8d483348ac759f7f05415c374c1aa13575aa65"
+        "sha256": "e7e711cd5baadf46ddf7dfa1cc6301c8bf531db570a676d36bbc99c46b54feac"
       },
       {
         "path": ".github/workflows/training.yml",

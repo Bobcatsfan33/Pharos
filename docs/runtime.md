@@ -15,7 +15,7 @@ Pharos Runtime step
      -> block: sealed refusal -> fail before step.started
      -> escalate: sealed record + review handle -> durable pause
         -> human approve/modify/reject (sealed human verdict)
-        -> pharos resume -> replay action -> stable continuation claim -> execute/fail
+        -> pharos-runtime resume -> replay action -> stable continuation claim -> execute/fail
 ```
 
 ## Reliability invariants
@@ -45,14 +45,14 @@ export PHAROS_API_KEY=pk_...
 export PHAROS_TENANT_ID=acme
 
 python3 -m pip install -e "runtime/python[viewer]"
-pharos run --mock runtime/python/examples/pharos_governed.py --run-id governed-demo
-pharos show governed-demo
+pharos-runtime run --mock runtime/python/examples/pharos_governed.py --run-id governed-demo
+pharos-runtime show governed-demo
 ```
 
 If a policy escalates the `publish` step, resolve it in Pharos and run:
 
 ```bash
-pharos resume governed-demo --mock
+pharos-runtime resume governed-demo --mock
 ```
 
 The resume resubmits the identical authorization key, observes the human decision, claims
@@ -61,7 +61,7 @@ with the identical continuation identity, and executes only the unfinished step.
 The root CI runs the runtime lint, strict typing, import-boundary checks, complete test suite,
 determinism lint, performance gates, and crash soak. It then runs
 [`scripts/e2e-runtime.ts`](../scripts/e2e-runtime.ts) against real Postgres, Redis, MinIO,
-KMS, the Pharos HTTP API, and the in-repository `pharos` CLI. It requires two sealed
+KMS, the Pharos HTTP API, and the in-repository `pharos-runtime` CLI. It requires two sealed
 authorization records, one sealed human verdict, two `governance.decided` events, two
 durable `step.completed` outcomes, and zero skipped infrastructure tests.
 
@@ -73,4 +73,6 @@ the original `pharos` declaration. This makes the Pharos `modify` feature operat
 than merely advisory.
 
 The `keel` command remains an executable compatibility alias for existing users. New
-documentation and installations use the `pharos` command and `pharos-runtime` distribution.
+documentation and installations use the `pharos-runtime` command and `pharos-runtime`
+distribution. The bare `pharos` command is the control-plane CLI (`@getpharos/cli` on npm, the
+`getpharos` distribution on PyPI) — see [ADR 0006](adr/0006-cli-package-and-bin-names.md).

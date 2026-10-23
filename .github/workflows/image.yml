@@ -158,7 +158,7 @@ jobs:
           test "$(docker image inspect "${LOCAL_RUNTIME_IMAGE}" --format '{{ index .Config.Labels "org.opencontainers.image.base.name" }}')" = "${PYTHON_IMAGE}"
           test "$(docker image inspect "${LOCAL_RUNTIME_IMAGE}" --format '{{.Config.User}}')" = "65532:65532"
           docker run --rm --read-only --network none --cap-drop ALL \
-            --security-opt no-new-privileges "${LOCAL_RUNTIME_IMAGE}" --help | grep -q "usage: pharos"
+            --security-opt no-new-privileges "${LOCAL_RUNTIME_IMAGE}" --help | grep -q "usage: pharos-runtime"
       - name: generate runtime SPDX SBOM
         uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26
         with:

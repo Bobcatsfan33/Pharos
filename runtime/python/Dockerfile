@@ -9,7 +9,7 @@ COPY pyproject.toml README.md ./
 COPY keel ./keel
 COPY pharos_runtime ./pharos_runtime
 RUN pip install --prefix=/install ".[viewer,pg,otel]"
-# Examples ship in the image so `pharos run examples/...` works out of the box; a
+# Examples ship in the image so `pharos-runtime run examples/...` works out of the box; a
 # pre-owned /data seeds the anonymous volume with non-root ownership.
 COPY examples ./examples
 RUN mkdir -p /seed-data

@@ -81,7 +81,7 @@ async function main(): Promise<void> {
       "--pharos-tenant",
       tenantId,
     ];
-    const run = await runCommand("pharos", [
+    const run = await runCommand("pharos-runtime", [
       "run",
       "--mock",
       graph,
@@ -124,7 +124,7 @@ async function main(): Promise<void> {
       );
     }
 
-    const resumed = await runCommand("pharos", [
+    const resumed = await runCommand("pharos-runtime", [
       "resume",
       runId,
       "--mock",
@@ -160,8 +160,15 @@ async function main(): Promise<void> {
       }
     }
 
-    const timeline = await runCommand("pharos", ["show", runId, "--db", db, "--blobs", blobs]);
-    if (timeline.status !== 0) throw new Error(`pharos show failed:\n${timeline.stderr}`);
+    const timeline = await runCommand("pharos-runtime", [
+      "show",
+      runId,
+      "--db",
+      db,
+      "--blobs",
+      blobs,
+    ]);
+    if (timeline.status !== 0) throw new Error(`pharos-runtime show failed:\n${timeline.stderr}`);
     const decisions = timeline.stdout.match(/governance\.decided/g) ?? [];
     const escalated = timeline.stdout.match(/governance\.escalated/g) ?? [];
     const completed = timeline.stdout.match(/step\.completed/g) ?? [];

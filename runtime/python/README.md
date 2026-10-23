@@ -45,7 +45,7 @@ A 4-step agent makes billed model calls, "crashes" mid-run, and resumes in a fre
 runtime — the completed call is replayed from the log (cost unchanged) and only the
 remaining work executes. The cost equality is a **checked assertion**, gated in CI
 (`tests/chaos/test_crash_resume_demo.py`), not a screenshot. Browse the same run in the
-viewer: `pharos view`.
+viewer: `pharos-runtime view`.
 
 ## The two capabilities
 
@@ -75,9 +75,9 @@ export PHAROS_URL=http://localhost:4000
 export PHAROS_API_KEY=pk_...
 export PHAROS_TENANT_ID=acme
 
-pharos run --mock examples/pharos_governed.py --run-id governed-demo
+pharos-runtime run --mock examples/pharos_governed.py --run-id governed-demo
 # The example's synthetic sensitive publication escalates. Approve it in Pharos, then:
-pharos resume governed-demo --mock
+pharos-runtime resume governed-demo --mock
 ```
 
 Pharos seals the authorization; the runtime appends its evidence binding directly before the
@@ -110,9 +110,9 @@ are the written contract in [`docs/DETERMINISM.md`](docs/DETERMINISM.md).
 pip install pharos-runtime             # SQLite + content-addressed blobs
 pip install 'pharos-runtime[viewer]'   # adds the local trace viewer
 
-pharos run --mock examples/research_pipeline.py   # durable, traced, budgeted — no key
-pharos ls                                         # list runs
-pharos show <run_id>                              # full event timeline
+pharos-runtime run --mock examples/research_pipeline.py   # durable, traced, budgeted — no key
+pharos-runtime ls                                         # list runs
+pharos-runtime show <run_id>                              # full event timeline
 keel view                                       # the dashboard: runs/steps/prompts/tokens/$
 ```
 
@@ -167,9 +167,9 @@ run = await run_agent("agent",
 ## Durability you can see
 
 ```bash
-pharos run --mock examples/research_pipeline.py --run-id demo
-pharos replay demo                          # re-drive from the log: byte-identical
-pharos diff demo other                      # where two runs diverge
+pharos-runtime run --mock examples/research_pipeline.py --run-id demo
+pharos-runtime replay demo                          # re-drive from the log: byte-identical
+pharos-runtime diff demo other                      # where two runs diverge
 ```
 
 Resume and normal scheduling are the *same* fold over the log; completed model calls
@@ -177,7 +177,11 @@ are replayed and **never re-billed** (asserted in CI, not screenshotted).
 
 ## CLI
 
-`pharos run | ls | show | resume | approve | replay | diff | simulate | test | audit | migrate | import | view`
+`pharos-runtime run | ls | show | resume | approve | replay | diff | simulate | test | audit | migrate | import | view`
+
+The command is `pharos-runtime`, not `pharos`: the bare name is the Pharos control-plane CLI
+(`npx @getpharos/cli`, `pipx run getpharos`) — see
+[ADR 0006](../../docs/adr/0006-cli-package-and-bin-names.md).
 
 `keel` remains an equivalent compatibility command during the migration window.
 
