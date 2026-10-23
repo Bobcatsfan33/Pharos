@@ -21,24 +21,60 @@ Requires Python 3.9+.
 ## Quickstart
 
 ```python
-from pharos_sdk import PharosClient, PharosBlockedError
+from pharos_sdk import PharosClient
 
 client = PharosClient(
     base_url="https://pharos.example.com",
     api_key="pk_...",
     deadline_ms=800,
-    local_fail_mode="fail_closed",  # or "fail_open" for reversible actions
+    local_fail_mode="fail_closed",  # used only when reversibility is unknown
+)
+
+result = client.submit(
+    tenantId="acme",
+    action={"type": "payment.transfer", "agentId": "billing-agent",
+            "payload": {"amount": 30000}},
+    liability={"mandate": None, "oversightMode": "autonomous",
+               "blastRadius": {"financialAmount": 30000, "currency": "USD",
+                               "reversibility": "irreversible"},
+               "modelMetadata": None},
+)
+
+verdict = result["verdict"]
+if verdict["decision"] == "block":
+    raise RuntimeError(verdict["ruleCitations"][0]["description"])
+# "allow" / "modify": proceed; "escalate": see workflow continuation below.
+```
+
+`submit()` takes the wire fields as keyword arguments — camelCase `tenantId`, `action`
+(`type`, `agentId`, optional `payload`), `liability` (`oversightMode`, `blastRadius` with
+`reversibility`), and optional `mandateId` / `idempotencyKey` — validates them before transmit,
+and sends them unchanged. A missing or mistyped field raises `PharosError` with
+`code == "invalid_input"`; `submit()` never raises `PharosBlockedError`, it returns the verdict.
+
+### Governing a tool (raises on block)
+
+`govern_tool` wraps a callable so each call is submitted first and a `block` / `reject`
+verdict raises `PharosBlockedError` (an `escalate` verdict waits for the human decision and
+resumes exactly once). Its options are snake_case; `map_action` can override the default
+`human_in_loop` / `irreversible` liability per call:
+
+```python
+from pharos_sdk import PharosBlockedError, govern_tool
+
+
+def transfer(args: dict) -> dict:
+    ...  # the real tool
+
+
+governed_transfer = govern_tool(
+    client,
+    {"tenant_id": "acme", "agent_id": "billing-agent", "tool_name": "transfer"},
+    transfer,
 )
 
 try:
-    result = client.submit(
-        tenant_id="acme",
-        agent_id="billing-agent",
-        action={"type": "payment.transfer", "payload": {"amount": 30000}},
-    )
-    verdict = result["verdict"]
-    if verdict["decision"] == "allow":
-        ...  # proceed with the action
+    governed_transfer({"amount": 30000})
 except PharosBlockedError as e:
     print("blocked:", e.reason, e.citations)
 ```
