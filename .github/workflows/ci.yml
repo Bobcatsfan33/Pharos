@@ -461,6 +461,36 @@ jobs:
           PHAROS_S3_SECRET_KEY: pharos_local_dev
           PHAROS_S3_FORCE_PATH_STYLE: "true"
 
+  # The zero-Docker suite: no service containers, no env, nothing but Node. Proves the
+  # embedded storage backend (and everything the on-ramp relies on) runs with no
+  # infrastructure at all, and that it never skips — the same zero-skip gate applies.
+  test-embedded:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:publishable
+      - name: embedded suite (no Docker)
+        run: pnpm exec vitest run --config vitest.embedded.config.ts --reporter=default --reporter=json --outputFile.json=vitest-embedded-report.json
+      - name: embedded tests must run, not skip
+        if: always()
+        run: |
+          node -e '
+            const r = require("./vitest-embedded-report.json");
+            const skipped = r.numPendingTests + r.numTodoTests;
+            console.log(`embedded: ${r.numPassedTests} passed, ${r.numFailedTests} failed, ${skipped} skipped`);
+            if (r.numFailedTests > 0) process.exit(1);
+            if (skipped > 0) { console.error("Embedded tests skipped — they need no infrastructure, so a skip is a bug."); process.exit(1); }
+            if (r.numTotalTests === 0) { console.error("No embedded tests ran."); process.exit(1); }
+          '
+
   runtime:
     runs-on: ubuntu-latest
     steps:

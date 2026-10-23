@@ -15,6 +15,7 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm runtime:check",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
+    "test:embedded": "vitest run --config vitest.embedded.config.ts",
     "test:watch": "vitest",
     "test:live": "vitest run --config vitest.live.config.ts",
     "test:judge-parity": "vitest run test/onnx-serving.spec.ts --config vitest.live.config.ts",
