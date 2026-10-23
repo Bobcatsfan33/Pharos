@@ -510,6 +510,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # @getpharos/pdp-spec resolves through its built dist, and the CLI bundle inlines it,
+      # so the publishable packages must exist before esbuild runs.
+      - run: pnpm build:publishable
       - name: pack, npm-install into an empty project, run every command
         run: bash scripts/cli-smoke.sh
 

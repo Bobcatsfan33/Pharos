@@ -32,5 +32,7 @@
   "devDependencies": {
     "@types/pg": "^8.23.1"
   },
-  "sideEffects": false
+  "sideEffects": [
+    "./src/providers.ts"
+  ]
 }

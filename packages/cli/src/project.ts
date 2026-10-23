@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 
 export const PROJECT_FILE = "pharos.yaml";
@@ -113,12 +113,23 @@ function validate(raw: Record<string, unknown>): ProjectConfig {
   };
 }
 
+/** Read a file or return null if it does not exist — no check-then-use race. */
+export function readIfPresent(file: string): string | null {
+  try {
+    return readFileSync(file, "utf8");
+  } catch (err) {
+    if ((err as { code?: string }).code === "ENOENT") return null;
+    throw err;
+  }
+}
+
 export function findProject(cwd = process.cwd()): Project | null {
   let dir = resolve(cwd);
   for (;;) {
     const file = join(dir, PROJECT_FILE);
-    if (existsSync(file)) {
-      const config = parseProjectFile(readFileSync(file, "utf8"));
+    const text = readIfPresent(file);
+    if (text !== null) {
+      const config = parseProjectFile(text);
       const dataDir = isAbsolute(config.storage.dataDir)
         ? config.storage.dataDir
         : join(dir, config.storage.dataDir);
@@ -142,7 +153,7 @@ export function requireProject(cwd = process.cwd()): Project {
 export function ensureGitignored(root: string, dataDir: string): boolean {
   const file = join(root, ".gitignore");
   const entry = `${dataDir.replace(/\/$/, "")}/`;
-  const existing = existsSync(file) ? readFileSync(file, "utf8") : "";
+  const existing = readIfPresent(file) ?? "";
   if (existing.split(/\r?\n/).some((l) => l.trim() === entry || l.trim() === dataDir)) return false;
   const block = `${existing.length > 0 && !existing.endsWith("\n") ? "\n" : ""}# Pharos embedded data (SQLite, record files, local keystore + passphrase) — never commit\n${entry}\n`;
   if (existing) appendFileSync(file, block);

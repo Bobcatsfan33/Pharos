@@ -14,7 +14,7 @@
 //                                   @pharos/judge only on the ONNX path.
 // The build refuses to ship if any of those appears as a static import in the entry chunk.
 import { build } from "esbuild";
-import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -79,6 +79,11 @@ await build({
 const modelsSrc = join(here, "../judge/models");
 cpSync(modelsSrc, join(dist, "models"), { recursive: true });
 
+// Policy packs are discovered from a directory, not listed in code (@pharos/policy resolves
+// `../packs` relative to the bundle), so the shipped pack files go under dist/packs. A new
+// pack file therefore reaches the CLI with no change here.
+cpSync(join(here, "../policy/packs"), join(dist, "packs"), { recursive: true });
+
 // Refuse to ship a bundle in which the entry, or any chunk the entry imports statically,
 // imports a lazy-only module: the embedded on-ramp must load with none of them installed.
 // Statement-level scan: esbuild may wrap long binding lists across lines, so collapse the
@@ -109,7 +114,11 @@ if (leaked.size > 0) {
   );
   process.exit(1);
 }
+// Code splitting emits `dist/chunks/` only when the graph actually needs a shared chunk.
+// With every lazy-only module external, the embedded entry needs none, so the directory may
+// legitimately be absent — the import guard above is what enforces the bundle's shape.
+const chunkDir = join(dist, "chunks");
 const files = readdirSync(join(dist, "bin")).concat(
-  readdirSync(join(dist, "chunks")).map((f) => `chunks/${f}`),
+  existsSync(chunkDir) ? readdirSync(chunkDir).map((f) => `chunks/${f}`) : [],
 );
 console.log(`built @getpharos/cli ${pkg.version}: ${files.length} files under dist/`);

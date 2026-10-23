@@ -19,5 +19,7 @@
     "asn1js": "^3.0.10",
     "pkijs": "^3.4.1"
   },
-  "sideEffects": false
+  "sideEffects": [
+    "./src/tsa/providers.ts"
+  ]
 }
