@@ -1,5 +1,5 @@
 import { type ChainVerification, type SigningProvider, verifyChain } from "@pharos/core";
-import type { EvidenceStore } from "./evidenceStore.js";
+import type { EvidenceStorePort } from "./ports.js";
 
 /** Minimal anchor shape the integrity sweep needs (a subset of ChainAnchor). */
 export interface AnchorSummary {
@@ -8,7 +8,7 @@ export interface AnchorSummary {
 }
 
 export interface ChainIntegrityDeps {
-  store: EvidenceStore;
+  store: Pick<EvidenceStorePort, "getChain" | "listTenants">;
   signer: SigningProvider;
   /** Trusted-time anchors for a tenant, used to detect missing-anchor gaps. Optional so the
    *  cryptographic sweep still works without the ops store wired in (e.g. tests). */

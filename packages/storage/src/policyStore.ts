@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
+import type { PolicyStorePort } from "./ports.js";
 
 export type PolicyStatus = "draft" | "shadow" | "active" | "rolled_back" | "archived";
 
@@ -20,7 +21,7 @@ export interface PolicyVersion {
  * prior version — a single status flip that restores prior state in well under a minute with
  * zero evidence-chain disruption (verdicts reference policies; the chain is untouched).
  */
-export class PolicyStore {
+export class PolicyStore implements PolicyStorePort {
   constructor(private readonly pool: Pool) {}
 
   private row(r: Record<string, unknown>): PolicyVersion {

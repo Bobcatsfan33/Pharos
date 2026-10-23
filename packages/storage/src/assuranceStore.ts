@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
+import type { AssuranceStorePort } from "./ports.js";
 
 export interface AssuranceAudit {
   id: string;
@@ -20,7 +21,7 @@ export interface AssuranceStats {
  * Assurance store: sample verdicts into a human audit queue, record whether the human upheld
  * the machine decision, and aggregate the upheld counts that feed the Wilson-score bound.
  */
-export class AssuranceStore {
+export class AssuranceStore implements AssuranceStorePort {
   constructor(private readonly pool: Pool) {}
 
   /** Enqueue audits for candidate verdicts not yet sampled. Returns how many were added. */

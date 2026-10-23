@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
+import type { EscalationStorePort } from "./ports.js";
 
 export type EscalationStatus = "pending" | "approved" | "modified" | "rejected" | "cancelled";
 export type ResolutionDecision = "approve" | "modify" | "reject";
@@ -52,7 +53,7 @@ interface EscalationRow {
  * first invocation or a stable durable-continuation identity. Crash-safe exactly-once
  * execution still requires runtime serialization plus target idempotency or an outbox.
  */
-export class EscalationStore {
+export class EscalationStore implements EscalationStorePort {
   constructor(private readonly pool: Pool) {}
 
   private rowTo(row: EscalationRow): Escalation {

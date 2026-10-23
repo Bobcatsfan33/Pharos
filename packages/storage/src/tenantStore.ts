@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import type { TenantStorePort } from "./ports.js";
 
 export type TenantStatus = "active" | "suspended" | "deleted";
 
@@ -27,7 +28,7 @@ interface TenantRow {
  * operational rows and API keys but, when retain_evidence_on_delete is set, leaves the
  * sealed evidence chain and WORM objects intact for the mandated retention period.
  */
-export class TenantStore {
+export class TenantStore implements TenantStorePort {
   constructor(private readonly pool: Pool) {}
 
   private rowTo(row: TenantRow): Tenant {

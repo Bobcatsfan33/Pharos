@@ -1,4 +1,5 @@
 import { Redis } from "ioredis";
+import type { CounterStorePort } from "./ports.js";
 
 /**
  * Deadline-bound verdict cache.
@@ -7,7 +8,7 @@ import { Redis } from "ioredis";
  * the latency budget. Sprint 0 provides the cache primitive; Sprint 2 (Lantern) wires
  * semantic/plan-level cache keys into the cascade.
  */
-export class VerdictCache {
+export class VerdictCache implements CounterStorePort {
   private readonly redis: Redis;
   constructor(url: string) {
     this.redis = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 2 });

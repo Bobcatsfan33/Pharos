@@ -62,11 +62,11 @@ async function startGateway(): Promise<void> {
     agentId: "unmodified-agent",
     target: targetUrl,
     heldRequestStore: new PostgresHeldRequestStore(
-      platform.pool,
+      platform.pool!,
       heldRequestKeyProviderFromMaster(gatewayHoldMasterKey),
       { leaseMs: 500 },
     ),
-    readinessCheck: async () => void (await platform!.pool.query("SELECT 1")),
+    readinessCheck: async () => void (await platform!.pool!.query("SELECT 1")),
     mapAction: (req) => ({
       action: { type: "message.send", payload: req.body as Record<string, unknown> },
       liability: {
@@ -183,7 +183,7 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
     if (!available) return ctx.skip();
     const escalationId = randomUUID();
     const store = new PostgresHeldRequestStore(
-      platform!.pool,
+      platform!.pool!,
       heldRequestKeyProviderFromMaster(gatewayHoldMasterKey),
       { leaseMs: 60_000 },
     );
@@ -200,7 +200,7 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
 
     // Model an abandoned worker deterministically. A 20ms lease plus setTimeout raced the
     // database round trip and occasionally expired before the immediate busy assertion.
-    const client = await platform!.pool.connect();
+    const client = await platform!.pool!.connect();
     try {
       await client.query("BEGIN");
       await client.query("SELECT set_config('pharos.tenant_id', $1, true)", [TENANT]);
@@ -245,7 +245,7 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
       if (keyLookups === 2) await new Promise((resolve) => setTimeout(resolve, 1_100));
       return key;
     };
-    const store = new PostgresHeldRequestStore(platform!.pool, slowDecryptKeyProvider, {
+    const store = new PostgresHeldRequestStore(platform!.pool!, slowDecryptKeyProvider, {
       leaseMs: 1_000,
     });
     await store.save(TENANT, escalationId, {
@@ -259,7 +259,7 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
     expect(acquired.status).toBe("acquired");
     if (acquired.status !== "acquired") throw new Error("held request was not acquired");
 
-    const client = await platform!.pool.connect();
+    const client = await platform!.pool!.connect();
     try {
       await client.query("BEGIN");
       await client.query("SELECT set_config('pharos.tenant_id', $1, true)", [TENANT]);
@@ -284,7 +284,7 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
   it("rejects oversized held requests before persistence", async (ctx) => {
     if (!available) return ctx.skip();
     const store = new PostgresHeldRequestStore(
-      platform!.pool,
+      platform!.pool!,
       heldRequestKeyProviderFromMaster(gatewayHoldMasterKey),
       { maxBytes: 64 },
     );
@@ -304,7 +304,7 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
     const oldKey = randomBytes(32);
     const newKey = randomBytes(32);
     const oldStore = new PostgresHeldRequestStore(
-      platform!.pool,
+      platform!.pool!,
       heldRequestKeyringFromMasters("2026-q3", { "2026-q3": oldKey }),
     );
     await oldStore.save(TENANT, escalationId, {
@@ -316,7 +316,7 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
     expect(await oldStore.keyUsage(TENANT)).toContainEqual({ keyId: "2026-q3", count: 1 });
 
     const rotatingStore = new PostgresHeldRequestStore(
-      platform!.pool,
+      platform!.pool!,
       heldRequestKeyringFromMasters("2026-q4", {
         "2026-q3": oldKey,
         "2026-q4": newKey,
@@ -326,7 +326,7 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
     expect(await rotatingStore.keyUsage(TENANT)).toContainEqual({ keyId: "2026-q4", count: 1 });
 
     const newOnlyStore = new PostgresHeldRequestStore(
-      platform!.pool,
+      platform!.pool!,
       heldRequestKeyringFromMasters("2026-q4", { "2026-q4": newKey }),
     );
     const acquired = await newOnlyStore.acquire(TENANT, escalationId);
@@ -366,7 +366,7 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
     expect(escalationId).toBeTruthy();
     expect(upstreamHits).toBe(before); // not forwarded yet
 
-    const raw = await platform!.pool.query<{ ciphertext: Buffer }>(
+    const raw = await platform!.pool!.query<{ ciphertext: Buffer }>(
       `SELECT ciphertext FROM gateway_held_requests
        WHERE tenant_id = $1 AND escalation_id = $2`,
       [TENANT, escalationId],
@@ -375,7 +375,7 @@ describe("Gateway — zero-code governance of an unmodified agent", () => {
     expect(raw.rows[0]!.ciphertext.toString("utf8")).not.toContain("Patient John Smith");
 
     const otherTenantStore = new PostgresHeldRequestStore(
-      platform!.pool,
+      platform!.pool!,
       heldRequestKeyProviderFromMaster(gatewayHoldMasterKey),
     );
     expect(await otherTenantStore.acquire(`${TENANT}-other`, escalationId)).toEqual({
