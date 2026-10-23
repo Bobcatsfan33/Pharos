@@ -13,6 +13,7 @@ import { LocalTsa, Rfc3161Tsa, type TsaProvider } from "@pharos/evidence";
 import {
   AnchorScheduler,
   ChainIntegrityService,
+  buildEmbeddedStorage,
   buildPostgresStorage,
   type AccessAuditLogPort,
   type ApiKeyStorePort,
@@ -53,9 +54,12 @@ import { ReviewSlaService } from "./reviewSla.js";
  * The composition root: build the durable platform spine from configuration.
  *
  * One pipeline, two consumers. A submitted action flows through the verdict engine
- * (Beam) and the evidence store (Ledger) inside a single transaction. Everything is
- * durable — Postgres, WORM, KMS — so the platform survives restarts with the chain
- * intact. There are no in-memory or file-backed stores of platform/evidence state.
+ * (Beam) and the evidence store (Ledger) inside a single transaction, on whichever
+ * storage backend configuration selects: Postgres + S3 Object Lock + Redis (the
+ * production path; survives restarts with the chain intact and WORM-retained) or the
+ * embedded SQLite + local-file backend (the zero-infrastructure on-ramp — durable and
+ * tamper-evident, not WORM; see `storage.posture`). There are no in-memory stores of
+ * platform or evidence state on either backend.
  */
 export interface Platform {
   config: PharosConfig;
@@ -226,34 +230,38 @@ const REVIEW_NOTIFIER_OPTIONS: ReviewNotifierOptions = {
 };
 
 /**
- * Build the storage backend from configuration. Postgres + S3 WORM + Redis is the only
- * backend today and remains the production path; it is selected here, in one place, so a
- * lighter backend can be added behind the same ports without touching the routes.
+ * Build the storage backend from configuration — the single selection point, so the routes
+ * never know which backend they run on. `postgres` is the default and the production path
+ * (`loadConfig` refuses anything else in prod); `embedded` is the on-ramp.
  */
 export async function buildStorage(
   config: PharosConfig,
   signer: SigningProvider,
 ): Promise<StorageBackend> {
+  // Sprint 1: per-tenant signing keys (matches TenantStore.kmsKeyName).
+  const resolveKeyName = (tenantId: string) => `tenant:${tenantId}`;
+  if (config.storage.backend === "embedded") {
+    return buildEmbeddedStorage(
+      { dataDir: config.storage.dataDir },
+      { signer, resolveKeyName, notifier: REVIEW_NOTIFIER_OPTIONS },
+    );
+  }
+  // loadConfig guarantees these for the postgres backend; the fallbacks only satisfy types.
   return buildPostgresStorage(
     {
-      pgUrl: config.pg.url,
-      redisUrl: config.redis.url,
+      pgUrl: config.pg.url ?? "",
+      redisUrl: config.redis.url ?? "",
       s3: {
-        endpoint: config.s3.endpoint,
-        region: config.s3.region,
-        bucket: config.s3.bucket,
+        endpoint: config.s3.endpoint ?? "",
+        region: config.s3.region ?? "",
+        bucket: config.s3.bucket ?? "",
         accessKey: config.s3.accessKey,
         secretKey: config.s3.secretKey,
         forcePathStyle: config.s3.forcePathStyle,
         retentionDays: config.s3.wormRetentionDays,
       },
     },
-    {
-      signer,
-      // Sprint 1: per-tenant signing keys (matches TenantStore.kmsKeyName).
-      resolveKeyName: (tenantId) => `tenant:${tenantId}`,
-      notifier: REVIEW_NOTIFIER_OPTIONS,
-    },
+    { signer, resolveKeyName, notifier: REVIEW_NOTIFIER_OPTIONS },
   );
 }
 

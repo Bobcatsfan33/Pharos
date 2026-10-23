@@ -235,6 +235,48 @@ runtime. Treat the terminator as part of your trust boundary and monitor it as s
 production clients at the terminator's HTTPS endpoint; both SDKs use standard
 `fetch`/`urllib` with certificate verification enabled by default.
 
+## 8. Embedded mode (SQLite + local files) is an on-ramp, not a retention tier
+
+> **Tracking issue:** none — this is a design posture, not a gap to close. It is listed so the
+> zero-infrastructure path can never be mistaken for the production one.
+
+**Today:** `PHAROS_STORAGE_BACKEND=embedded` runs the whole control plane with nothing but
+Node ≥ 22.13: operational state and chain heads in one SQLite file (`node:sqlite`, no native
+build), every sealed record also written as a content-addressed file under
+`PHAROS_DATA_DIR/evidence/`, and rate-limit counters in process memory
+([`packages/storage/src/embedded/`](../packages/storage/src/embedded/)). The verdict-and-seal
+invariant holds exactly as on Postgres: the record file is written and fsynced, the row
+inserted, the head advanced, and the idempotency key claimed in **one SQLite transaction**;
+a file-write failure rolls the append back and no verdict is returned. The same storage
+conformance suite runs against both backends, and the chain verifies offline with the
+published keyset in the same way.
+
+**What it guarantees:** durability across restarts; tamper-**evidence** (an edited record file
+fails verify-on-read; a deleted one is reported as missing evidence by `reconcileEvidence`;
+the hash chain and seals expose any change to the operational copy); offline third-party
+verification from an exported bundle.
+
+**What it does NOT guarantee, and must never be described as providing:**
+
+- **WORM / retention.** Anyone with write access to the data directory can delete or replace
+  files and rows. Nothing enforces write-once semantics independently of Pharos. Retention
+  guarantees require the Postgres + **S3 Object Lock (COMPLIANCE mode)** path, whose bucket is
+  asserted at boot to have Object Lock enabled.
+- **Database-level tenant isolation.** SQLite has no roles or row-level security; the
+  application-layer tenant filters are the only control. Postgres adds RLS under a
+  `NOBYPASSRLS` role as a backstop.
+- **Multi-instance rate limits.** Counters are per process. Redis is the production counter
+  store.
+- **Key custody.** With no `PHAROS_KMS_KEYSTORE_PASSPHRASE` set, embedded mode generates a
+  random passphrase into `PHAROS_DATA_DIR/keystore.passphrase` (mode 0600) so the on-ramp needs
+  zero configuration. The passphrase then lives beside the keystore it protects — a
+  development posture. Set the variable from a keychain or secret manager to opt out; use AWS
+  KMS for production.
+
+`PHAROS_ENV=prod` refuses the embedded backend outright, and every surface that reports the
+backend (`/healthz`, the startup log, the CLI) reads these facts from the backend's own
+`EvidencePosture` rather than restating them.
+
 ---
 
 *Maintenance: when a roadmap task above lands, delete its entry here (and the corresponding
