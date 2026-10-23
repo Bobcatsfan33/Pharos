@@ -16,6 +16,17 @@ export type {
   TenantStorePort,
 } from "./ports.js";
 export {
+  buildEmbeddedStorage,
+  EMBEDDED_EVIDENCE_POSTURE,
+  type EmbeddedStorageBackend,
+  type EmbeddedStorageConfig,
+  type EmbeddedStorageDeps,
+} from "./embedded/backend.js";
+export { EmbeddedDb, runEmbeddedMigrations, EMBEDDED_SCHEMA_VERSION } from "./embedded/sqlite.js";
+export { EvidenceFileStore } from "./embedded/recordFiles.js";
+export { EmbeddedEvidenceStore } from "./embedded/evidenceStore.js";
+export { InMemoryCounterStore } from "./embedded/counters.js";
+export {
   buildPostgresStorage,
   POSTGRES_EVIDENCE_POSTURE,
   type PostgresStorageBackend,
