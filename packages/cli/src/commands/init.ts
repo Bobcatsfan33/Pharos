@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import {
   DEFAULT_DATA_DIR,
+  DEFAULT_POLICIES,
   DEFAULT_TENANT,
   PROJECT_FILE,
   ensureGitignored,
@@ -37,7 +38,7 @@ export async function init(argv: string[]): Promise<number> {
       version: 1,
       tenant: values.tenant!,
       storage: { backend: "embedded", dataDir: values["data-dir"]! },
-      policies: ["finra", "hipaa"],
+      policies: [...DEFAULT_POLICIES],
     };
     writeFileSync(file, renderProjectFile(config));
     print(ok(`wrote ${bold(PROJECT_FILE)}`));
