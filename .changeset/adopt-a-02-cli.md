@@ -1,6 +1,5 @@
 ---
 "@getpharos/cli": minor
-"@pharos/storage": patch
 ---
 
 Introduce `@getpharos/cli` (bin `pharos`): `init`, `demo`, `log`, `verify`, `export` over the
