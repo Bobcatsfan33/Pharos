@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { VerdictEngine } from "@pharos/core";
-import { CODING_AGENT_SAFETY_PACK, evaluateArtifact } from "@pharos/policy";
+import { SHIPPED_PACKS, evaluateArtifact } from "@pharos/policy";
+
+/**
+ * The pack is a discovered JSON file (`packages/policy/packs/coding-agent-safety.json`), not a
+ * module: adding or editing a pack is a data change, and `loadShippedPacks` validates it
+ * against `pack.schema.json` on the way in.
+ */
+const CODING_AGENT_SAFETY_PACK = SHIPPED_PACKS["coding-agent-safety"]!;
 import { actionForCommand, COMMAND_LIABILITY } from "../packages/cli/src/commands/run.js";
 
 /**

@@ -2,7 +2,7 @@ import { writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import type { ActionIntent, LiabilityContext } from "@pharos/core";
 import { verifyEvidenceBundle, type EvidenceBundle } from "@pharos/evidence";
-import { FINRA_PACK_V2, type PolicyArtifact } from "@pharos/policy";
+import { SHIPPED_PACKS, artifactsOf, type PolicyArtifact } from "@pharos/policy";
 import type { Platform } from "@pharos/api";
 import { projectPolicies, requireProject } from "../project.js";
 import { openPlatform } from "../platform.js";
@@ -88,8 +88,10 @@ export async function demo(argv: string[]): Promise<number> {
   const platform = await openPlatform(project);
   try {
     // The story is about payments, so the FINRA pack joins whatever the project selected.
+    // Packs are discovered, so this names the pack id and takes whatever version shipped.
     const packs = projectPolicies(project);
-    if (!packs.some((p) => p.packId === FINRA_PACK_V2.packId)) packs.push(FINRA_PACK_V2);
+    const finra = artifactsOf(SHIPPED_PACKS).find((p) => p.packId === "finra");
+    if (finra && !packs.some((p) => p.packId === "finra")) packs.push(finra);
     return await run(platform, project.config.tenant, values.bundle ? values.out! : null, packs);
   } finally {
     await platform.close();
