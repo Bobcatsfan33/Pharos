@@ -6,6 +6,7 @@ import { verify, verifyHelp } from "./commands/verify.js";
 import { exportBundle, exportHelp } from "./commands/export.js";
 import { run, runHelp } from "./commands/run.js";
 import { serve, serveHelp } from "./commands/serve.js";
+import { hook, hookHelp } from "./commands/hook.js";
 
 const VERSION = process.env.PHAROS_CLI_VERSION ?? "dev";
 
@@ -34,6 +35,11 @@ const COMMANDS: Record<string, Command> = {
     run: serve,
     help: serveHelp,
     summary: "start the Pharos API over embedded storage",
+  },
+  hook: {
+    run: hook,
+    help: hookHelp,
+    summary: "Claude Code PreToolUse hook: govern every tool call (pharos init --claude-code)",
   },
 };
 
