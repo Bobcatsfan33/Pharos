@@ -277,6 +277,37 @@ verification from an exported bundle.
 backend (`/healthz`, the startup log, the CLI) reads these facts from the backend's own
 `EvidencePosture` rather than restating them.
 
+## 9. The Claude Code hook governs tool calls before they run — within what a hook can see
+
+> **Tracking issue:** none — a scoping statement for `pharos hook claude-code`.
+
+**Today:** `pharos init --claude-code` installs a `PreToolUse` hook for `Bash`, `Write`,
+`Edit`, `MultiEdit`, `NotebookEdit`, `Read`, and every `mcp__*` tool. Each call is mapped to
+an action (`shell.exec`, `file.write`, `file.read`, `mcp.<server>.<tool>`), evaluated against
+the project's packs, and **sealed to the local embedded chain before Claude Code learns the
+answer** — a denied call is evidence too. `block` → `deny` (which Claude Code honours even
+under `--dangerously-skip-permissions`), `escalate` → `ask` with the cited rule, `allow` →
+no decision by default so Claude Code's own permission rules still apply.
+
+**What it does not guarantee:**
+
+- **Coverage is the hook's, not Pharos's.** A user can edit `.claude/settings.json`, run
+  Claude Code outside the project, or use a tool the matcher does not name. Pharos records
+  what it was asked about; it cannot prove it was asked about everything.
+- **It sees the call, not the effect.** `PreToolUse` carries the command string or file path;
+  Pharos does not observe the tool's output or what the command did once allowed. A
+  `PostToolUse` record is future work.
+- **String rules.** The `coding-agent-safety` pack matches command text and paths with
+  `contains`/`startsWith`; obfuscated or aliased commands (`$(echo rm) -rf /`) are not
+  understood. It is a safety net with cited reasons, not a sandbox.
+- **Fail closed, visibly.** Malformed hook input, no `pharos.yaml` in scope, or a failed seal
+  exit 2 — the call is blocked and Claude is told why — rather than silently allowing.
+- **Latency and the `npx` form.** The installed command is `npx -y @getpharos/cli hook
+  claude-code`; the first call downloads the package, later calls take a few hundred
+  milliseconds (platform open + seal) each. The transcript under `examples/claude-code/`
+  used the locally built bundle for the same reason.
+- Embedded storage posture applies (§8): tamper-evident, offline-verifiable, not WORM.
+
 ---
 
 *Maintenance: when a roadmap task above lands, delete its entry here (and the corresponding
