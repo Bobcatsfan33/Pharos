@@ -29,8 +29,16 @@ export async function buildApp(platform: Platform): Promise<FastifyInstance> {
   });
 
   app.get("/healthz", async () => {
-    const redisOk = await platform.cache.ping().catch(() => false);
-    return { status: "ok", env: platform.config.env, redis: redisOk };
+    const countersOk = await platform.cache.ping().catch(() => false);
+    const { backend, worm, rowLevelSecurity } = platform.storage.posture;
+    return {
+      status: "ok",
+      env: platform.config.env,
+      // `redis` is kept for existing dashboards; it is the counter-store probe on any backend.
+      redis: countersOk,
+      counters: countersOk,
+      storage: { backend, worm, rowLevelSecurity },
+    };
   });
 
   // Prometheus metrics exposition (scraped by the observability stack).

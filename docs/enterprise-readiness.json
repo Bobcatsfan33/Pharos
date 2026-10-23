@@ -386,7 +386,7 @@
       },
       {
         "path": "docs/LIMITATIONS.md",
-        "sha256": "03def4c65b5da41d89920e4ec6eb3d734fcd1db67372f3926cc5cf213892ab6c"
+        "sha256": "6e288bbea8e83ebc71ba20b08d0d59f537a81c0efdecbdf0463524b372cb53d0"
       },
       {
         "path": "docs/ROADMAP.md",
@@ -558,7 +558,7 @@
       },
       {
         "path": "services/api/src/platform.ts",
-        "sha256": "450fccfcc4cc11a3228b13ab77bf9e1a8c3c80a54b1d259f6b23bf4a3047d038"
+        "sha256": "5b395a5daa2fcf7fb2197523ce8ccfbcee6b2dfe59fbb194e36bb96cedc1528d"
       },
       {
         "path": "test/fixtures/onnx-parity-funds.json",

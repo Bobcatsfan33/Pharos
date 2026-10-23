@@ -9,8 +9,13 @@ import { transportBoundaryWarning } from "./transport.js";
 async function main(): Promise<void> {
   const platform = await buildPlatform();
   await platform.cache.connect().catch((err) => {
-    console.warn("[startup] redis connect failed (cache disabled):", (err as Error).message);
+    console.warn(
+      "[startup] counter store connect failed (rate limits fail closed):",
+      (err as Error).message,
+    );
   });
+  const posture = platform.storage.posture;
+  console.log(`[startup] storage backend: ${posture.backend} — ${posture.description}`);
   platform.integrity.start(60_000);
   platform.reviewSla.start(30_000);
   const anchorIntervalMs = platform.config.tsa.intervalMs;

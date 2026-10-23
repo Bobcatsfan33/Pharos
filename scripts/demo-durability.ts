@@ -5,7 +5,7 @@
  *
  *   1. pnpm infra:up
  *   2. pnpm demo:durability            # submits actions, prints the head
- *   3. (kill nothing — the platform process exits; Postgres/WORM persist)
+ *   3. (kill nothing — the platform process exits; the storage backend persists)
  *   4. pnpm demo:durability --verify    # reopens cold, finds records, verifies chain
  *
  * The first run submits a demo agent's actions and seals their records. The second
@@ -114,7 +114,7 @@ async function submit(): Promise<void> {
     const head = await platform.store.getHead(DEMO_TENANT);
     console.log(`\nChain head: sequence ${head?.sequence} hash ${head?.hash.slice(0, 16)}…`);
     console.log(
-      "Records are now durable in Postgres + WORM. Re-run with --verify to simulate a cold restart.\n",
+      `Records are now durable (${platform.storage.posture.backend === "postgres" ? "Postgres + S3 Object Lock WORM" : "embedded SQLite + local record files — tamper-evident, not WORM"}). Re-run with --verify to simulate a cold restart.\n`,
     );
   } finally {
     await platform.close();
