@@ -1,0 +1,120 @@
+# Daily proof that every install surface in docs/adoption/install-surfaces.md still works for a
+# stranger. The published registries are exercised exactly as a new user would (public npm and
+# PyPI, an empty project, no checkout); the not-yet-published CLI is proven from its packed
+# tarball; the Docker demo entrypoint is proven from a fresh image build. Each job is honest
+# about what is live versus pending a maintainer publish — see the `if:` comments.
+name: install surfaces
+
+on:
+  schedule:
+    - cron: "23 6 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/install-surfaces.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  npm-sdk:
+    name: npm — @getpharos/sdk@latest installs and exports PharosClient
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: install from the public registry into an empty project
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORK="$(mktemp -d)"
+          cd "$WORK"
+          npm init -y >/dev/null
+          npm install @getpharos/sdk@latest --no-audit --no-fund
+          node -p "'installed @getpharos/sdk ' + require('./node_modules/@getpharos/sdk/package.json').version"
+          node --input-type=module -e "import('@getpharos/sdk').then(m => { if (typeof m.PharosClient !== 'function') { throw new Error('PharosClient missing') } console.log('ok @getpharos/sdk', m.PharosClient.name) })"
+
+  pypi-sdk:
+    name: PyPI — getpharos installs and imports pharos_sdk
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+      - name: install from the public index and import the public API
+        shell: bash
+        run: |
+          set -euo pipefail
+          pip install getpharos
+          pip show getpharos | grep -i '^version'
+          python -c "import pharos_sdk; from pharos_sdk import PharosClient, govern_tool, PharosBlockedError; print('ok getpharos', pharos_sdk.__name__)"
+
+  npm-cli:
+    name: npm — npx @getpharos/cli@latest reaches a verified chain
+    # @getpharos/cli is NOT on npm yet; publishing it is a maintainer action (docs/PUBLISHING.md).
+    # The repository variable PHAROS_CLI_PUBLISHED is set to "true" by the maintainer after the
+    # first publish. Until then this job is skipped and `cli-tarball` below is the proof.
+    if: vars.PHAROS_CLI_PUBLISHED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: npx init + demo from the public registry, timed
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORK="$(mktemp -d)"
+          cd "$WORK"
+          START=$(date +%s%N)
+          npx -y @getpharos/cli@latest init
+          npx -y @getpharos/cli@latest demo | tee demo.out
+          ELAPSED_MS=$(( ($(date +%s%N) - START) / 1000000 ))
+          echo "npx init+demo: ${ELAPSED_MS} ms"
+          grep -q "chain verified" demo.out
+          if [ "$ELAPSED_MS" -gt 60000 ]; then
+            echo "::error::npx init+demo took ${ELAPSED_MS} ms (limit 60000 ms)"
+            exit 1
+          fi
+
+  cli-tarball:
+    name: tarball — pack @getpharos/cli, npm-install it into an empty project, run every command
+    # The unpublished proof: what `npx @getpharos/cli` will do for a stranger, from this checkout.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: pack, npm-install into an empty project, run every command
+        run: bash scripts/cli-smoke.sh
+
+  docker-demo:
+    name: docker — the image's demo entrypoint reaches a verified chain
+    # ghcr.io/bobcatsfan33/pharos-api is published only on release tags (image.yml), so this
+    # job builds the image from the checkout instead of pulling. Gated like `npm-cli` so the
+    # daily run tracks the published CLI, and runnable on demand so the entrypoint can be proven
+    # before the CLI is on npm.
+    if: vars.PHAROS_CLI_PUBLISHED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: build the image from this checkout
+        run: docker build -t pharos-local .
+      - name: run the demo entrypoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm pharos-local demo | tee demo.out
+          grep -q "chain verified" demo.out

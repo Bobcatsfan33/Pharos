@@ -70,7 +70,22 @@ Lock + AWS KMS path described in the
 The Tier-3 judges on this path are the honest linear baseline (bag-of-words logistic models,
 defeated by paraphrase); the transformer judges are a separate, opt-in download.
 
+## Docker
+
+The signed API image carries this CLI, so the demo also runs with nothing installed but Docker:
+
+```bash
+docker run --rm ghcr.io/bobcatsfan33/pharos-api:<tag> demo
+```
+
+The image is published **only on release tags** (`v*`, signed by `image.yml`); use a tag from
+the [releases page](https://github.com/Bobcatsfan33/Pharos/releases). The demo runs embedded
+storage inside the container — ephemeral, tamper-evident, not WORM — and `docker run --rm
+<image> pharos --version` reaches any other command.
+
 ## Links
 
 - Repository, architecture, limitations: https://github.com/Bobcatsfan33/Pharos
 - TypeScript SDK: `npm install @getpharos/sdk` · Python SDK: `pip install getpharos`
+- Every install surface, its status today and how it is verified:
+  https://github.com/Bobcatsfan33/Pharos/blob/main/docs/adoption/install-surfaces.md

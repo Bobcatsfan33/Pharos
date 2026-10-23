@@ -1,0 +1,17 @@
+{
+  "name": "Pharos",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "postCreateCommand": "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @getpharos/cli build",
+  "postAttachCommand": "echo '' && echo 'Pharos CLI is built. Seal three verdicts and verify the chain:' && echo '' && echo '  pnpm pharos init && pnpm pharos demo' && echo ''",
+  "forwardPorts": [4000],
+  "portsAttributes": {
+    "4000": {
+      "label": "Pharos API"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+    }
+  }
+}
