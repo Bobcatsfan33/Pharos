@@ -18,6 +18,9 @@ COPY apps ./apps
 RUN pnpm install --frozen-lockfile
 # Build is a validation gate (typecheck via tsc project builds), not the runtime artifact.
 RUN pnpm build
+# The single-file CLI bundle (packages/cli/dist): plain JS + the linear judge models. Shipped
+# so `docker run --rm <image> demo` reaches a verified chain with no infrastructure.
+RUN pnpm --filter @getpharos/cli build
 # Materialize only the API's production dependency closure. This excludes the
 # console, Vitest/Vite, linters, compilers, and other build-only workspace
 # dependencies from the artifact that is scanned, signed, and deployed.
@@ -45,9 +48,15 @@ RUN apt-get update \
 ENV PHAROS_KMS_KEYSTORE_DIR=/var/lib/pharos/keys/keystore
 ENV PHAROS_JUDGE_MODEL_DIR=/var/lib/pharos/judges
 COPY --from=build --chown=node:node /prod /app
+# The CLI bundle resolves its only runtime dependencies (fastify, @fastify/cors) by walking up
+# to /app/node_modules, which the API's deployed closure already contains.
+COPY --from=build --chown=node:node /app/packages/cli/dist /app/cli
+COPY --chown=node:node --chmod=0755 deploy/docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN mkdir -p /var/lib/pharos/keys /var/lib/pharos/judges && chown -R node:node /var/lib/pharos
 USER node
 EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PHAROS_API_PORT||4000)+'/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+# `demo` and `pharos …` run the bundled CLI over embedded storage; anything else execs as given.
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node_modules/.bin/tsx", "src/server.ts"]
