@@ -1,6 +1,6 @@
-import type { JudgeResult } from "@pharos/judge";
+import type { JudgeInput, Deadline } from "@pharos/judge";
 import type { VerdictRequest } from "@pharos/core";
-import { VerdictCascade, JudgeFault, type CascadeDeps } from "./cascade.js";
+import { VerdictCascade, JudgeFault, type CascadeDeps, type ContentRun } from "./cascade.js";
 
 /**
  * Test-only fault injection for the decision cascade (#82).
@@ -34,10 +34,14 @@ export class FaultInjectingCascade extends VerdictCascade {
     super(deps);
   }
 
-  protected override async runJudges(req: VerdictRequest): Promise<JudgeResult[]> {
+  protected override async runJudges(
+    req: VerdictRequest,
+    input: JudgeInput,
+    deadline: Deadline,
+  ): Promise<ContentRun> {
     if (this.faults.judgeThrows) throw new JudgeFault("injected judge failure");
     if (this.faults.judgeDelayMs) await sleep(this.faults.judgeDelayMs);
-    return super.runJudges(req);
+    return super.runJudges(req, input, deadline);
   }
 }
 

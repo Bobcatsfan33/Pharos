@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "1.0.0",
+  "workstream": "D1",
+  "provider": "onnx",
+  "runtime": "onnxruntime-node@1.30.0/darwin-arm64",
+  "models": [
+    {
+      "packId": "finra-promissory",
+      "concern": "finra-promissory",
+      "version": "finra-promissory@4cef02698045"
+    },
+    {
+      "packId": "phi-in-context",
+      "concern": "phi-in-context",
+      "version": "phi-in-context@f307c3117aad"
+    },
+    {
+      "packId": "funds-movement-intent",
+      "concern": "funds-movement-intent",
+      "version": "funds-movement-intent@f3fc84a6dbbf"
+    }
+  ],
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M2",
+    "logicalCpus": 8,
+    "memoryBytes": 8589934592,
+    "node": "v25.9.0"
+  },
+  "preloadMs": 2212.3904159999997,
+  "noApplicableModels": {
+    "requests": 1000,
+    "action": "crm.update",
+    "judgePathMs": {
+      "p50": 0.01675,
+      "p95": 0.033375,
+      "p99": 0.074375,
+      "max": 1.559041,
+      "n": 1000
+    },
+    "verdictTotalMs": {
+      "p50": 0.017708,
+      "p95": 0.034792000000000003,
+      "p99": 0.079708,
+      "max": 1.9352909999999999,
+      "n": 1000
+    },
+    "contentModelsRan": 0,
+    "gate": {
+      "judgePathP99BelowMs": 20,
+      "pass": true
+    }
+  },
+  "threeModelPath": {
+    "requests": 200,
+    "action": "email.send",
+    "perJudgeMs": {
+      "3/finra-promissory": {
+        "p50": 171.947125,
+        "p95": 214.180625,
+        "p99": 234.166541,
+        "max": 237.147709,
+        "n": 200
+      },
+      "3/phi-in-context": {
+        "p50": 211.691583,
+        "p95": 255.472458,
+        "p99": 274.431416,
+        "max": 278.918833,
+        "n": 200
+      },
+      "3/funds-movement-intent": {
+        "p50": 230.695083,
+        "p95": 276.983458,
+        "p99": 291.889584,
+        "max": 296.434,
+        "n": 200
+      }
+    },
+    "tier3": {
+      "p50": 230.876,
+      "p95": 277.152,
+      "p99": 292.092667,
+      "max": 296.620375,
+      "n": 200
+    },
+    "sumOfJudges": {
+      "p50": 614.672208,
+      "p95": 741.546542,
+      "p99": 800.0304570000001,
+      "max": 812.500542,
+      "n": 200
+    },
+    "maxJudge": {
+      "p50": 230.695083,
+      "p95": 276.983458,
+      "p99": 291.889584,
+      "max": 296.434,
+      "n": 200
+    },
+    "ratioTier3OverSum": {
+      "p50": 0.374931269349513,
+      "p95": 0.38342852171849584,
+      "p99": 0.40400329356599574,
+      "max": 0.4162919657254384,
+      "n": 200
+    },
+    "gate": {
+      "description": "tier-3 wall time ≈ max(model), not sum(model)",
+      "pass": true
+    }
+  }
+}

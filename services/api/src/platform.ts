@@ -268,6 +268,8 @@ export async function buildPlatform(
     registry,
     deadlineMs: config.api.verdictDeadlineMs,
     packs: DEFAULT_PACK_BINDINGS,
+    routing: config.judge.routing,
+    structural: config.judge.structural,
     policyArtifacts: shippedArtifacts, // citation-level rules by default; per-call override adds tenant policies
     onJudgeResults: (results) => {
       for (const result of results) {

@@ -235,6 +235,39 @@ runtime. Treat the terminator as part of your trust boundary and monitor it as s
 production clients at the terminator's HTTPS endpoint; both SDKs use standard
 `fetch`/`urllib` with certificate verification enabled by default.
 
+## 8. The structural judge abstains unless the host supplies the facts; routing decides which models run
+
+**Today:** Workstream D1 added a deterministic structural judge to Tier 3
+([`packages/judge/src/structural.ts`](../packages/judge/src/structural.ts)) and routes the
+content models by action type ([decision-cascade.md](decision-cascade.md#the-judge-panel-d1-routing-structural-checks-concurrency)).
+Two of its four checks depend on facts Pharos does not yet collect on its own: the
+payload-schema check needs a registered JSON-schema subset for the action type, and the
+plan-conformance check needs the allowed next steps of the current plan. Both arrive through
+the cascade's `contextFor` hook; **the served API does not yet populate it**, so over
+`POST /v1/actions` those two checks abstain on every action today. The mandate-scope check
+fires only when a mandate declares `limits.actionTypes`, and the blast-radius check only when
+the payload carries an amount or currency; it does not second-guess the declared
+reversibility, which is a statement about the world rather than about the payload. An abstention leaves no citation and no signal in the sealed record — only the
+`3/structural` timing key shows the judge ran — so the absence of a structural citation is
+not evidence that the payload matched a schema or the plan.
+
+The "allowed plan derived from the causal evidence graph" the handoff describes is not
+derived yet; D1 ships the check and the contract, not the derivation.
+
+**Routing is a coverage change.** Under the default `PHAROS_JUDGE_ROUTING=strict` the FINRA
+promissory and PHI models score communications and disclosures, and the funds model scores
+funds movement. Promissory language inside a `crm.update` note is therefore not scored by the
+FINRA model. That is the intended Workstream D1 behaviour, and it is what makes the no-model
+path fast, but a tenant whose risk lives in action types outside the default bindings must
+bind packs to those types or run `PHAROS_JUDGE_ROUTING=all`.
+
+**Gate:** the served API populates tenant context (registered action schemas, a plan source)
+and an integration test exercises both checks end to end; the plan derivation from the
+evidence graph lands with the later judgement-family workstreams. Nothing in this entry
+promotes a judge or changes entry 1 or 2.
+
+---
+
 ---
 
 *Maintenance: when a roadmap task above lands, delete its entry here (and the corresponding

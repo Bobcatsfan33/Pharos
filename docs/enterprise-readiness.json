@@ -342,7 +342,7 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-10-04",
+    "generatedAt": "2026-10-30",
     "files": [
       {
         "path": ".github/CODEOWNERS",
@@ -386,7 +386,7 @@
       },
       {
         "path": "docs/LIMITATIONS.md",
-        "sha256": "03def4c65b5da41d89920e4ec6eb3d734fcd1db67372f3926cc5cf213892ab6c"
+        "sha256": "f6a94b34e11a71399eb38124c7594f4a98790038135c4166402e0f4f8c9a356e"
       },
       {
         "path": "docs/ROADMAP.md",
@@ -410,7 +410,7 @@
       },
       {
         "path": "docs/benchmarks/latency.md",
-        "sha256": "5f242d25a2fdd2bb16ac5c33cf64e6fbae2739c439007a7283bba2de6b710996"
+        "sha256": "10292d634377fc5571438f886e2e8a956dff995c216e2f202f2ebef90a894102"
       },
       {
         "path": "docs/benchmarks/onnx-local-reference.json",
@@ -430,7 +430,7 @@
       },
       {
         "path": "docs/decision-cascade.md",
-        "sha256": "1bfcc68b97864bd467eaff8f93c177577f585463a9cddcdf8e9ee421b9776801"
+        "sha256": "c6ca663e384340d875632b54580e66ba67761742b48a77e9156bac8227c70971"
       },
       {
         "path": "docs/evidence-seal.md",
@@ -558,7 +558,7 @@
       },
       {
         "path": "services/api/src/platform.ts",
-        "sha256": "e5366cf2c7f4c52d2c65e11a1af22b5fb4cb4ba291d2effbd3530f0f983b5fdd"
+        "sha256": "fe1c459c85db95c1ef7146245ce23ae706241ed2d83104102df567be6aec4a30"
       },
       {
         "path": "test/fixtures/onnx-parity-funds.json",
