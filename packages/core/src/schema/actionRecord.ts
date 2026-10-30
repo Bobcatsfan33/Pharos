@@ -1,4 +1,14 @@
 import { z } from "zod";
+import {
+  Decision,
+  FailMode as WireFailMode,
+  ModelMetadataSchema as WireModelMetadataSchema,
+  OversightMode as WireOversightMode,
+  Reversibility as WireReversibility,
+  RuleCitationSchema as WireRuleCitationSchema,
+  SignatureAlgorithm as WireSignatureAlgorithm,
+  TierReached,
+} from "@getpharos/pdp-spec";
 import { SUPPORTED_SCHEMA_VERSIONS } from "./version.js";
 
 /**
@@ -18,6 +28,11 @@ import { SUPPORTED_SCHEMA_VERSIONS } from "./version.js";
  * verifying `seal.signature` against the published public key for `seal.keyId`, and
  * checking `seal.prevHash` links to the prior record. No Pharos infrastructure is
  * required to verify — only the public key and the documented procedure.
+ *
+ * The vocabulary shared with the wire contract — decisions, reversibility, oversight, fail
+ * modes, tiers, rule citations, model metadata — is imported from `@getpharos/pdp-spec`, the
+ * single source of those shapes. What stays here is what only a sealed record has: the
+ * defaults applied at sealing time, the chain position, and the seal.
  */
 
 // ---------------------------------------------------------------------------
@@ -40,28 +55,19 @@ export type ActionIntent = z.infer<typeof ActionIntentSchema>;
 // ---------------------------------------------------------------------------
 // Verdict context (Beam / Decide). Filled by the decision cascade.
 // ---------------------------------------------------------------------------
-export const VerdictDecision = z.enum(["allow", "block", "modify", "escalate"]);
+export const VerdictDecision = Decision;
 export type VerdictDecision = z.infer<typeof VerdictDecision>;
 
-export const FailMode = z.enum(["fail_open", "fail_closed"]).nullable();
+export const FailMode = WireFailMode;
 export type FailMode = z.infer<typeof FailMode>;
 
-export const RuleCitationSchema = z.object({
-  /** Rule identifier within its pack (e.g. "finra-2210-promissory"). */
-  ruleId: z.string().min(1),
-  /** Regulation pack the rule belongs to (e.g. "finra", "hipaa"). */
-  pack: z.string().min(1),
-  /** Specific clause cited (e.g. "FINRA Rule 2210(d)(1)(B)"). */
-  clause: z.string().optional(),
-  /** Examiner-readable explanation of why the rule applied. */
-  description: z.string().optional(),
-});
+export const RuleCitationSchema = WireRuleCitationSchema;
 export type RuleCitation = z.infer<typeof RuleCitationSchema>;
 
 export const VerdictContextSchema = z.object({
   decision: VerdictDecision,
   /** Highest tier the cascade reached: 1 deterministic, 2 statistical, 3 judge, "human" review. */
-  tierReached: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal("human")]),
+  tierReached: TierReached,
   /** Rules cited by the verdict, each naming its clause. */
   ruleCitations: z.array(RuleCitationSchema).default([]),
   /** Composite risk score in [0,1] produced by the cascade. */
@@ -85,14 +91,10 @@ export type VerdictContext = z.infer<typeof VerdictContextSchema>;
 // ---------------------------------------------------------------------------
 // Liability context (Ledger / Prove). Binds the action to its mandate & blast radius.
 // ---------------------------------------------------------------------------
-export const Reversibility = z.enum(["reversible", "irreversible"]);
+export const Reversibility = WireReversibility;
 export type Reversibility = z.infer<typeof Reversibility>;
 
-export const OversightMode = z.enum([
-  "autonomous", // no human in the path
-  "human_in_loop", // human approves before execution
-  "human_on_loop", // human monitors and can intervene
-]);
+export const OversightMode = WireOversightMode;
 export type OversightMode = z.infer<typeof OversightMode>;
 
 export const MandateBindingSchema = z.object({
@@ -120,11 +122,7 @@ export const BlastRadiusSchema = z.object({
 });
 export type BlastRadius = z.infer<typeof BlastRadiusSchema>;
 
-export const ModelMetadataSchema = z.object({
-  provider: z.string(),
-  model: z.string(),
-  version: z.string().optional(),
-});
+export const ModelMetadataSchema = WireModelMetadataSchema;
 export type ModelMetadata = z.infer<typeof ModelMetadataSchema>;
 
 /**
@@ -220,7 +218,7 @@ export const RecordSealSchema = z.object({
    * for older records it is informational only, and legacy records that misstate it
    * are left exactly as sealed (D2: evidence is never rewritten).
    */
-  algorithm: z.enum(["ed25519", "ecdsa-p256"]),
+  algorithm: WireSignatureAlgorithm,
   /** KMS key id that produced the signature (enables rotation with chain continuity). */
   keyId: z.string().min(1),
   /** Base64 signature over `contentHash` bytes. */

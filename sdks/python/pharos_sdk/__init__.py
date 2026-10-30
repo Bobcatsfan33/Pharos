@@ -14,6 +14,7 @@ from .mandate_token import (
     token_head_hash,
     verify_mandate_token,
 )
+from . import types
 
 __all__ = [
     "PharosClient",
@@ -27,6 +28,7 @@ __all__ = [
     "token_head_hash",
     "canonical_json",
     "MandateTokenVerifyResult",
+    "types",
     "govern_tool",
     "Governor",
     "crewai_tool",

@@ -124,6 +124,9 @@ importers:
       '@aws-sdk/client-kms':
         specifier: ^3.1144.0
         version: 3.1144.0
+      '@getpharos/pdp-spec':
+        specifier: workspace:*
+        version: link:../pdp-spec
       zod:
         specifier: ^4.6.5
         version: 4.6.5
@@ -191,7 +194,11 @@ importers:
         specifier: workspace:*
         version: link:../core
 
-  packages/pdp-spec: {}
+  packages/pdp-spec:
+    dependencies:
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
 
   packages/policy:
     dependencies:
@@ -201,7 +208,11 @@ importers:
 
   packages/review: {}
 
-  packages/sdk-ts: {}
+  packages/sdk-ts:
+    dependencies:
+      '@getpharos/pdp-spec':
+        specifier: workspace:^
+        version: link:../pdp-spec
 
   packages/storage:
     dependencies:

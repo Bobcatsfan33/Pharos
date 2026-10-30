@@ -1,4 +1,4 @@
-import { PharosError, type SubmitInput } from "./types.js";
+import { PharosError, type OversightMode, type Reversibility, type SubmitInput } from "./types.js";
 
 /**
  * Runtime validation at the SDK trust boundary.
@@ -25,8 +25,19 @@ import { PharosError, type SubmitInput } from "./types.js";
  * Kept dependency-free on purpose: `@getpharos/sdk` ships with zero runtime deps.
  */
 
-const OVERSIGHT_MODES = ["autonomous", "human_in_loop", "human_on_loop"] as const;
-const REVERSIBILITY = ["reversible", "irreversible"] as const;
+// The enum lists are checked against the wire contract at compile time (`satisfies`), so a
+// value added to the spec without being added here is a typecheck failure, not drift.
+const OVERSIGHT_MODES = [
+  "autonomous",
+  "human_in_loop",
+  "human_on_loop",
+] as const satisfies readonly OversightMode[];
+const REVERSIBILITY = ["reversible", "irreversible"] as const satisfies readonly Reversibility[];
+type Exhaustive<T, U extends readonly T[]> = Exclude<T, U[number]> extends never ? true : never;
+const _oversightExhaustive: Exhaustive<OversightMode, typeof OVERSIGHT_MODES> = true;
+const _reversibilityExhaustive: Exhaustive<Reversibility, typeof REVERSIBILITY> = true;
+void _oversightExhaustive;
+void _reversibilityExhaustive;
 
 function invalid(path: string, expected: string): never {
   throw new PharosError(`invalid submit input: ${path} ${expected}`, "invalid_input");

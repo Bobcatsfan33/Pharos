@@ -6,6 +6,18 @@ action goes in, a verdict comes out, optionally bound to a signed evidence recor
 the reference *commercial* implementation; the package also ships an **independent reference
 implementation** that conforms, demonstrating the spec is implementable by other parties.
 
+## Schema
+
+The contract is defined once, as zod schemas in
+[`packages/pdp-spec/src/schema.ts`](../../packages/pdp-spec/src/schema.ts), and published as
+JSON Schema (draft 2020-12) at
+[`packages/pdp-spec/schema/pdp-v1.schema.json`](../../packages/pdp-spec/schema/pdp-v1.schema.json).
+Implementers in any language validate against the JSON Schema; the TypeScript and Python
+SDK types, and the sealed `ActionRecord` vocabulary in `@pharos/core`, are generated from or
+composed of the same definitions, and a test fails if any copy drifts. Objects accept
+additional properties: the contract is additive, and readers must ignore fields they do not
+know.
+
 ## Request
 
 ```jsonc

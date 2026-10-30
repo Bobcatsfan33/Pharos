@@ -1,52 +1,30 @@
-/** Public SDK types. Standalone (no workspace deps) so the package can be published as-is. */
+/**
+ * Public SDK types, derived from the wire contract in `@getpharos/pdp-spec` (type-only: the
+ * SDK still ships with zero runtime dependencies, and the spec package is only consulted by
+ * the TypeScript compiler). The contract's JSON Schema is the vendor-neutral form.
+ */
+import type {
+  ActionInput as WireActionInput,
+  BlastRadiusInput,
+  Decision as WireDecision,
+  LiabilityInput as WireLiabilityInput,
+  MandateInput,
+  OversightMode as WireOversightMode,
+  Reversibility as WireReversibility,
+  Verdict as WireVerdict,
+} from "@getpharos/pdp-spec";
 import type { MandateToken } from "./mandateToken.js";
 
-export type Decision = "allow" | "block" | "modify" | "escalate";
-export type Reversibility = "reversible" | "irreversible";
-export type OversightMode = "autonomous" | "human_in_loop" | "human_on_loop";
+export type Decision = WireDecision;
+export type Reversibility = WireReversibility;
+export type OversightMode = WireOversightMode;
 
-export interface ActionInput {
-  type: string;
-  agentId: string;
-  sessionId?: string;
-  payload?: Record<string, unknown>;
-}
+export type ActionInput = WireActionInput;
+export type BlastRadius = BlastRadiusInput;
+export type LiabilityInput = WireLiabilityInput;
+export type { MandateInput };
 
-export interface BlastRadius {
-  financialAmount?: number;
-  currency?: string;
-  reversibility: Reversibility;
-  notes?: string;
-}
-
-export interface LiabilityInput {
-  mandate?: null | {
-    id: string;
-    scope: string;
-    limits?: Record<string, unknown>;
-    grantor: string;
-    expiresAt?: string | null;
-    version?: string;
-  };
-  oversightMode: OversightMode;
-  blastRadius: BlastRadius;
-  modelMetadata?: null | { provider: string; model: string; version?: string };
-}
-
-export interface Verdict {
-  decision: Decision;
-  tierReached: 1 | 2 | 3 | "human";
-  riskScore: number;
-  ruleCitations: Array<{ ruleId: string; pack: string; clause?: string; description?: string }>;
-  failMode: "fail_open" | "fail_closed" | null;
-  judgeVersion: string | null;
-  latency: {
-    totalMs: number;
-    perTier: Record<string, number>;
-    deadlineMs: number;
-    deadlineBreached: boolean;
-  };
-}
+export type Verdict = WireVerdict;
 
 export interface SubmitResult {
   verdict: Verdict;

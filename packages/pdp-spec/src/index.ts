@@ -8,6 +8,35 @@ export {
   type PdpEvidenceBinding,
 } from "./contract.js";
 export { validatePdpResponse, type ValidationResult } from "./validate.js";
+export {
+  WIRE_SCHEMAS,
+  toJsonSchemaDocument,
+  Decision,
+  Reversibility,
+  OversightMode,
+  FailMode,
+  TierReached,
+  SignatureAlgorithm,
+  RuleCitationSchema,
+  ModelMetadataSchema,
+  BlastRadiusInputSchema,
+  MandateInputSchema,
+  ActionInputSchema,
+  LiabilityInputSchema,
+  VerdictLatencySchema,
+  VerdictSchema,
+  PdpRequestSchema,
+  PdpEvidenceBindingSchema,
+  PdpResponseSchema,
+  type RuleCitation,
+  type ModelMetadata,
+  type BlastRadiusInput,
+  type MandateInput,
+  type ActionInput,
+  type LiabilityInput,
+  type VerdictLatency,
+  type Verdict,
+} from "./schema.js";
 export { runConformance, type ConformanceResult, type ConformanceCase } from "./conformance.js";
 export { createReferencePdp, type ReferencePdpOptions } from "./reference.js";
 export {
