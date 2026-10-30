@@ -1,6 +1,6 @@
-# Evidence that stands up outside Pharos (Sprint 5 — Seal)
+# Evidence that stands up outside Pharos
 
-Sprint 5 upgrades evidence from cryptographically neat to legally usable: trusted
+This layer takes evidence from cryptographically neat to legally usable: trusted
 timestamps, external anchoring, field-level redaction, litigation hold, claims-pack
 assembly, regulatory exports, and the scoped exchange portal.
 
@@ -77,7 +77,7 @@ counsel review of each against the requirement text is a Sprint-5 legal gate.
 ## Exchange portal
 
 Released packs are read through a consent-gated, **access-audited** path; every external read
-or share lands in the hash-chained access audit (Sprint 1).
+or share lands in the hash-chained access audit.
 
 ## Legal
 

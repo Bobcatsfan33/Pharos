@@ -1,4 +1,4 @@
-# The decision cascade (Sprint 2 — Lantern)
+# The decision cascade
 
 The cascade is the central technical claim of Pharos: deterministic, citation-backed
 verdicts under a hard latency budget. It is implemented in
@@ -128,7 +128,7 @@ The chaos behavior is exercised in tests, not just asserted in prose:
   `latency.deadlineBreached = true`.
 - **Postgres down mid-verdict** — `integration.lantern.test.ts` verifies that with the
   database unavailable no partial/unsealed verdict is returned (verdict + evidence are atomic;
-  the Sprint 0 guarantee holds under fault).
+  the atomicity guarantee holds under fault).
 - **Redis down** — the verdict cache and rate limiter fail open (best-effort); verdicts are
   unaffected because the authoritative path is Postgres + WORM, not the cache.
 

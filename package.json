@@ -3,7 +3,24 @@
   "version": "0.1.0",
   "license": "Apache-2.0",
   "private": true,
-  "description": "Pharos \u2014 the trust control plane for enterprise AI agents. Pharos decides. Pharos proves.",
+  "description": "Pharos — real-time policy verdicts for AI agents with signed, hash-chained evidence of every decision. Pharos decides. Pharos proves.",
+  "keywords": [
+    "ai-agents",
+    "agent-governance",
+    "policy-engine",
+    "guardrails",
+    "audit-log",
+    "evidence",
+    "mcp",
+    "llm",
+    "compliance",
+    "authorization"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bobcatsfan33/Pharos.git"
+  },
+  "homepage": "https://github.com/Bobcatsfan33/Pharos#readme",
   "type": "module",
   "packageManager": "pnpm@10.32.1+sha512.a706938f0e89ac1456b6563eab4edf1d1faf3368d1191fc5c59790e96dc918e4456ab2e67d613de1043d2e8c81f87303e6b40d4ffeca9df15ef1ad567348f2be",
   "engines": {

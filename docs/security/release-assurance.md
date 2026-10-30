@@ -26,7 +26,7 @@ administrator bypass. The `production-release` environment must additionally req
 approval. The live 2026-08-10 baseline found none of those controls; the 2026-08-12 follow-up closed
 the tag, branch, ref-policy, and administrator-bypass gaps, but the sole repository collaborator
 still cannot act as an independent reviewer. See
-[`2026-08-10-github-release-controls.md`](../evidence/2026-08-10-github-release-controls.md).
+[`2026-08-10-github-release-controls.md`](../internal/evidence/2026-08-10-github-release-controls.md).
 Do not create a release or prerelease tag until that audit is rerun with a passing result.
 After the image gate passes, `.github/workflows/image.yml`:
 

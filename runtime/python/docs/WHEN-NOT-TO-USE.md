@@ -30,7 +30,7 @@ durability, replay, or recorded-run regression testing. Honest non-fit cases:
 ## Maturity (read before depending on it)
 
 - **Early-stage, single-maintainer.** Continuity risk is real; see the governance and
-  branch-protection notes in [`SDLC-POLICY.md`](SDLC-POLICY.md).
+  branch-protection notes in [`SDLC-POLICY.md`](../../../docs/internal/runtime/SDLC-POLICY.md).
 - **Not independently audited.** No third-party security audit or penetration test yet.
 - **Not soak-tested across nodes in production.** Multi-worker leasing and Postgres/NATS
   backends exist and are tested, but a long-running multi-node soak is still pending

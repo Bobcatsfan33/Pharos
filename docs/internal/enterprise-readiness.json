@@ -346,7 +346,7 @@
     "files": [
       {
         "path": ".github/CODEOWNERS",
-        "sha256": "9093d2780cad7eb990a47f6445f693b2638b1d18b0e38335f33b5f560ba66246"
+        "sha256": "66d728671ed0fc98aa5a7195d7bda07b53cf2323f8d75778e4f34e8ca2301d9d"
       },
       {
         "path": ".github/dependabot.yml",
@@ -354,7 +354,7 @@
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "89a2c1400267763936e4ce5d5eacc8129ad0ad93d9c97ec6c6fba4d871dd6fd7"
+        "sha256": "73593f71bbd25743a73b4947ad447906ad46db066ffbafaccde0ef820ddc74eb"
       },
       {
         "path": ".github/workflows/codeql.yml",
@@ -366,7 +366,7 @@
       },
       {
         "path": ".github/workflows/image.yml",
-        "sha256": "b1869bec6c0a175b6e907d2407e59bcb55c85858af4cae7be507c4d8c608d70a"
+        "sha256": "13422d859d57d995dd589e532f389da26b9d1885335ea17d9d23e20c2c6f50ab"
       },
       {
         "path": ".github/workflows/judge-parity.yml",
@@ -374,7 +374,7 @@
       },
       {
         "path": ".github/workflows/release.yml",
-        "sha256": "55a9e5a68b2389bf0827e98a1d8d483348ac759f7f05415c374c1aa13575aa65"
+        "sha256": "25e965a391c6f71b21754a8434ce79dc54764a68e6e200a68ca7860ca22bb571"
       },
       {
         "path": ".github/workflows/training.yml",
@@ -386,11 +386,11 @@
       },
       {
         "path": "docs/LIMITATIONS.md",
-        "sha256": "1e967c0d110a388030fc5cb6d2ec68f413f40dbb04569954a7049a13fafc4b10"
+        "sha256": "137e9b27a1da8a40f5d7c5c318448c0d3acebec3e8baa0bdd5f46dd812c47ba5"
       },
       {
         "path": "docs/assurance-and-risk.md",
-        "sha256": "79de1014914286142c930f1d4168948a73bbae6db3e1ef5eb337887c1778eab4"
+        "sha256": "ec005420a5b3fd9efad3a8b7cb25fa3afea4c8f6664dbd75b0ce26065d9701aa"
       },
       {
         "path": "docs/benchmarks/funds-meta-frame-v2.json",
@@ -422,15 +422,15 @@
       },
       {
         "path": "docs/decision-cascade.md",
-        "sha256": "564ef62fa5559e90a75efb711b38c1d0d5aa9a25793b9efff710d9616cb77b50"
+        "sha256": "7ab07997f34e539bdc07c37d7eb34daeafd9b47b2ddbc0bf9d7caf903197ddf5"
       },
       {
         "path": "docs/evidence-seal.md",
-        "sha256": "bcc8ef5b8348baf5d151690f01ad471f3ff349a96d83033858772d1a4dee8505"
+        "sha256": "1f3f7d264a26e3631642114488efd6ae90c46dcb837629871ae1e3c0eaa0ac7d"
       },
       {
         "path": "docs/identity-and-tenancy.md",
-        "sha256": "d3acb7748429870ac8c54fca22bb3df027c358f9bd66a379cb83e0aaaa6a9e7b"
+        "sha256": "6e6e993f73bcae6cec562be896ba233402711d8271f768b46f9ceb1e18f50bd4"
       },
       {
         "path": "docs/incident-response.md",
@@ -502,11 +502,11 @@
       },
       {
         "path": "docs/operations.md",
-        "sha256": "de8c84af8f52b7e830b17068fc9c6f8cad6b47937305a6f13caf8dcc578a3f82"
+        "sha256": "f98a963f38ac35d5770844760e944ed31b37e9659e8639280fe0b2e3d9a7650e"
       },
       {
         "path": "docs/review-operations.md",
-        "sha256": "a07524dd9d21b6fb1c1f884a2e67a3446b8550cf0fa0ecdaa4221657e34e6a03"
+        "sha256": "6ce0facf11378f3fb0fd064d8d6583ad7d1d5dde4b2f3ed9a775626f2b1a0d73"
       },
       {
         "path": "docs/runbooks/gateway-held-key-rotation.md",
@@ -538,7 +538,7 @@
       },
       {
         "path": "docs/security/release-assurance.md",
-        "sha256": "1a6491d5f9e9b9af9749c412b9327aac6f5789b949302a0b28ec38a3ceeb39ea"
+        "sha256": "fd85dbb965df0da7ca75fa7c165fe1ea90a8e20a95f71d41cbfedd8221ddcb95"
       },
       {
         "path": "packages/judge/models/manifest.json",
@@ -546,7 +546,7 @@
       },
       {
         "path": "packages/judge/src/onnxModel.ts",
-        "sha256": "5452dc241a9e7d69afa8c0df66fd1bc93513a1996faf4c6e8baed82011bfee46"
+        "sha256": "2a15a96ef8e3a581c6edd44a3a856dcc9a6cba2b798b559f38de4f80eddd1d95"
       },
       {
         "path": "packages/observability/src/judgeDrift.ts",
@@ -558,7 +558,7 @@
       },
       {
         "path": "services/api/src/platform.ts",
-        "sha256": "fe1c459c85db95c1ef7146245ce23ae706241ed2d83104102df567be6aec4a30"
+        "sha256": "95e542e0c2f8304c202e585c3769e44e42e64ed998bf286248e1cb37da5a3b7c"
       },
       {
         "path": "test/fixtures/onnx-parity-funds.json",

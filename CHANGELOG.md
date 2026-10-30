@@ -8,6 +8,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pharos is
 pre-1.0: minor versions may include breaking changes until 1.0.
 
+## [Unreleased]
+
+The repository is reshaped to the structure widely adopted open-source projects share: one
+interface and one registry per concern, one source per schema, user docs separate from
+planning material, and one product rather than two.
+
+### Changed
+
+- **Provider registries replace the if-chains.** Signing backends (`@pharos/core`),
+  trusted-time backends (`@pharos/evidence`) and judge-serving backends (`@pharos/judge`)
+  are resolved by name; the shipped implementations register from their own files and the
+  composition root carries no per-provider branch. Configuration accepts any registered
+  provider name; production rules are unchanged.
+- **Regulation packs are JSON data**, discovered from `packages/policy/packs/*.json` and
+  validated against `pack.schema.json`. Each pack declares the Tier-3 judge bindings for its
+  concerns; the cascade's default bindings and the set of concerns a production deployment
+  must serve are derived, not listed. `test/registries.extension.test.ts` pins the
+  one-file-plus-one-registration contract.
+- **One wire schema.** `@getpharos/pdp-spec` defines the PDP vocabulary and exchange as zod
+  schemas and publishes `schema/pdp-v1.schema.json`. `@pharos/core`'s sealed record composes
+  the shared vocabulary (the v1 shape is unchanged), `@getpharos/sdk`'s types derive from it
+  type-only, and `pharos_sdk/types.py` is generated from the JSON Schema. Drift fails a test.
+- **Keel is folded into Pharos Runtime.** `runtime/python` loses its nested workflows,
+  licence, governance, security and changelog files (the root ones apply), its regression
+  replay runs in the root CI job, and it talks to the control plane through the Python SDK
+  instead of a client of its own. The `keel` command and package namespace remain as
+  compatibility aliases.
+- **Planning material moves to `docs/internal/`** (roadmaps, sprint status, handoff packets,
+  evidence transcripts, the enterprise-readiness manifest and its tooling under
+  `scripts/internal/`). `docs/` holds user and contributor documentation; a short public
+  `docs/roadmap.md` lists what is next. The CI job that gated the build on the self-assessment
+  manifest is retired; the manifest's verifier is run by a maintainer on demand.
+- README, CONTRIBUTING, architecture doc and PR template rewritten around how the system is
+  shaped and where a change goes. Sprint and task identifiers removed from source comments
+  and doc titles. `AGENTS.md` added.
+
+### Added
+
+- `getpharos` 0.3.0: a public, envelope-checked `PharosClient.request()` with no local
+  fail-mode (what the runtime builds on), `pharos_sdk.types`, and `py.typed`.
+- The runtime image is built from the repository root so it installs the SDK from the same
+  checkout.
+
 ## [0.2.0] — 2026-08-02
 
 The hardening release. Where 0.1.x built the platform, 0.2.0 spent its time trying to break

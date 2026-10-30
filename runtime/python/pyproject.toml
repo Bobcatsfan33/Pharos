@@ -7,6 +7,15 @@ requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Pharos contributors" }]
 keywords = ["ai-agents", "agent-governance", "durable-execution", "llm", "audit-log", "policy-engine", "pharos"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+]
 dependencies = [
     "getpharos>=0.3.0",
     "pydantic>=2.6",

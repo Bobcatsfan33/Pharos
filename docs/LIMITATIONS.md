@@ -39,7 +39,7 @@ see **[docs/benchmarks/judge-evals.md](benchmarks/judge-evals.md)**. PR-AUC 68�
 two concerns the judge over-flags compliant near-misses (hard-negative FPR up to 83%). Operational
 precision is far below the balanced-eval figure once base rates are applied (e.g. ~0.4% adjusted
 precision at 0.1% prevalence). These are real numbers with 95% intervals and negative-control
-floors — the baseline Sprint 6 must beat at the frozen operating points.
+floors — the baseline the transformer judges must beat at the frozen operating points.
 
 The ONNX system evaluation proves serving/parity and exposes a serious known limit:
 encoded/OOD input is conservatively over-flagged at the current threshold. One live

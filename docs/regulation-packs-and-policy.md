@@ -1,4 +1,4 @@
-# Regulation packs & the policy lifecycle (Sprint 6 — Codex)
+# Regulation packs & the policy lifecycle
 
 Packs are the recurring-revenue content moat and the thing security platforms are
 structurally bad at. Depth in two verticals beats breadth in six.

@@ -1,4 +1,4 @@
-# SDKs, middlewares, and the gateway (Sprint 3 — Causeway)
+# SDKs, middlewares, and the gateway
 
 Until a customer's agent can be governed without rewriting it, Pharos has no path into
 production. Causeway delivers the adoption surface: SDKs, framework middlewares, a no-code

@@ -1,4 +1,4 @@
-# Operations: observability, resilience & runbooks (Sprint 8 — Granite)
+# Operations: observability, resilience & runbooks
 
 ## Observability
 

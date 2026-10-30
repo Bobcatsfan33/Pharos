@@ -1,4 +1,4 @@
-# Review operations (Sprint 4 — Watchroom)
+# Review operations
 
 The human tier is the stickiest surface in the product and the tier regulators explicitly
 expect. Watchroom turns it into the compliance department's daily tool.
@@ -37,7 +37,7 @@ across email / Slack / Teams / webhook and records every delivery in an audit ta
 
 A reviewer resolves an escalation (approve / modify / reject) with a required rationale; the
 resolution **seals a tier-`human` evidence record** linking reviewer identity, rationale,
-and the overridden machine context (implemented in Sprint 3, surfaced here). Four-eyes is
+and the overridden machine context. Four-eyes is
 flagged per action class.
 
 ## Analytics & the feedback loop

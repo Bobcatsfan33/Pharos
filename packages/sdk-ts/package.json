@@ -1,7 +1,7 @@
 {
   "name": "@getpharos/sdk",
   "version": "0.2.0",
-  "description": "Pharos SDK \u2014 submit agent actions for a real-time policy verdict and sealed evidence.",
+  "description": "Pharos SDK — submit agent actions for a real-time policy verdict and sealed evidence.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -14,12 +14,16 @@
   },
   "keywords": [
     "ai-agents",
-    "policy",
-    "governance",
-    "audit",
+    "agent-governance",
+    "policy-engine",
+    "guardrails",
+    "audit-log",
     "evidence",
+    "mcp",
+    "llm",
     "compliance",
-    "llm"
+    "authorization",
+    "pharos"
   ],
   "type": "module",
   "main": "./dist/index.js",
