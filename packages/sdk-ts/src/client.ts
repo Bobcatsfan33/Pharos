@@ -1,6 +1,7 @@
 import {
   type ClaimResult,
   type Escalation,
+  type MandateRootKey,
   type SubmitInput,
   type SubmitResult,
   type TelemetryEvent,
@@ -8,6 +9,24 @@ import {
   PharosError,
 } from "./types.js";
 import { validateSubmitInput } from "./validate.js";
+import { scopeAllowsActionType, verifyMandateToken } from "./mandateToken.js";
+
+export interface MandateTokenClientOptions {
+  /**
+   * The tenant's published mandate root keys (`GET /v1/keyset`, entries named
+   * `mandate:<tenantId>#vN`), or a resolver by keyId. Without them the SDK does not verify
+   * tokens locally; the server always does.
+   */
+  rootKeys: MandateRootKey[] | ((keyId: string) => Promise<MandateRootKey | null>);
+  /**
+   * Optimistic local allow (default false). When on, a verified token on a reversible,
+   * zero-amount action inside the token's scope is allowed locally while the sealed record is
+   * submitted asynchronously. The server verdict is authoritative; Tier 2/3 may still disagree,
+   * and `result.sealed` / the `local-verdict-diverged` event surface that. Leave this off unless
+   * the tenant's policy says otherwise.
+   */
+  localAllow?: boolean;
+}
 
 export interface PharosClientOptions {
   baseUrl: string;
@@ -25,6 +44,8 @@ export interface PharosClientOptions {
   localFailMode?: "fail_open" | "fail_closed";
   onEvent?: (event: TelemetryEvent) => void;
   fetchImpl?: typeof fetch;
+  /** MandateToken handling (Workstream A). Omit to leave verification to the server. */
+  mandateToken?: MandateTokenClientOptions;
 }
 
 /**
@@ -95,6 +116,95 @@ export class PharosClient {
     throw lastErr instanceof Error ? lastErr : new PharosError("request failed", "unknown");
   }
 
+  private async rootKeyFor(keyId: string): Promise<MandateRootKey | null> {
+    const keys = this.opts.mandateToken?.rootKeys;
+    if (!keys) return null;
+    if (typeof keys === "function") return keys(keyId);
+    return keys.find((k) => k.keyId === keyId) ?? null;
+  }
+
+  /**
+   * Decide locally from the token when the client holds the root keys. Returns null when the
+   * server should decide (no keys configured, or the token verified but local allow does not
+   * apply). A local decision is still submitted for sealing by the caller.
+   */
+  private async localTokenVerdict(
+    input: SubmitInput,
+    start: number,
+  ): Promise<{ verdict: Verdict; kind: "mandate-token-invalid" | "mandate-token-allow" } | null> {
+    const token = input.mandateToken;
+    if (!token || !this.opts.mandateToken) return null;
+    const keyId = token.authority?.keyId;
+    const root = typeof keyId === "string" ? await this.rootKeyFor(keyId) : null;
+    const now = new Date();
+    const result = root
+      ? await verifyMandateToken(token, root, now, {
+          expect: { tenantId: input.tenantId, agentId: input.action.agentId },
+        })
+      : { ok: false as const, code: "root-key-unknown" as const, effective: null };
+    const latency = () => ({
+      totalMs: Date.now() - start,
+      perTier: {},
+      deadlineMs: this.deadlineMs,
+      deadlineBreached: false,
+    });
+    if (!result.ok) {
+      this.emit({
+        type: "local-verdict",
+        verdict: "mandate-token-invalid",
+        code: result.code ?? undefined,
+      });
+      return {
+        kind: "mandate-token-invalid",
+        verdict: {
+          decision: "block",
+          tierReached: 1,
+          riskScore: 1,
+          ruleCitations: [
+            {
+              ruleId: "mandate-token-invalid",
+              pack: "core",
+              clause: "liability.mandateToken.verification",
+              description: `Presented mandate token was refused: ${result.code}.`,
+            },
+          ],
+          failMode: null,
+          judgeVersion: null,
+          latency: latency(),
+        },
+      };
+    }
+    if (!this.opts.mandateToken.localAllow || !result.effective) return null;
+    const br = input.liability.blastRadius;
+    const eligible =
+      br.reversibility === "reversible" &&
+      (br.financialAmount ?? 0) === 0 &&
+      scopeAllowsActionType(result.effective.scope, input.action.type) &&
+      new Date(result.effective.expiresAt).getTime() > now.getTime();
+    if (!eligible) return null;
+    this.emit({ type: "local-verdict", verdict: "mandate-token-allow" });
+    return {
+      kind: "mandate-token-allow",
+      verdict: {
+        decision: "allow",
+        tierReached: 1,
+        riskScore: 0,
+        ruleCitations: [
+          {
+            ruleId: "mandate-token-local-allow",
+            pack: "sdk",
+            clause: "mandateToken.localAllow",
+            description:
+              "Verified mandate token admitted a reversible, zero-amount, in-scope action locally; the sealed server verdict is authoritative.",
+          },
+        ],
+        failMode: null,
+        judgeVersion: null,
+        latency: latency(),
+      },
+    };
+  }
+
   /** Submit an action for a verdict + sealed record. Falls back to a local default if unreachable. */
   async submit(input: SubmitInput): Promise<SubmitResult> {
     // Validate BEFORE transmit and before any fail-mode path (#80). This throws rather
@@ -102,6 +212,46 @@ export class PharosClient {
     // fail-mode, so a typo could allow an irreversible action the server never saw.
     validateSubmitInput(input);
     const start = Date.now();
+
+    // MandateToken (Workstream A): a structurally invalid token is a Tier-1 block decided here,
+    // without waiting on the network; an optimistic local allow is opt-in. In both cases the
+    // very same request is still submitted, so the decision has a sealed record — the server
+    // reaches the same block from the token, and may overrule a local allow at Tier 2/3.
+    const local = await this.localTokenVerdict(input, start);
+    if (local) {
+      const sealed = this.submitRemote(input, start).then(
+        (r) => {
+          if (r.verdict.decision !== local.verdict.decision)
+            this.emit({
+              type: "local-verdict-diverged",
+              local: local.verdict.decision,
+              sealed: r.verdict.decision,
+            });
+          return r;
+        },
+        (err: unknown) => {
+          this.emit({
+            type: "local-verdict-diverged",
+            local: local.verdict.decision,
+            sealed: null,
+            error: (err as Error).message,
+          });
+          throw err;
+        },
+      );
+      sealed.catch(() => undefined); // the caller may ignore `sealed`; never an unhandled rejection
+      return {
+        verdict: local.verdict,
+        record: { content: { id: "local", sequence: -1 } },
+        escalation: null,
+        localVerdict: local.kind,
+        sealed,
+      };
+    }
+    return this.submitRemote(input, start);
+  }
+
+  private async submitRemote(input: SubmitInput, start: number): Promise<SubmitResult> {
     try {
       const result = await this.request<SubmitResult>("POST", "/v1/actions", input);
       this.emit({

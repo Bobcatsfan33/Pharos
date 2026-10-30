@@ -72,3 +72,20 @@ runs over the served API against real Postgres / Redis / MinIO / local KMS. The 
 and plan checks abstain until the host supplies tenant context — see
 [LIMITATIONS.md §8](LIMITATIONS.md#8-the-structural-judge-abstains-unless-the-host-supplies-the-facts-routing-decides-which-models-run).
 Plan: [handoff/2026-10-29-d1-plan.md](handoff/2026-10-29-d1-plan.md).
+
+**Sprint S2 (A — MandateToken, portable attenuable authority) — code-complete, PR open.**
+`packages/core/src/mandate-token/` implements the Biscuit construction without a library or
+Datalog: an authority block signed by the tenant's mandate key (published in `/v1/keyset`),
+attenuation blocks that can only narrow, a proof that defeats truncation, pure offline
+verification, and `effective()` as the intersection. `POST /v1/tenants/:t/mandates/:m/token`
+mints; `POST /v1/actions` accepts `mandateToken`, verifies it against the server's own key,
+refuses revoked mandates, and seals `liability.mandateToken` (schema **1.1.1**, ADR 0007) so
+replay reproduces the Tier-1 token rules from the record alone. Both SDKs and the gateway verify
+offline; an invalid token is a local Tier-1 block that is still submitted for sealing.
+Conformance vectors (18, shared by core, the TypeScript SDK, and the stdlib-only Python
+verifier), a 200-chain narrowing property, and a 1,500-mutation fuzz that no edit widens
+`effective()`. Exit gate in
+[benchmarks/latency.md](benchmarks/latency.md#tier-1-mandate-token-path-workstream-a) and
+enforced by a CI job. Honest limits in
+[LIMITATIONS.md §9](LIMITATIONS.md#9-mandatetoken-offline-verifiers-cannot-see-revocation-local-allow-is-optimistic-resources-are-carried-not-enforced).
+Plan: [handoff/2026-10-30-a-plan.md](handoff/2026-10-30-a-plan.md).

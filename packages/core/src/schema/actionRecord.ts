@@ -127,11 +127,48 @@ export const ModelMetadataSchema = z.object({
 });
 export type ModelMetadata = z.infer<typeof ModelMetadataSchema>;
 
+/**
+ * A presented MandateToken, as sealed (schema 1.1.1, Workstream A). The token itself is not
+ * stored — its content-hashed blocks are, plus the verifier's verdict and the authority that was
+ * in force. Replay reproduces the Tier-1 token rules from this alone.
+ */
+export const SealedMandateTokenSchema = z.object({
+  /** The tenant mandate key the authority block names (`mandate:<tenantId>#vN`). */
+  rootKeyId: z.string(),
+  /** `[sha256(authority), sha256(block 0), …]` over canonical JSON. */
+  blockHashes: z.array(z.string().regex(/^[0-9a-f]{64}$/)),
+  /** sha256 over the token minus its proof; empty when the token could not be hashed. */
+  headHash: z.string(),
+  /** `verified`, or the structural reason the token was refused. */
+  verification: z.string().min(1),
+  /** The authority in force after every block narrowed it; absent when refused. */
+  effective: z
+    .object({
+      tenantId: z.string(),
+      agentId: z.string(),
+      mandateId: z.string(),
+      grantor: z.string(),
+      issuedAt: z.string(),
+      expiresAt: z.string(),
+      scope: z.object({ actionTypes: z.array(z.string()), resources: z.array(z.string()) }),
+      limits: z.object({
+        financialAmount: z.number().optional(),
+        currency: z.string().optional(),
+        reversibility: z.enum(["reversible", "irreversible", "any"]).optional(),
+      }),
+      citations: z.array(z.string()),
+    })
+    .optional(),
+});
+export type SealedMandateTokenRecord = z.infer<typeof SealedMandateTokenSchema>;
+
 export const LiabilityContextSchema = z.object({
   mandate: MandateBindingSchema.nullable().default(null),
   oversightMode: OversightMode,
   blastRadius: BlastRadiusSchema,
   modelMetadata: ModelMetadataSchema.nullable().default(null),
+  /** Present only when the caller presented a MandateToken (schema ≥ 1.1.1). */
+  mandateToken: SealedMandateTokenSchema.optional(),
 });
 export type LiabilityContext = z.infer<typeof LiabilityContextSchema>;
 

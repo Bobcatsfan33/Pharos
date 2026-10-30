@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.0.0",
+  "workstream": "A",
+  "what": "Tier-1-only verdicts with a 3-block MandateToken (verify + fold + Tier 1), single process",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M2",
+    "logicalCpus": 8,
+    "memoryBytes": 8589934592,
+    "node": "v25.9.0"
+  },
+  "verdicts": 20000,
+  "blocksPerToken": 2,
+  "signaturesVerifiedPerVerdict": 4,
+  "wallMs": 6578.767625,
+  "verdictsPerSec": 3040.0830581092305,
+  "latencyMs": {
+    "p50": 0.3195,
+    "p95": 0.367458,
+    "p99": 0.555333,
+    "max": 1.561834
+  },
+  "mix": {
+    "allow": 10000,
+    "block": 10000
+  },
+  "gate": {
+    "verdictsPerSecAtLeast": 1000,
+    "pass": true
+  }
+}

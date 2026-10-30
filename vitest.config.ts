@@ -35,7 +35,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["test/**/*.test.ts"],
+    include: ["test/**/*.test.ts", "packages/core/test/**/*.test.ts"],
     environment: "node",
     env: {
       PHAROS_KMS_KEYSTORE_PASSPHRASE: "pharos-test-keystore-passphrase",

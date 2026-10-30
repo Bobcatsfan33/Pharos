@@ -41,7 +41,15 @@ export {
 } from "./signing/resilience.js";
 
 // Verdict engine
-export { VerdictEngine, type VerdictRequest, type VerdictEngineOptions } from "./verdict/engine.js";
+export {
+  VerdictEngine,
+  resolveVerdictRequest,
+  type VerdictRequest,
+  type VerdictEngineOptions,
+} from "./verdict/engine.js";
+
+// MandateToken — portable, attenuable authority (Workstream A)
+export * from "./mandate-token/index.js";
 
 // Selective-disclosure redaction
 export {

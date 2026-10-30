@@ -8,7 +8,7 @@ verdicts under a hard latency budget. It is implemented in
 
 | Tier | What | Module | Short-circuit |
 |------|------|--------|---------------|
-| 1 | Deterministic rules: mandate limits, expiry, deny lists, irreversible-oversight | [`@pharos/core` VerdictEngine](../packages/core/src/verdict/engine.ts) | a **block** ends the cascade (Tiers 2–3 skipped) |
+| 1 | Deterministic rules: mandate limits, expiry, deny lists, irreversible-oversight, and — when a [MandateToken](../packages/core/src/mandate-token/) is presented — token validity and token scope | [`@pharos/core` VerdictEngine](../packages/core/src/verdict/engine.ts) | a **block** ends the cascade (Tiers 2–3 skipped) |
 | 2 | Statistical risk score (log-scaled financial magnitude, irreversibility, oversight, mandate, action sensitivity) | [`riskScorer.ts`](../packages/cascade/src/riskScorer.ts) | extreme risk (≥ 0.9) escalates without Tier 3 |
 | 3 | Judge panel: a deterministic **structural judge** on every action plus the served content models routed by action type — linear development baseline or production-required, hash-verified ONNX transformers (FINRA promissory, PHI-in-context, funds-movement intent) | [`@pharos/judge`](../packages/judge/src/panel.ts) | terminal tier |
 
@@ -42,6 +42,30 @@ The registry serves the active model per pack and retains historical linear vers
 replay. Both model kinds expose the same calibrated result contract; the cascade awaits the
 polymorphic registry and records the exact content-hashed model version. The decision about
 meaning is made by learned model weights, not hand-written patterns.
+
+## Tier 1 with a MandateToken (Workstream A)
+
+A MandateToken is portable authority: an authority block signed by the tenant's mandate key
+(`mandate:<tenantId>#vN`, published in `/v1/keyset`) plus attenuation blocks, each signed by the
+ephemeral key the previous block published and each only able to narrow (tighter limit, earlier
+expiry, subset of action types / resources). Verification is pure and offline. When one is
+presented to `POST /v1/actions`:
+
+1. The server verifies it against its own published key, checks the stored mandate is still
+   active, and folds the **effective** authority into `liability.mandate` — it supersedes the
+   `mandateId` lookup. What is sealed is `liability.mandateToken` (block hashes, head hash, the
+   verifier's answer, the effective authority), never the token itself.
+2. Two Tier-1 rules read only that sealed liability: `mandate-token-invalid` blocks a refused
+   token (truncated chain, widening block, bad signature, expired, wrong tenant or agent, unknown
+   root key, revoked mandate), and `mandate-token-scope` blocks an action type outside the
+   token's effective scope. The existing ceiling and expiry rules then apply to the attenuated
+   limits.
+3. Replay reproduces both from the record alone — no token, no key, no mandate store.
+
+The SDKs and the gateway verify a token locally when configured with the tenant's root keys: a
+structurally invalid token is a Tier-1 block answered without a round trip, and the same request
+is still submitted so the block has a sealed record. The structural judge does **not** read tokens
+yet (deferred to Workstream D3). Benchmark: [latency.md](benchmarks/latency.md#tier-1-mandate-token-path-workstream-a).
 
 ## The judge panel (D1): routing, structural checks, concurrency
 

@@ -56,6 +56,11 @@ export function validateSubmitInput(input: SubmitInput): void {
   requireNonEmptyString(input.tenantId, "tenantId");
   optionalString(input.mandateId, "mandateId");
   optionalString(input.idempotencyKey, "idempotencyKey");
+  if (input.mandateToken !== undefined) {
+    if (!isPlainObject(input.mandateToken))
+      invalid("mandateToken", "must be an object when present");
+    if (input.mandateId !== undefined) invalid("mandateToken", "cannot be combined with mandateId");
+  }
 
   // --- action ---
   const action = input.action;
