@@ -49,3 +49,26 @@ where the harbor was.
 
 - **Production-hardening engineering.** Several sprint deliverables still need promotion work, led by independently validating, calibrating, documenting, and production-benchmarking the transformer judges and onboarding approved KMS/TSA trust. The gateway's held-request state is now size-capped, tenant-isolated, encrypted in Postgres, and restart-tested. Every remaining limitation is enumerated in **[docs/LIMITATIONS.md](docs/LIMITATIONS.md)**.
 - **External/human gates.** Outside-counsel and consultant reviews, SOC 2 attestation, a commissioned penetration test, design-partner/pilot/production-customer signatures, carrier feed confirmations, and publishing the SDKs to PyPI/npm — none of which are code.
+
+---
+
+## Judgement family and primitives (program started 2026-10-29)
+
+The [handoff](handoff/2026-10-29-judgement-family-and-primitives.md) defines Workstreams A–D
+and the sprint order D1 → A → D2 → D3 → B → D4 → C. Shadow mode only; no judge is promoted;
+`docs/enterprise-readiness.json` stays `not-approved`.
+
+**Sprint S1 (D1 — structural judges, routing, parallel panel) — code-complete, PR open.**
+Tier 3 is now a typed judge panel: content models run only for the action types their pack
+binds (strict routing by default), a deterministic structural judge (mandate scope, payload
+schema, plan conformance, blast-radius consistency) runs on every action with its own
+content-hashed `judgeVersion`, and the applicable judges run concurrently under the cascade
+deadline. Per-judge timings are sealed as `verdict.latency.perTier["3/<judgeId>"]` without a
+schema change. Exit gate measured and committed in
+[benchmarks/latency.md](benchmarks/latency.md#judge-path-d1): judge-path p99 for a
+`crm.update` with no applicable models **0.074 ms** (gate < 20 ms), three-model tier wall
+**230.9 ms p50 against a 614.7 ms sum** of the judges (≈ max, not sum). Integration coverage
+runs over the served API against real Postgres / Redis / MinIO / local KMS. The payload-schema
+and plan checks abstain until the host supplies tenant context — see
+[LIMITATIONS.md §8](LIMITATIONS.md#8-the-structural-judge-abstains-unless-the-host-supplies-the-facts-routing-decides-which-models-run).
+Plan: [handoff/2026-10-29-d1-plan.md](handoff/2026-10-29-d1-plan.md).

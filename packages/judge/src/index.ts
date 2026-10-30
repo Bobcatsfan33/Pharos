@@ -35,3 +35,28 @@ export {
   type EnsureOptions,
 } from "./artifactStore.js";
 export { onnxRuntimeIdentity, assertQualifiedOnnxRuntime } from "./runtime.js";
+export {
+  actionTypeMatches,
+  deadlineFrom,
+  type ActionSchema,
+  type Deadline,
+  type Judge,
+  type JudgeInput,
+  type JudgeKind,
+  type PanelJudgeResult,
+  type PropertySchema,
+  type TenantContext,
+} from "./contract.js";
+export {
+  StructuralJudge,
+  STRUCTURAL_CHECKS,
+  STRUCTURAL_JUDGE_VERSION,
+  checkBlastRadius,
+  checkMandateScope,
+  checkPayloadSchema,
+  checkPlan,
+  validateObject,
+  type Finding,
+  type StructuralCheck,
+} from "./structural.js";
+export { ContentModelJudge, JudgePanel, toPanelResult, type PanelRun } from "./panel.js";

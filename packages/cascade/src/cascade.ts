@@ -5,7 +5,17 @@ import {
   type RuleCitation,
   VerdictEngine,
 } from "@pharos/core";
-import { type ModelRegistry, type JudgeResult } from "@pharos/judge";
+import {
+  ContentModelJudge,
+  StructuralJudge,
+  STRUCTURAL_JUDGE_VERSION,
+  deadlineFrom,
+  type Finding,
+  type JudgeInput,
+  type ModelRegistry,
+  type JudgeResult,
+  type TenantContext,
+} from "@pharos/judge";
 import { type PolicyArtifact, evaluateArtifact } from "@pharos/policy";
 import { scoreRisk } from "./riskScorer.js";
 import { DeadlineExceeded, withDeadline } from "./deadline.js";
@@ -28,6 +38,13 @@ const HIGH_RISK_SHORT_CIRCUIT = 0.9;
 
 export interface JudgePackBinding {
   packId: string;
+  /**
+   * Routing (D1): the action-type prefixes this concern is about (`"email."` matches
+   * `email.send`; a bare type matches exactly). A content model never runs for an action type
+   * outside its list — a FINRA communications judge has nothing to say about `crm.update`.
+   * Absent = applies to every action type.
+   */
+  actionTypes?: string[];
   /** What to do when this pack flags. */
   onFlag: "block" | "escalate";
   /** Only escalate/block when the action is unmandated (e.g. funds movement). */
@@ -51,6 +68,36 @@ export interface CascadeDeps {
    * must not attach prompts, payloads, tenant IDs, or identities to model metrics.
    */
   onJudgeResults?: (results: readonly JudgeResult[]) => void;
+  /**
+   * `strict` (default): content models run only for action types their binding declares.
+   * `all`: every registered model runs for every action (the pre-D1 behaviour).
+   */
+  routing?: "strict" | "all";
+  /** Run the deterministic structural judge in the Tier-3 panel (default true). */
+  structural?: boolean;
+  /** Per-tenant facts the structural judge may consult (schemas, plan). Default: tenant id only. */
+  contextFor?: (req: VerdictRequest) => TenantContext;
+}
+
+/** What a fired structural check decides. Deterministic, like Tier 1; no model, no threshold. */
+const STRUCTURAL_DECISIONS: Record<string, { decision: "block" | "escalate"; clause: string }> = {
+  "structural.mandate-scope": { decision: "block", clause: "mandate.limits.actionTypes" },
+  "structural.payload-schema": { decision: "block", clause: "action.schema" },
+  "structural.plan": { decision: "escalate", clause: "plan.allowedNext" },
+  "structural.blast-radius": { decision: "escalate", clause: "liability.blastRadius" },
+};
+
+/** Per-judge timings live beside the tier totals as `3/<judgeId>`; tier totals are the bare keys. */
+function tierTotalMs(perTier: Record<string, number>): number {
+  let total = 0;
+  for (const [key, ms] of Object.entries(perTier)) if (!key.includes("/")) total += ms;
+  return total;
+}
+
+export interface ContentRun {
+  results: JudgeResult[];
+  /** `3/<packId>` → ms for every content judge that ran. */
+  perJudgeMs: Record<string, number>;
 }
 
 /**
@@ -63,7 +110,15 @@ export interface CascadeDeps {
  * constructed — a stronger guarantee than "the server never sets that field".
  */
 export class VerdictCascade {
-  constructor(protected readonly deps: CascadeDeps) {}
+  private readonly structuralJudge = new StructuralJudge();
+  private readonly contentJudges: ContentModelJudge[];
+
+  constructor(protected readonly deps: CascadeDeps) {
+    this.contentJudges = deps.packs.map(
+      (b) =>
+        new ContentModelJudge(deps.registry, b.packId, b.actionTypes, deps.routing ?? "strict"),
+    );
+  }
 
   async evaluate(
     req: VerdictRequest,
@@ -134,19 +189,46 @@ export class VerdictCascade {
       return this.compose(decision, 2, citations, riskScore, null, null, perTier);
     }
 
-    // --- Tier 3: served distilled judge models (semantic evaluation) ---
+    // --- Tier 3: the judge panel — structural checks + routed content models, concurrently ---
     const t3Start = process.hrtime.bigint();
-    const judgeResults = await this.runJudges(req);
+    const input = this.judgeInput(req);
+    const deadline = deadlineFrom(t3Start, this.deps.deadlineMs);
+    const [structural, content] = await Promise.all([
+      this.deps.structural === false ? Promise.resolve([]) : this.runStructural(input, perTier),
+      this.runJudges(req, input, deadline),
+    ]);
+    const judgeResults = content.results;
     perTier["3"] = elapsedMs(t3Start);
+    Object.assign(perTier, content.perJudgeMs);
     this.deps.onJudgeResults?.(judgeResults);
 
-    // Default citation: the most salient judge (highest probability), even if not flagged.
+    // Default citation: the most salient signal (highest score), even if not flagged. A fired
+    // structural check scores 1 and therefore names the structural judge as the deciding one.
     let topProb = -1;
     for (const r of judgeResults) {
       if (r.probability > topProb) {
         topProb = r.probability;
         judgeVersion = r.judgeVersion;
         judgeRuntime = r.judgeRuntime ?? null;
+      }
+    }
+    for (const f of structural) {
+      if (f.abstain) continue;
+      if (f.score > 0 && f.score > topProb) {
+        topProb = f.score;
+        judgeVersion = STRUCTURAL_JUDGE_VERSION;
+        judgeRuntime = null;
+      }
+      const rule = STRUCTURAL_DECISIONS[f.concern];
+      if (f.score > 0 && rule) {
+        decision = mostSevere(decision, rule.decision);
+        riskScore = Math.max(riskScore, 1);
+        citations.push({
+          ruleId: f.citation ?? f.concern,
+          pack: "structural",
+          clause: rule.clause,
+          description: f.rationale,
+        });
       }
     }
     if (policyArtifacts && policyArtifacts.length > 0) {
@@ -156,6 +238,8 @@ export class VerdictCascade {
         riskScore = Math.max(riskScore, r.probability);
         judgeProbabilities[r.packId] = r.probability;
       }
+      // Structural signals are addressable by policy rules too (`{ judge: "structural.plan", gte: 1 }`).
+      for (const f of structural) if (!f.abstain) judgeProbabilities[f.concern] = f.score;
       const evalCtx = { request: req, judgeProbabilities };
       for (const artifact of policyArtifacts) {
         for (const m of evaluateArtifact(artifact, evalCtx)) {
@@ -193,28 +277,56 @@ export class VerdictCascade {
     return this.compose(decision, 3, citations, riskScore, judgeVersion, judgeRuntime, perTier);
   }
 
-  /** Protected so the test-only subclass in ./testing.js can wrap it; never faulted here. */
-  protected async runJudges(req: VerdictRequest): Promise<JudgeResult[]> {
+  /** The panel input: raw action text plus the cascade-owned normalized variants (ADR 0004). */
+  private judgeInput(req: VerdictRequest): JudgeInput {
     const raw = actionText(req);
-    // Cascade-owned normalization (ADR 0004): score the RAW text AND the normalized variants
-    // (unicode-canonicalized + reversibly-decoded), and take the MORE-SEVERE verdict per pack.
-    // Obfuscation can only ADD detections — it can never mask a plaintext signal. Models stay bare.
-    const texts = [...new Set([raw, ...normalizedVariants(raw)])];
-    const results = await Promise.all(
-      this.deps.packs.map(async (binding) => {
-        if (!this.deps.registry.has(binding.packId)) return null;
-        let worst: JudgeResult | null = null;
-        for (const t of texts) {
-          // judgeAsync dispatches on kind: logistic (sync, resolved) or served ONNX (async).
-          const r = await this.deps.registry.judgeAsync(binding.packId, t);
-          if (!worst || r.probability > worst.probability) worst = r;
-        }
-        return worst;
+    return {
+      action: req.action,
+      liability: req.liability,
+      context: this.deps.contextFor?.(req) ?? { tenantId: req.tenantId },
+      mandate: req.liability.mandate,
+      textVariants: [...new Set([raw, ...normalizedVariants(raw)])],
+      priorSignals: [],
+    };
+  }
+
+  private async runStructural(
+    input: JudgeInput,
+    perTier: Record<string, number>,
+  ): Promise<Finding[]> {
+    const start = process.hrtime.bigint();
+    const findings = await this.structuralJudge.evaluateAll(input);
+    perTier["3/structural"] = elapsedMs(start);
+    return findings;
+  }
+
+  /**
+   * Content models — routed (only judges whose binding covers the action type) and run
+   * CONCURRENTLY, so the tier costs max(model), not sum(model). Protected so the test-only
+   * subclass in ./testing.js can wrap it; never faulted here.
+   */
+  protected async runJudges(
+    req: VerdictRequest,
+    input: JudgeInput,
+    deadline: ReturnType<typeof deadlineFrom>,
+  ): Promise<ContentRun> {
+    void deadline; // the cascade's withDeadline races the whole panel; judges may consult it later
+    const applicable = this.contentJudges.filter(
+      (j) => this.deps.registry.has(j.id) && j.appliesTo(req.action),
+    );
+    const timed = await Promise.all(
+      applicable.map(async (judge) => {
+        const start = process.hrtime.bigint();
+        // judgeAsync dispatches on kind: logistic (sync, resolved) or served ONNX (async).
+        const result = await judge.score(input);
+        return { judge, result, ms: elapsedMs(start) };
       }),
     );
     // Promise.all preserves pack order, so evidence and tie-breaking remain deterministic while
     // independent concern models execute concurrently.
-    return results.filter((result): result is JudgeResult => result !== null);
+    const perJudgeMs: Record<string, number> = {};
+    for (const t of timed) perJudgeMs[`3/${t.judge.id}`] = t.ms;
+    return { results: timed.map((t) => t.result), perJudgeMs };
   }
 
   private compose(
@@ -226,7 +338,7 @@ export class VerdictCascade {
     judgeRuntime: string | null,
     perTier: Record<string, number>,
   ): VerdictContext {
-    const totalMs = Object.values(perTier).reduce((a, b) => a + b, 0);
+    const totalMs = tierTotalMs(perTier);
     return {
       decision,
       tierReached,
@@ -257,10 +369,7 @@ export class VerdictCascade {
     const reversible = req.liability.blastRadius.reversibility === "reversible";
     const failMode = reversible ? "fail_open" : "fail_closed";
     const decision: VerdictDecision = reversible ? "allow" : "escalate";
-    const totalMs = Math.max(
-      wallMs ?? 0,
-      Object.values(perTier).reduce((a, b) => a + b, 0),
-    );
+    const totalMs = Math.max(wallMs ?? 0, tierTotalMs(perTier));
     return {
       decision,
       tierReached: perTier["3"] !== undefined ? 3 : perTier["2"] !== undefined ? 2 : 1,

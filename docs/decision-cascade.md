@@ -10,10 +10,15 @@ verdicts under a hard latency budget. It is implemented in
 |------|------|--------|---------------|
 | 1 | Deterministic rules: mandate limits, expiry, deny lists, irreversible-oversight | [`@pharos/core` VerdictEngine](../packages/core/src/verdict/engine.ts) | a **block** ends the cascade (Tiers 2–3 skipped) |
 | 2 | Statistical risk score (log-scaled financial magnitude, irreversibility, oversight, mandate, action sensitivity) | [`riskScorer.ts`](../packages/cascade/src/riskScorer.ts) | extreme risk (≥ 0.9) escalates without Tier 3 |
-| 3 | Served judge models — linear development baseline or production-required, hash-verified ONNX transformers (FINRA promissory, PHI-in-context, funds-movement intent) | [`@pharos/judge`](../packages/judge/src/onnxModel.ts) | terminal tier |
+| 3 | Judge panel: a deterministic **structural judge** on every action plus the served content models routed by action type — linear development baseline or production-required, hash-verified ONNX transformers (FINRA promissory, PHI-in-context, funds-movement intent) | [`@pharos/judge`](../packages/judge/src/panel.ts) | terminal tier |
 
 Each tier is instrumented; `verdict.latency.perTier` records the milliseconds spent in each,
 and the absence of a `"3"` entry is itself evidence that the cascade short-circuited earlier.
+Inside Tier 3 every judge that ran adds its own time under a flat sibling key,
+`perTier["3/<judgeId>"]` (`3/structural`, `3/finra-promissory`, …); `perTier["3"]` remains the
+tier's wall time and `totalMs` sums only the tier keys. `ActionRecord` v1 is unchanged — the
+map's type was already `Record<string, number>` — and the absence of a `3/<model>` key is
+evidence that routing did not run that model.
 
 The most severe outcome across tiers wins (`block > escalate > modify > allow`). Every
 Tier-3 verdict cites the exact `judgeVersion` (a content hash of the model artifact) that
@@ -37,6 +42,41 @@ The registry serves the active model per pack and retains historical linear vers
 replay. Both model kinds expose the same calibrated result contract; the cascade awaits the
 polymorphic registry and records the exact content-hashed model version. The decision about
 meaning is made by learned model weights, not hand-written patterns.
+
+## The judge panel (D1): routing, structural checks, concurrency
+
+Tier 3 is a panel of typed judges ([`contract.ts`](../packages/judge/src/contract.ts)), not a
+fixed loop over every model. Each judge declares `appliesTo(action)`; the cascade builds one
+`JudgeInput` (action, liability, mandate, tenant context, the raw and normalized text variants)
+and runs the applicable judges together with `Promise.all` under the cascade deadline, so the
+tier costs the slowest judge, not the sum
+([measured](benchmarks/latency.md#judge-path-d1)).
+
+**Routing.** Each pack binding names the action-type prefixes its model is for: the FINRA
+promissory and PHI models bind to communications and disclosures (`email.`, `message.`,
+`document.`, `file.`, …), the funds-movement model to `payment.`, `wire.`, `transfer.` and the
+like (`DEFAULT_PACK_BINDINGS` in [`@pharos/cascade`](../packages/cascade/src/index.ts)).
+Under the default `PHAROS_JUDGE_ROUTING=strict` a `crm.update` or a shell command runs no
+transformer at all. `PHAROS_JUDGE_ROUTING=all` restores the pre-D1 behaviour of every model on
+every action. Routing changes *which* models score an action; it does not change any model.
+
+**Structural judge.** [`structural.ts`](../packages/judge/src/structural.ts) runs four
+deterministic, model-free checks on every Tier-3 action and is sealed with its own
+content-hashed `judgeVersion` (`structural@<hash>` over the check semantics):
+
+| Check | Fails when | Decision | Citation |
+|---|---|---|---|
+| `structural.mandate-scope` | the action type is outside `mandate.limits.actionTypes` | block | `structural-mandate-scope` |
+| `structural.payload-schema` | the payload violates the tenant's registered schema for the type | block | `structural-payload-schema` |
+| `structural.plan` | the action type is not in the plan's `allowedNext` | escalate | `structural-plan-deviation` |
+| `structural.blast-radius` | the payload's stated amount or currency contradicts the declared `blastRadius` | escalate | `structural-blast-radius` |
+
+A check that lacks the fact it depends on **abstains** — no mandate action-type list, no
+registered schema, no plan — rather than guessing. The schema and plan come from the tenant
+context the host supplies (`contextFor` on the cascade); see
+[LIMITATIONS.md](LIMITATIONS.md) for what that means today. Structural signals are also
+addressable from policy artifacts as judge conditions (`{ judge: "structural.plan", gte: 1 }`).
+`PHAROS_JUDGE_STRUCTURAL=false` removes the judge from the panel.
 
 ## Deadline & engineered fail modes
 

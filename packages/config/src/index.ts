@@ -104,6 +104,13 @@ const ConfigSchema = z
       modelDir: z.string().min(1).optional(),
       /** Version-pinned reference distributions and approved PSI thresholds. */
       driftProfilePath: z.string().min(1).optional(),
+      /**
+       * Tier-3 routing (D1). `strict`: a content model runs only for the action types its pack
+       * binding declares. `all`: every model runs for every action (the pre-D1 behaviour).
+       */
+      routing: z.enum(["strict", "all"]).default("strict"),
+      /** Run the deterministic structural judge in the Tier-3 panel. */
+      structural: boolish.default(true),
     }),
     api: z.object({
       port: z.coerce.number().int().positive().default(4000),
@@ -443,6 +450,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
       provider: env.PHAROS_JUDGE_PROVIDER,
       modelDir: env.PHAROS_JUDGE_MODEL_DIR,
       driftProfilePath: env.PHAROS_JUDGE_DRIFT_PROFILE_PATH,
+      routing: env.PHAROS_JUDGE_ROUTING,
+      structural: env.PHAROS_JUDGE_STRUCTURAL,
     },
     api: {
       port: env.PHAROS_API_PORT,
