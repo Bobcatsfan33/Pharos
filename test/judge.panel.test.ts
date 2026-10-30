@@ -199,6 +199,64 @@ describe("judge panel — structural decisions", () => {
     expect(v.ruleCitations.map((c) => c.ruleId)).toContain("structural-blast-radius");
   });
 
+  it("blast-radius abstains on generic numeric keys: `value`, `total` and numeric strings are not money", async () => {
+    // Each of these said nothing about money under the default liability (financialAmount 0);
+    // reading them as currency escalated ordinary CRM/file actions with riskScore 1.
+    for (const payload of [
+      { field: "score", value: 42 },
+      { field: "year", value: "2025" },
+      { items: 3, total: 3 },
+      { total: "12" },
+    ]) {
+      const v = await cascade.evaluate(req("crm.update", payload), now);
+      expect(v.decision, JSON.stringify(payload)).toBe("allow");
+      expect(v.ruleCitations.map((c) => c.ruleId)).not.toContain("structural-blast-radius");
+    }
+  });
+
+  it("blast-radius still fires when the payload declares an amount, as a number or a numeric string", async () => {
+    for (const payload of [{ amount: 500 }, { amount: "500" }, { financialAmount: 500 }]) {
+      const v = await cascade.evaluate(
+        req("crm.update", payload, {
+          blastRadius: { financialAmount: 0, currency: "USD", reversibility: "irreversible" },
+        }),
+        now,
+      );
+      expect(v.decision, JSON.stringify(payload)).toBe("escalate");
+      expect(v.ruleCitations.map((c) => c.ruleId)).toContain("structural-blast-radius");
+    }
+  });
+
+  it("payload-schema uses own properties: prototype keys do not satisfy `required` or slip past `additionalProperties: false`", async () => {
+    const withSchema = new VerdictCascade({
+      engine: new VerdictEngine({ deadlineMs: 800 }),
+      registry: loadDefaultRegistry(),
+      deadlineMs: 800,
+      packs: DEFAULT_PACK_BINDINGS,
+      contextFor: () => ({
+        tenantId: "t",
+        actionSchemas: {
+          "crm.update": {
+            required: ["constructor"],
+            properties: { record: { type: "string" } },
+            additionalProperties: false,
+          },
+        },
+      }),
+    });
+    // `"constructor" in {}` is true; Object.hasOwn({}, "constructor") is false — the key is missing.
+    const missing = await withSchema.evaluate(req("crm.update", { record: "x" }), now);
+    expect(missing.decision).toBe("block");
+    expect(missing.ruleCitations.map((c) => c.ruleId)).toContain("structural-payload-schema");
+    // An own `toString` key is unexpected under additionalProperties: false, even though it is on the prototype.
+    const extra = await withSchema.evaluate(
+      req("crm.update", { record: "x", constructor: "present", toString: "smuggled" }),
+      now,
+    );
+    expect(extra.decision).toBe("block");
+    expect(extra.ruleCitations.map((c) => c.ruleId)).toContain("structural-payload-schema");
+  });
+
   it("structural signals are addressable by policy rules as judge conditions", async () => {
     const v = await cascade.evaluate(req("crm.update", { record: "x" }), now, [
       {
