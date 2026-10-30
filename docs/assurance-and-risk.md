@@ -1,4 +1,4 @@
-# Assurance, risk profile & the underwriter feed (Sprint 7 — Beam Count)
+# Assurance, risk profile & the underwriter feed
 
 This converts Pharos from a control into a pricing signal — the BitSight-of-AI-liability
 position.

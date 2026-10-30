@@ -1,292 +1,217 @@
-# Pharos
+<p align="center">
+  <img src="docs/media/demo.svg" alt="pnpm demo: an agent's unmandated wire is escalated citing FINRA 3110, a mandated one is allowed, and the sealed evidence bundle verifies offline" width="860">
+</p>
 
-**Real-time policy verdicts for AI agents, with cryptographic evidence of every decision.**
+<h1 align="center">Pharos</h1>
 
-*Pharos decides. Pharos proves.*
+<p align="center"><strong>Real-time policy verdicts for AI agents, with signed, hash-chained evidence of every decision.</strong><br>
+<em>Pharos decides. Pharos proves.</em></p>
 
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![CI](https://github.com/Bobcatsfan33/Pharos/actions/workflows/ci.yml/badge.svg)](https://github.com/Bobcatsfan33/Pharos/actions/workflows/ci.yml)
+<p align="center">
+  <a href="https://github.com/Bobcatsfan33/Pharos/actions/workflows/ci.yml"><img src="https://github.com/Bobcatsfan33/Pharos/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://www.npmjs.com/package/@getpharos/sdk"><img src="https://img.shields.io/npm/v/@getpharos/sdk?label=%40getpharos%2Fsdk&color=cb3837" alt="npm"></a>
+  <a href="https://pypi.org/project/getpharos/"><img src="https://img.shields.io/pypi/v/getpharos?label=getpharos&color=3775a9" alt="PyPI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="Apache-2.0"></a>
+  <a href="docs/roadmap.md"><img src="https://img.shields.io/badge/roadmap-next%203%20things-6b7280" alt="Roadmap"></a>
+</p>
 
 ---
 
-When an AI agent is about to do something consequential — move money, send PHI, change a
-record — Pharos answers two questions in one call. **Can it?** A policy verdict (allow,
-block, modify, escalate) citing the specific rule clause it relied on. **What happened?** A
-signed, hash-chained evidence record binding that action to its mandate, its verdict, and
-its blast radius — written to WORM storage and verifiable by anyone, offline, later.
+When an agent is about to do something consequential — move money, send PHI, push to a
+protected branch, delete a record — Pharos answers two questions in one call.
 
-One pipeline, two outputs, and that is the whole point: **an agent action can never be
-governed without being recorded, or recorded without its governing context.**
+**Can it?** A verdict — `allow`, `block`, `modify` or `escalate` — citing the rule clause it
+relied on.
+**What happened?** A signed, hash-chained record binding the action to its mandate, its
+verdict and its blast radius, written in the *same transaction* and verifiable by anyone,
+offline, later.
 
-**Who it's for.** Teams putting agents somewhere consequential — payments, healthcare,
-regulated workflows — who will need to answer *"why did the agent do that?"* months later,
-to someone who will not simply take your word for it.
+One pipeline, two outputs. An action can never be governed without being recorded, or
+recorded without its governing context.
 
-**Why it's different.** Guardrail libraries block bad output but leave no durable trail.
-Governance tooling documents policy but never touches runtime. Pharos closes the loop: the
-same event that *decides* is the one that *proves*, signed once and chained once.
+## Quickstart
+
+Three governed actions and a verified chain, on your machine, in about a minute. No cloud
+account, no API key.
+
+```bash
+git clone https://github.com/Bobcatsfan33/Pharos.git && cd Pharos
+pnpm install && cp .env.example .env
+pnpm infra:up              # Postgres + Redis + MinIO (S3 WORM) via docker compose
+pnpm demo                  # the funds-transfer story above
+pnpm verify:bundle evidence-bundle.json   # verify it with no Pharos running
+```
+
+Prerequisites: Node ≥ 22, pnpm 10, Docker. First run spends most of its time pulling three
+images; the commands themselves take seconds. The full walkthrough — including tampering with
+the bundle and watching it fail — is in [docs/demo.md](docs/demo.md).
+
+## Use it from your agent
+
+<table>
+<tr><th>TypeScript</th><th>Python</th></tr>
+<tr><td>
+
+```ts
+import { PharosClient } from "@getpharos/sdk";
+
+const pharos = new PharosClient({ baseUrl, apiKey });
+const { verdict, record } = await pharos.submit({
+  tenantId: "acme",
+  action: { type: "payment.transfer",
+            agentId: "treasury-bot",
+            payload: { amount: 30_000 } },
+  liability: {
+    mandate: null, oversightMode: "autonomous",
+    blastRadius: { financialAmount: 30_000,
+                   currency: "USD",
+                   reversibility: "irreversible" },
+    modelMetadata: null,
+  },
+});
+if (verdict.decision === "block")
+  throw new Error(verdict.ruleCitations[0]?.description);
+// record.seal.contentHash is permanent, signed evidence.
+```
+
+</td><td>
+
+```python
+from pharos_sdk import PharosClient
+
+pharos = PharosClient(base_url=base_url, api_key=api_key)
+result = pharos.submit(
+    tenantId="acme",
+    action={"type": "payment.transfer",
+            "agentId": "treasury-bot",
+            "payload": {"amount": 30000}},
+    liability={"mandate": None,
+               "oversightMode": "autonomous",
+               "blastRadius": {"financialAmount": 30000,
+                               "currency": "USD",
+                               "reversibility": "irreversible"},
+               "modelMetadata": None},
+)
+if result["verdict"]["decision"] == "block":
+    raise RuntimeError(
+        result["verdict"]["ruleCitations"][0]["description"])
+```
+
+</td></tr>
+</table>
+
+Both SDKs honour the verdict deadline, retry transient failures, and apply a **local
+fail-mode** when Pharos is unreachable: reversible work fails open, irreversible work fails
+closed.
+
+**Works with**
+
+| | |
+|---|---|
+| Frameworks | LangChain / LangGraph · OpenAI Agents · Anthropic SDK · CrewAI · Microsoft Agent Framework — one wrap call each, one conformance contract ([docs](docs/sdks-and-integration.md)) |
+| MCP and tools | Governed MCP tool calls, credential grants and governed connector effects ([docs](docs/capability-platform.md)) |
+| No code at all | An HTTP egress gateway that governs an agent importing nothing ([docs](docs/sdks-and-integration.md#zero-code-gateway)) |
+| Policy | Citation-level packs (FINRA, HIPAA) as JSON, a constrained-grammar compiler, OPA and Cedar interchange, signed policy bundles ([docs](docs/regulation-packs-and-policy.md)) |
+| Standards | The open [PDP specification](docs/spec/pdp-v1.md) with a conformance suite and published [JSON Schema](packages/pdp-spec/schema/pdp-v1.schema.json) |
+| Execution | **Pharos Runtime** — durable, governed execution in Python: every step gets a verdict, escalation is a zero-compute pause, runs resume after a crash and replay byte-identically ([docs](docs/runtime.md)) |
+
+## How it works
 
 ```mermaid
 flowchart LR
     A["Agent<br/><i>any framework</i>"] -->|SDK or gateway| B
-
-    subgraph decide ["DECIDE — a verdict, in one call"]
+    subgraph decide ["DECIDE — one call"]
         direction TB
         B["Tier 1<br/>deterministic rules<br/><i>mandates, limits</i>"] --> C["Tier 2<br/>statistical risk"]
-        C --> D["Tier 3<br/>judge model"]
+        C --> D["Tier 3<br/>judge panel<br/><i>structural + content models</i>"]
     end
-
     D --> E{"Verdict<br/>allow · block<br/>modify · escalate"}
     E -->|same transaction| F["Sealed ActionRecord<br/><i>hash + signature</i>"]
-
     subgraph prove ["PROVE — evidence that outlives the request"]
         direction TB
         F --> G[("Hash chain<br/>genesis → head")]
         G --> H[("WORM storage<br/>S3 Object Lock")]
         G --> I["RFC 3161<br/>trusted-time anchor"]
     end
-
     H --> J["Offline verification<br/><i>no Pharos required</i>"]
     I --> J
 ```
 
-## Quickstart
+- **Decide.** A deterministic Tier 1 (mandates, limits, packs) short-circuits most actions.
+  Tier 2 scores statistical risk. Tier 3 is a panel of typed judges — a model-free structural
+  judge on every action, content models only for the action types their pack binds to — run
+  concurrently under a hard deadline. On a deadline breach or a dependency fault, reversible
+  actions fail open into async review and irreversible actions fail closed to a human.
+- **Prove.** The verdict and the record come out of one database transaction. Records are
+  canonicalised, hashed, signed (local Ed25519 in development; AWS KMS, Vault Transit, Azure
+  Key Vault or GCP KMS through one `SigningProvider` interface), chained per tenant and
+  written to WORM storage. Chain heads are anchored to an RFC 3161 timestamp authority.
+- **Verify.** `pnpm verify:bundle` re-derives every hash, checks every signature against the
+  published keyset, walks the chain and checks the anchor using `@pharos/core` alone — no
+  database, no signer, no network.
 
-A governed action and a verified evidence chain, locally. No cloud account, no API key, no
-paid service.
+[docs/architecture.md](docs/architecture.md) has the full map and the extension points.
 
-```bash
-git clone https://github.com/Bobcatsfan33/Pharos.git && cd Pharos
-pnpm install
-cp .env.example .env
-pnpm infra:up          # Postgres + Redis + MinIO (S3 WORM) via docker compose
-```
+## Status
 
-Govern three agent actions and seal them:
-
-```bash
-pnpm demo:durability
-```
-
-```
-=== Submitting 3 demo actions for tenant "demo-tenant" ===
-  seq 0  email.send          -> ALLOW      hash 7928edf0c664…
-  seq 1  payment.transfer    -> BLOCK      hash 858d1aae0430…
-  seq 2  crm.update          -> ALLOW      hash 7d3ac5477574…
-
-Chain head: sequence 2 hash 7d3ac54775745ded…
-```
-
-That `payment.transfer -> BLOCK` is a Tier-1 deterministic rule: the action exceeded its
-mandate's limit. The verdict and the sealed record came out of the same transaction.
-
-Now prove the evidence survived a restart and the chain is intact genesis-to-head:
-
-```bash
-pnpm demo:durability --verify
-```
-
-```
-=== Cold verification for tenant "demo-tenant" (simulated restart) ===
-Found 3 persisted records after restart.
-Genesis-to-head chain verification: PASS ✅
-  records checked: 3
-```
-
-**Measured on a clean checkout** (2026-08-02, warm pnpm store, Docker images already
-pulled): `pnpm install` 2s · `infra:up` 1s · demo 2s · verify 1s. Budget about five
-minutes for a genuinely first run — almost all of it Docker pulling the Postgres, Redis and
-MinIO images; the commands themselves take seconds.
-
-> **If `--verify` reports a chain break**, you are pointing a fresh checkout at a database
-> seeded by a different one. That is correct behaviour rather than a bug — the earlier
-> records were signed by a keystore that no longer exists, so their signatures no longer
-> verify. Start from a clean database, or remove `.pharos-keystore` and re-run.
-
-### Then see the whole story
-
-```bash
-pnpm demo
-```
-
-An agent tries to wire $4,800 with no mandate. Pharos refuses and cites the rule:
-
-```
-── Act 1 ─ the agent acts without authority
-
-  Verdict:   ESCALATE   tier 3
-  Cited:     finra-3110-funds-movement  FINRA Rule 3110 (supervision) / 2150 (funds handling)
-             Movement of customer funds requires supervisory review. Unmandated
-             funds-movement intent is escalated to a registered principal.
-```
-
-Treasury grants a mandate. Same transfer, same agent, same amount — the verdict flips:
-
-```
-── Act 2 ─ treasury grants a mandate
-
-  Verdict:   ALLOW   tier 3
-```
-
-Both decisions are sealed, anchored in trusted time, and written to a bundle that anyone
-can check **offline, with no Pharos infrastructure**:
-
-```bash
-pnpm verify:bundle evidence-bundle.json
-```
-
-```
-Chain verification: PASS - admissible
-
-Trusted-time anchors (1):
-  OK  anchor [local] 8880a43f2d33… @ 2026-08-02T20:53:45.971Z  (head)
-
-Anchor verification: PASS - head existed before the stamped time
-```
-
-Full walkthrough, including how to **tamper with the bundle and watch it fail**:
-**[docs/demo.md](docs/demo.md)**.
-
-## Use it from your agent
-
-```typescript
-import { PharosClient } from "@getpharos/sdk";
-
-const pharos = new PharosClient({ baseUrl, apiKey });
-
-const { verdict, record } = await pharos.submit({
-  tenantId: "acme",
-  action: { type: "payment.transfer", agentId: "treasury-bot", payload: { amount: 30_000 } },
-  liability: {
-    mandate: null,
-    oversightMode: "autonomous",
-    blastRadius: { financialAmount: 30_000, currency: "USD", reversibility: "irreversible" },
-    modelMetadata: null,
-  },
-});
-
-if (verdict.decision === "block") throw new Error(verdict.ruleCitations[0]?.description);
-// record.seal.contentHash is now permanent, signed evidence.
-```
-
-```python
-from pharos_sdk import PharosClient
-
-pharos = PharosClient(base_url=base_url, api_key=api_key)
-
-result = pharos.submit(
-    tenantId="acme",
-    action={"type": "payment.transfer", "agentId": "treasury-bot",
-            "payload": {"amount": 30000}},
-    liability={"mandate": None, "oversightMode": "autonomous",
-               "blastRadius": {"financialAmount": 30000, "currency": "USD",
-                               "reversibility": "irreversible"},
-               "modelMetadata": None},
-)
-
-if result["verdict"]["decision"] == "block":
-    raise RuntimeError(result["verdict"]["ruleCitations"][0]["description"])
-```
-
-Both SDKs are deadline-aware, retry transient failures, and apply a **local fail-mode** when
-Pharos is unreachable: reversible work fails open, irreversible work fails closed. Framework
-middlewares (LangChain/LangGraph, OpenAI Agents, Anthropic SDK, CrewAI, MS Agent Framework)
-share one conformance contract, and a zero-code HTTP gateway governs agents that import
-nothing at all. See **[docs/sdks-and-integration.md](docs/sdks-and-integration.md)**.
-
-### Pharos Runtime: governed execution included
-
-Pharos now ships its durable Python runtime in this monorepo under
-[`runtime/python`](runtime/python). It submits every runnable step through `/v1/actions`,
-writes the sealed evidence binding into its append-only execution log, and maps escalation
-to a zero-compute durable pause. After review, the same run resumes with a stable replay-safe
-claim identity. The control plane and runtime remain independently scalable while sharing
-one product, release boundary, and end-to-end CI proof.
-
-```bash
-python3 -m pip install -e "runtime/python[viewer]"
-pharos run --mock runtime/python/examples/pharos_governed.py --run-id governed-demo
-```
-
-The legacy `keel` command remains available for compatibility. See the
-[Pharos Runtime contract and quickstart](docs/runtime.md).
-
-## Status — what is and isn't proven
-
-Pharos is **not a finished product, and its own readiness manifest says so.** That manifest
-is machine-checked in CI and currently reads `decision: not-approved` with 6 open blocking
-gates. It ships published rather than hidden, because a system whose pitch is *evidence*
-should be willing to be evidence about itself.
+Pharos is not a finished product, and says so in its own repository. What is listed as
+working is covered by tests that run against real Postgres, Redis and MinIO; CI fails the
+build if an integration test is skipped rather than run.
 
 | | |
 |---|---|
-| **Works today, tested** | Verdict cascade · sealing · hash chain · WORM · offline verification · TS + Python SDKs · framework middlewares · zero-code gateway · OPA/Cedar interchange · signed policy bundles · MCP/tool governance · governed connectors · approval policy · causal evidence graph · assurance promotion/rollback · technical control mappings · open governed-action protocol |
-| **Test suite** | 545 control-plane tests plus the complete runtime and Python SDK suites—run against **real** Postgres / Redis / MinIO. CI fails the build if integration tests are skipped rather than run |
-| **Not production-approved** | [`docs/enterprise-readiness.json`](docs/enterprise-readiness.json) · [`docs/procurement-readiness.md`](docs/procurement-readiness.md) |
-| **Every known gap** | [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) |
+| **Works today, tested** | Verdict cascade · structural judge, routing and the parallel Tier-3 panel · sealing · hash chain · WORM · RFC 3161 anchoring · offline verification · TS and Python SDKs · framework middlewares · zero-code gateway · OPA/Cedar interchange · signed policy bundles · MCP and connector governance · approval policy · assurance promotion and rollback · Pharos Runtime |
+| **Judges** | The content judges on the default local path are linear bag-of-words classifiers: fast, deterministic and defeated by paraphrase. Transformer judges are served and requalified on ONNX Runtime 1.30 but remain **restricted pre-production**; their [model cards](docs/model-cards/production-judges.md) list the evidence still missing. No judge is promoted. |
+| **Latency** | Judge path for an action with no applicable model: 0.074 ms p99; the three-model tier runs in max, not sum. End to end with all three ONNX judges on a developer laptop: 597 ms p99 at ~8 verdicts/s, so the 1,000 verdicts/s production-topology gate is open. [Benchmarks](docs/benchmarks/latency.md). |
+| **Every known gap** | [docs/LIMITATIONS.md](docs/LIMITATIONS.md) — the list is expected to shrink. |
+| **What is next** | [docs/roadmap.md](docs/roadmap.md) |
 
-**On the judges, plainly.** The Tier-3 judges on the default local path are **linear
-bag-of-words classifiers**. They are the honest demo path — fast, deterministic, easy to
-reason about, and defeated by paraphrase. The transformer judges are wired and served but
-remain **restricted pre-production**: their
-[model cards](docs/model-cards/production-judges.md) list the adversarial-efficacy,
-calibration, and independent-validation evidence still missing. **No judge is promoted or
-marketed as production-ready.** The deterministic Tier 1 and statistical Tier 2 carry the
-load a demo actually exercises.
-
-**On latency.** The old p99 3.7 ms / ~5,400 verdicts-per-second linear-model headline has been
-retired. The benchmark now loads all three ONNX judges by default. A current Apple-M2 engineering
-run stayed below 800 ms p99 at concurrency 2 but achieved only about 8 verdicts/second, so the
-1,000 verdicts/second production-topology gate remains open. See
-[`docs/benchmarks/latency.md`](docs/benchmarks/latency.md).
-
-## How it's built
-
-| | |
-|---|---|
-| Operational state | Postgres — policies, mandates, queues, tenants; RLS-isolated under a `NOBYPASSRLS` role |
-| Evidence chain | WORM object storage (S3 Object Lock), hash-chained and continuously verified |
-| Verdict cache | Redis, deadline-bound |
-| Signing | Pluggable `SigningProvider` — local Ed25519, AWS KMS P-256, and remote BYOK/HYOK transports for Vault Transit, Azure Key Vault, and GCP KMS, with rotation and chain continuity |
-| Deployment | Docker Compose or Helm — see [deploy/INSTALL.md](deploy/INSTALL.md) |
+## Repository
 
 ```
-packages/core        ActionRecord schema, hashing, sealing, chain verify, KMS signing
-packages/cascade     the tiered verdict engine
-packages/connectors  MCP registry, credential grants, governed effects, plugin conformance
-packages/devkit      policy simulation/diff, fixture sanitation, environment doctor
-packages/storage     Postgres + S3 WORM + Redis; the transactional write path
-packages/sdk-ts      TypeScript SDK          sdks/python   Python SDK
-packages/middleware  framework adapters
-services/api         Fastify ingestion API   services/gateway  zero-code egress gateway
-apps/console         Next.js console
+packages/core          ActionRecord schema, hashing, sealing, chain verify, signing-provider registry
+packages/cascade       the tiered verdict engine and judge panel
+packages/judge         structural judge, linear and ONNX content judges, judge-provider registry
+packages/policy        rule evaluator, compiler, OPA/Cedar interop, packs/*.json
+packages/evidence      claims packs, exports, TSA-provider registry (local, RFC 3161)
+packages/storage       Postgres + S3 WORM + Redis — the transactional write path
+packages/pdp-spec      the open PDP contract: zod schemas, JSON Schema, conformance suite
+packages/sdk-ts        TypeScript SDK             sdks/python        Python SDK
+packages/middleware    framework adapters         packages/connectors MCP + governed effects
+services/api           Fastify ingestion API      services/gateway   zero-code egress gateway
+runtime/python         Pharos Runtime (durable, governed execution)
+apps/console           Next.js console
+deploy/                Docker Compose and Helm — see deploy/INSTALL.md
 ```
 
 ## Docs
 
 | | |
 |---|---|
-| [Architecture](docs/architecture.md) | How the pieces fit together |
-| [Capability platform](docs/capability-platform.md) | Policy interop, MCP, connectors, approvals, assurance, compliance, and the open protocol |
-| [Demo walkthrough](docs/demo.md) | The funds-transfer story, end to end |
-| [Decision cascade](docs/decision-cascade.md) | Tiers, deadlines, fail-modes |
-| [Evidence & sealing](docs/evidence-seal.md) | Chain, anchoring, redaction, claims packs |
+| [Architecture](docs/architecture.md) | How the pieces fit together, and where a new one goes |
+| [Demo walkthrough](docs/demo.md) | The funds-transfer story, end to end, including tampering |
+| [Decision cascade](docs/decision-cascade.md) | Tiers, the judge panel, routing, deadlines, fail-modes |
+| [Evidence and sealing](docs/evidence-seal.md) | Chain, anchoring, redaction, claims packs |
 | [Offline verification](docs/external-verification.md) | Verify a bundle with no Pharos infrastructure |
+| [SDKs and integration](docs/sdks-and-integration.md) | SDKs, middlewares, the gateway |
+| [Policy and packs](docs/regulation-packs-and-policy.md) | Packs, the compiler, lifecycle, interop |
+| [Pharos Runtime](docs/runtime.md) | Durable, governed execution |
+| [PDP specification](docs/spec/pdp-v1.md) | The open contract and conformance suite |
 | [Schema](docs/schema-v1.md) | The `ActionRecord` event |
 | [Threat model](docs/security/THREAT_MODEL.md) | STRIDE analysis and the accepted-risk register |
+| [Operations](docs/operations.md) · [Install](deploy/INSTALL.md) | Running it for real |
 | [Limitations](docs/LIMITATIONS.md) | Everything that does not yet work as a buyer would want |
-| [Sprint history](docs/status.md) | What was built, sprint by sprint |
-| [Contributing](CONTRIBUTING.md) | Setup, the review bar, and how this repo is run |
 
 ## Contributing
 
-Good first issues are labelled and scoped with acceptance criteria. The house rules — DCO
-sign-off, a changeset for publishable packages, integration tests that **run** rather than
-skip, and rendering configuration rather than reading it — are in
-**[CONTRIBUTING.md](CONTRIBUTING.md)**. Apache-2.0; the
-[open-core boundary](docs/adr/0001-open-core-boundary.md) is a proposal that relicenses
+Good first issues are labelled and scoped with acceptance criteria. Adding a signing or
+trusted-time backend, a judge provider, a policy pack or a framework adapter is one new file
+plus one registration — [CONTRIBUTING.md](CONTRIBUTING.md) says where each goes and which
+registry it uses. The house rules: DCO sign-off, a changeset for publishable packages,
+integration tests that run rather than skip, and docs that never claim what the code cannot
+back. Apache-2.0; the [open-core boundary](docs/adr/0001-open-core-boundary.md) relicenses
 nothing. Be decent — see the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ---
 
-*Pharos decides. Pharos proves.*
+<p align="center"><em>Pharos decides. Pharos proves.</em></p>
