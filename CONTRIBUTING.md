@@ -39,16 +39,19 @@ has the map; the short version:
 |---|---|---|
 | A signing backend (KMS, HSM, vault) | `packages/core/src/signing/<name>.ts` | `registerSigningProvider("<name>", factory)` in `packages/core/src/signing/registry.ts`; select it with `PHAROS_KMS_PROVIDER=<name>` |
 | A trusted-time (TSA) backend | `packages/evidence/src/tsa/<name>.ts` | `registerTsaProvider("<name>", factory)` in `packages/evidence/src/tsa/registry.ts`; select with `PHAROS_TSA_PROVIDER=<name>` |
-| A Tier-3 judge or judge model loader | `packages/judge/src/<kind>.ts` | `registerJudgeLoader(kind, loader)` in `packages/judge/src/registry.ts`; models are listed in `packages/judge/models/manifest.json` |
-| A policy pack (rules with citations) | `packages/policy/packs/<pack>.json` | Nothing — packs are discovered from the directory. Add fixtures under `test/fixtures/policy/<pack>/` |
-| A judge concern and its pack binding | `packages/policy/packs/<pack>.json` (`judgeBindings`) | Nothing — the cascade binds concerns from the pack manifest |
-| A framework middleware (LangChain, CrewAI, …) | `packages/middleware/src/adapters/<framework>.ts` | Implements `MiddlewareAdapter`; passes the shared conformance suite in `test/middleware.conformance.test.ts` |
-| A governed connector | `packages/connectors/src/plugins/<name>.ts` | Implements `ConnectorPlugin` and passes `runPluginConformance` |
+| A judge-serving backend | `packages/judge/src/<name>.ts` | `registerJudgeProvider("<name>", factory)` in `packages/judge/src/registry.ts`; select with `PHAROS_JUDGE_PROVIDER=<name>` |
+| A served judge model (concern) | `packages/judge/models/manifest.json` | Nothing — the manifest is the list of concerns a deployment must serve |
+| A policy pack (rules with citations) | `packages/policy/packs/<pack>.json` | Nothing — packs are discovered from the directory and validated against `pack.schema.json`; add its cases to `test/policy.test.ts` |
+| A judge concern's routing and verdict | `judgeBindings` in the pack's JSON | Nothing — the cascade's default bindings are derived from the packs |
+| A framework middleware (LangChain, OpenAI Agents, …) | `packages/middleware/src/adapters.ts` | Exports a wrapper over `govern`; passes the shared conformance suite in `test/middleware.conformance.test.ts` |
+| A governed connector | `packages/connectors/src/<name>.ts` | Implements `ConnectorPlugin` (`plugins.ts`) and passes `runPluginConformance` |
 | A runtime framework adapter (Python) | `runtime/python/keel/adapters/<framework>.py` | Ships a `reference_agent()` and passes the adapter conformance suite — see [`runtime/python/docs/ADAPTER-AUTHORS.md`](runtime/python/docs/ADAPTER-AUTHORS.md) |
-| An API route | `services/api/src/routes/<area>.ts` | Mounted from `services/api/src/platform.ts` |
+| An API route | `services/api/src/routes/<area>.ts` | Registered in `services/api/src/app.ts` |
 
-If a change needs you to edit a central list to make something appear, that list is a bug —
-open an issue rather than growing it.
+`test/registries.extension.test.ts` is the contract: a new signing, TSA or judge backend
+registers from its own file and is selected by configuration, and a new pack file adds a pack
+and a concern binding with no code change. If a change needs you to edit a central list to make
+something appear, that list is a bug — open an issue rather than growing it.
 
 ## Ground rules
 

@@ -79,7 +79,10 @@ tier costs the slowest judge, not the sum
 **Routing.** Each pack binding names the action-type prefixes its model is for: the FINRA
 promissory and PHI models bind to communications and disclosures (`email.`, `message.`,
 `document.`, `file.`, …), the funds-movement model to `payment.`, `wire.`, `transfer.` and the
-like (`DEFAULT_PACK_BINDINGS` in [`@pharos/cascade`](../packages/cascade/src/index.ts)).
+like. The bindings are declared by each pack in
+[`packages/policy/packs/*.json`](../packages/policy/packs) (`judgeBindings`); the cascade's
+`DEFAULT_PACK_BINDINGS` is derived from them, so adding a concern is adding a binding to a
+pack file.
 Under the default `PHAROS_JUDGE_ROUTING=strict` a `crm.update` or a shell command runs no
 transformer at all. `PHAROS_JUDGE_ROUTING=all` restores the pre-D1 behaviour of every model on
 every action. Routing changes *which* models score an action; it does not change any model.

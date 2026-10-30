@@ -1,15 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { loadConfig, type PharosConfig } from "@pharos/config";
 import {
-  AwsKms,
-  FileKeystore,
-  LocalKms,
   ResilientSigner,
   VerdictEngine,
+  createSigningProvider,
   type SigningProvider,
   type PublicKeyEntry,
 } from "@pharos/core";
-import { LocalTsa, Rfc3161Tsa, type TsaProvider } from "@pharos/evidence";
+import { createTsaProvider, type TsaProvider } from "@pharos/evidence";
 import {
   AccessAuditLog,
   AnchorScheduler,
@@ -31,16 +29,15 @@ import {
 } from "@pharos/storage";
 import { OidcVerifier, type OidcIssuerConfig } from "@pharos/identity";
 import {
-  loadDefaultRegistry,
-  loadOnnxJudge,
-  loadManifest,
   assertQualifiedOnnxRuntime,
-  ModelRegistry,
-  type AsyncJudge,
-  type LoadOnnxOptions,
+  createJudgeRegistry,
+  loadManifest,
+  servedConcerns,
+  type JudgeLoader,
+  type ModelRegistry,
 } from "@pharos/judge";
 import { VerdictCascade, DEFAULT_PACK_BINDINGS } from "@pharos/cascade";
-import { SHIPPED_PACKS, type PolicyArtifact } from "@pharos/policy";
+import { SHIPPED_PACKS, artifactsOf, type PolicyArtifact } from "@pharos/policy";
 import {
   JudgeDriftMonitor,
   MetricsRegistry,
@@ -102,115 +99,62 @@ export interface BuildPlatformOptions {
   loadJudge?: JudgeLoader;
 }
 
-export type JudgeLoader = (options: LoadOnnxOptions) => Promise<AsyncJudge>;
+export type { JudgeLoader };
 
-export const PRODUCTION_JUDGE_CONCERNS = [
-  "finra-promissory",
-  "phi-in-context",
-  "funds-movement-intent",
-] as const;
+/** The concerns a production deployment must serve: every model in `models/manifest.json`. */
+export const PRODUCTION_JUDGE_CONCERNS: readonly string[] = servedConcerns();
 
 /**
- * Build the active judge registry before the API opens a listener.
- *
- * Production configuration is already fail-closed to `onnx`; this composition
- * step additionally downloads or reads every content-addressed artifact,
- * verifies its manifest digest, creates every inference session, and refuses
- * startup if any concern is unavailable. Local development retains the honest,
- * measured linear baseline.
+ * Build the active judge registry before the API opens a listener, through the judge-provider
+ * registry (`PHAROS_JUDGE_PROVIDER` names the backend). Production is already fail-closed to
+ * `onnx` by configuration; the ONNX provider additionally downloads or reads every
+ * content-addressed artifact, verifies its manifest digest, creates every inference session,
+ * and refuses startup if any concern is unavailable.
  */
 export async function buildJudgeRegistry(
   config: PharosConfig,
-  loadJudge: JudgeLoader = loadOnnxJudge,
+  loadJudge?: JudgeLoader,
 ): Promise<ModelRegistry> {
-  if (config.judge.provider === "linear") return loadDefaultRegistry();
-  if (config.env === "prod") assertQualifiedOnnxRuntime(loadManifest());
-
-  // Fetch, digest-verify, create the inference sessions, and warm all required packs
-  // concurrently. Startup remains all-or-nothing: nothing is registered until every
-  // load has succeeded and every returned identity has been validated.
-  const judges = await Promise.all(
-    PRODUCTION_JUDGE_CONCERNS.map(async (concern) => {
-      const judge = await loadJudge({
-        concern,
-        packId: concern,
-        cacheDir: config.judge.modelDir,
-      });
-      // Exercise the actual inference path before the readiness listener can open.
-      await judge.scoreBatch([""]);
-      return judge;
-    }),
-  );
-  const registry = new ModelRegistry();
-  for (const [index, concern] of PRODUCTION_JUDGE_CONCERNS.entries()) {
-    const judge = judges[index]!;
-    if (judge.packId !== concern || judge.concern !== concern) {
-      throw new Error(
-        `judge loader returned ${judge.packId}/${judge.concern} for required concern ${concern}`,
-      );
-    }
-    registry.registerServed(judge);
+  if (config.env === "prod" && config.judge.provider === "onnx") {
+    assertQualifiedOnnxRuntime(loadManifest());
   }
-  return registry;
+  return createJudgeRegistry(config.judge.provider, {
+    concerns: PRODUCTION_JUDGE_CONCERNS,
+    cacheDir: config.judge.modelDir,
+    loadJudge,
+  });
 }
 
+/** The evidence-chain signer, built by name from the signing-provider registry. */
 export function buildSigner(config: PharosConfig): SigningProvider {
-  if (config.kms.provider === "aws-kms") {
-    return new AwsKms({
-      region: config.kms.awsRegion,
-      endpoint: config.kms.awsEndpoint,
-      aliasPrefix: "pharos",
-      allowKeyCreation: config.kms.awsAllowKeyCreation,
-    });
-  }
-  if (!config.kms.keystorePassphrase) {
-    throw new Error("local-kms requires an encrypted-keystore passphrase");
-  }
-  return new LocalKms(new FileKeystore(config.kms.keystoreDir, config.kms.keystorePassphrase));
+  return createSigningProvider(config.kms.provider, {
+    settings: config.kms,
+    namespace: "signing",
+  });
 }
-
-/** The timestamp authority uses an INDEPENDENT keystore so anchors don't trust platform keys. */
-/** The signing provider for the simulated (`local`) TSA — an INDEPENDENT keystore/namespace. */
-export function buildTsaSigner(config: PharosConfig): SigningProvider {
-  if (config.kms.provider === "aws-kms") {
-    // Separate alias namespace so the TSA keyset is isolated from the signing keyset.
-    return new AwsKms({
-      region: config.kms.awsRegion,
-      endpoint: config.kms.awsEndpoint,
-      aliasPrefix: "pharos-tsa",
-      allowKeyCreation: config.kms.awsAllowKeyCreation,
-    });
-  }
-  if (!config.kms.keystorePassphrase) {
-    throw new Error("local TSA requires an encrypted-keystore passphrase");
-  }
-  return new LocalKms(
-    new FileKeystore(`${config.kms.keystoreDir}-tsa`, config.kms.keystorePassphrase),
-  );
-}
-
-/** Dev default TSA when PHAROS_TSA_PROVIDER=rfc3161 but no URL is set (FreeTSA). */
-const DEFAULT_FREETSA_URL = "https://freetsa.org/tsr";
 
 /**
- * Build the trusted-time authority. `rfc3161` is a real TSA (the token is verified offline
- * against its own certificate, so no keyset is published). `local` is the simulated TSA whose
+ * The signer for the simulated (`local`) TSA: the same backend as the evidence signer but an
+ * INDEPENDENT key namespace, so anchors never trust the evidence keys.
+ */
+export function buildTsaSigner(config: PharosConfig): SigningProvider {
+  return createSigningProvider(config.kms.provider, { settings: config.kms, namespace: "tsa" });
+}
+
+/**
+ * Build the trusted-time authority by name from the TSA-provider registry. `rfc3161` is a real
+ * TSA whose tokens self-verify (no keyset is published); `local` is the simulated TSA whose
  * public keyset IS published for offline verification.
  */
 export function buildTsaProvider(config: PharosConfig): {
   tsa: TsaProvider;
   keyset: () => Promise<PublicKeyEntry[]>;
 } {
-  if (config.tsa.provider === "rfc3161") {
-    return {
-      tsa: new Rfc3161Tsa(config.tsa.url ?? DEFAULT_FREETSA_URL, {
-        trustPolicy: { trustedCertSha256: config.tsa.trustedCertSha256 },
-      }),
-      keyset: async () => [],
-    };
-  }
-  const signer = buildTsaSigner(config);
-  return { tsa: new LocalTsa(signer, `tsa-${config.env}`), keyset: () => signer.publishKeyset() };
+  return createTsaProvider(config.tsa.provider, {
+    settings: config.tsa,
+    env: config.env,
+    localSigner: () => buildTsaSigner(config),
+  });
 }
 
 export async function buildPlatform(
@@ -262,7 +206,7 @@ export async function buildPlatform(
       })),
     );
   }
-  const shippedArtifacts = Object.values(SHIPPED_PACKS);
+  const shippedArtifacts = artifactsOf(SHIPPED_PACKS);
   const cascade = new VerdictCascade({
     engine,
     registry,

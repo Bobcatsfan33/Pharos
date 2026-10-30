@@ -32,6 +32,17 @@ export { LocalKms } from "./signing/localKms.js";
 export { AwsKms, awsKmsAliasName, type AwsKmsConfig } from "./signing/awsKms.js";
 export { RemoteKms, type RemoteKmsProvider, type RemoteSignerTransport } from "./signing/remote.js";
 export {
+  registerSigningProvider,
+  createSigningProvider,
+  hasSigningProvider,
+  listSigningProviders,
+  type KmsSettings,
+  type SigningProviderContext,
+  type SigningProviderFactory,
+} from "./signing/registry.js";
+// Registers the shipped backends (local-kms, aws-kms) with the registry on import.
+export { awsKmsAliasPrefix } from "./signing/providers.js";
+export {
   KmsUnavailableError,
   isKmsConnectivityError,
   CircuitBreaker,

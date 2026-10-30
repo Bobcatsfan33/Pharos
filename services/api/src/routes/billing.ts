@@ -24,7 +24,9 @@ async function usageFor(platform: Platform, tenantId: string, period?: string): 
     tenantId,
     period: p,
     recordedActions,
-    activePacks: Object.keys(SHIPPED_PACKS).length + activeCustom,
+    // Metered packs are the ones that carry rules; the core pack only declares judge bindings.
+    activePacks:
+      Object.values(SHIPPED_PACKS).filter((p) => p.rules.length > 0).length + activeCustom,
     riskProfileEnabled: true,
   };
 }

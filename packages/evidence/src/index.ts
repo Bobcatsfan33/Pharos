@@ -7,6 +7,17 @@ export {
   verifyTimestamp,
 } from "./timestamp.js";
 export {
+  registerTsaProvider,
+  createTsaProvider,
+  hasTsaProvider,
+  listTsaProviders,
+  type TsaSettings,
+  type TsaProviderContext,
+  type TsaProviderBuild,
+  type TsaProviderFactory,
+} from "./tsa/registry.js";
+export { DEFAULT_FREETSA_URL } from "./tsa/providers.js";
+export {
   type TimestampResult,
   type TokenVerdict,
   type Rfc3161Options,

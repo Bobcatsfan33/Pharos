@@ -22,6 +22,15 @@ const boolish = z
   .union([z.boolean(), z.string()])
   .transform((v) => (typeof v === "boolean" ? v : v.toLowerCase() === "true"));
 
+/**
+ * A provider selected by name from a registry (signing, trusted time, judge serving). The
+ * configuration validates only the shape; whether a name is registered is checked by the
+ * composition root, which names the registered backends in its error.
+ */
+const providerName = z
+  .string()
+  .regex(/^[a-z0-9][a-z0-9-]*$/, "provider names are lower-case kebab-case");
+
 const OidcIssuerSchema = z
   .object({
     issuer: z.url(),
@@ -66,7 +75,12 @@ const ConfigSchema = z
       wormRetentionDays: z.coerce.number().int().positive().default(3650),
     }),
     kms: z.object({
-      provider: z.enum(["local-kms", "aws-kms"]).default("local-kms"),
+      /**
+       * Signing backend, resolved by name from the signing-provider registry in `@pharos/core`
+       * (`local-kms` and `aws-kms` ship; a deployment may register more). Production requires
+       * `aws-kms` — see the production rules below.
+       */
+      provider: providerName.default("local-kms"),
       keystoreDir: z.string().min(1),
       /** Development-only secret used to encrypt the local Ed25519 keystore. */
       keystorePassphrase: z.string().min(16).optional(),
@@ -83,8 +97,11 @@ const ConfigSchema = z
       awsAllowKeyCreation: boolish.default(false),
     }),
     tsa: z.object({
-      /** Trusted-time authority: `local` (simulated, hermetic) or `rfc3161` (a real TSA). */
-      provider: z.enum(["local", "rfc3161"]).default("local"),
+      /**
+       * Trusted-time backend, resolved by name from the TSA-provider registry in
+       * `@pharos/evidence` (`local` is simulated and hermetic; `rfc3161` is a real TSA).
+       */
+      provider: providerName.default("local"),
       /** RFC 3161 TSA endpoint (rfc3161 only). Dev default FreeTSA; DigiCert/Sectigo in prod. */
       url: z.string().optional(),
       /**
@@ -98,8 +115,12 @@ const ConfigSchema = z
       intervalMs: z.coerce.number().int().min(0).default(3_600_000),
     }),
     judge: z.object({
-      /** Linear is a measured development baseline; production must preload the ONNX judges. */
-      provider: z.enum(["linear", "onnx"]).default("linear"),
+      /**
+       * Judge-serving backend, resolved by name from the judge-provider registry in
+       * `@pharos/judge`. `linear` is the measured development baseline; production must
+       * preload the `onnx` judges.
+       */
+      provider: providerName.default("linear"),
       /** Content-addressed ONNX/tokenizer cache. Pre-stage this path for restricted networks. */
       modelDir: z.string().min(1).optional(),
       /** Version-pinned reference distributions and approved PSI thresholds. */
