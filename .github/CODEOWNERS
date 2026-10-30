@@ -1,7 +1,7 @@
 # Code owners for Pharos.
 #
 # These paths hold the trust core — crypto, storage/seal path, and identity/tenancy.
-# Changes here require review from the tech lead (see CONTRIBUTING.md and roadmap §2).
+# Changes here require review from the tech lead (see CONTRIBUTING.md).
 # Order matters: the last matching pattern wins.
 
 /packages/core/       @Bobcatsfan33
@@ -11,12 +11,9 @@
 /packages/review/     @Bobcatsfan33
 /packages/storage/    @Bobcatsfan33
 /packages/identity/   @Bobcatsfan33
-/runtime/python/      @Bobcatsfan33
+/runtime/python/keel/substrate/ @Bobcatsfan33
+/runtime/python/keel/executor/  @Bobcatsfan33
 /.github/workflows/   @Bobcatsfan33
 /Dockerfile           @Bobcatsfan33
-/docs/enterprise-readiness.json @Bobcatsfan33
-/docs/security/readiness-evidence.md @Bobcatsfan33
-/docs/external-readiness/ @Bobcatsfan33
-/scripts/verify-enterprise-readiness.mjs @Bobcatsfan33
-/scripts/verify-external-gate-trackers.mjs @Bobcatsfan33
-/scripts/sync-enterprise-evidence.mjs @Bobcatsfan33
+/docs/internal/ @Bobcatsfan33
+/scripts/internal/ @Bobcatsfan33

@@ -5,8 +5,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Pharos is built against a versioned [roadmap](../blob/main/docs/ROADMAP.md).
-        If your request maps to an existing roadmap task, please reference its ID.
+        Check the [roadmap](../blob/main/docs/roadmap.md) and open issues before proposing a feature.
+        If it relates to an existing issue, link it.
   - type: textarea
     id: problem
     attributes:
@@ -21,14 +21,6 @@ body:
       description: What you'd like to happen. Include the packages/files you think it touches.
     validations:
       required: true
-  - type: input
-    id: roadmap
-    attributes:
-      label: Related roadmap task (optional)
-      description: A task ID like `S8-T4`, if applicable.
-      placeholder: S?-T?
-    validations:
-      required: false
   - type: textarea
     id: alternatives
     attributes:
