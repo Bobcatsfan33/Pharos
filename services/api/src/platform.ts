@@ -242,7 +242,7 @@ export async function buildPlatform(
 
   const cache = new VerdictCache(config.redis.url);
 
-  // Sprint 1: per-tenant signing keys (matches TenantStore.kmsKeyName).
+  // Per-tenant signing keys (matches TenantStore.kmsKeyName).
   const resolveKeyName = (tenantId: string) => `tenant:${tenantId}`;
 
   const store = new EvidenceStore({ pool, worm, signer, resolveKeyName });
@@ -314,7 +314,7 @@ export async function buildPlatform(
     listAnchors: (tenantId) => evidenceOps.listAnchors(tenantId),
     anchorMaxAgeMs: config.tsa.intervalMs > 0 ? config.tsa.intervalMs * 2 : undefined,
     onBreak: (report) => {
-      // Structured alert; Sprint 8 wires this into the observability/alerting stack.
+      // Structured alert, consumed by the observability/alerting stack.
       console.error("[chain-integrity] BREAK detected", JSON.stringify(report.errors));
     },
   });

@@ -1,4 +1,4 @@
-"""Runtime validation at the SDK trust boundary (#80).
+"""Runtime validation at the SDK trust boundary.
 
 The SDK is a thin client and the server does validate, so for a *reachable* platform this
 is only faster feedback. It is a safety control rather than a convenience because of the

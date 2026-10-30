@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { PharosClient } from "@getpharos/sdk";
 
 // SDK local fail-mode conformance (TS). When the platform is unreachable — which includes a
-// 503 kms_unavailable from S3-T2 — the SDK applies a local fail-mode that mirrors the server
+// 503 kms_unavailable — the SDK applies a local fail-mode that mirrors the server
 // cascade: reversible → fail_open (allow), irreversible → fail_closed (escalate). The Python
 // SDK conformance for the same contract lives in sdks/python/tests/test_failmode.py.
 const unreachable = () => Promise.reject(new Error("connect ECONNREFUSED"));

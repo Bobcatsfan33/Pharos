@@ -1,7 +1,7 @@
 import { PharosError, type SubmitInput } from "./types.js";
 
 /**
- * Runtime validation at the SDK trust boundary (#80).
+ * Runtime validation at the SDK trust boundary.
  *
  * The SDK is a thin client and the server does validate, so for a *reachable* platform
  * this is only faster feedback. The reason it is a safety control rather than a

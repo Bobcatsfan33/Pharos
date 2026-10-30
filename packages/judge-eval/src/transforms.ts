@@ -86,7 +86,7 @@ export function paraphrase(text: string): string {
 }
 
 /**
- * HARDENED encoding wrappers (tech-lead ruling, Sprint 6): plausible, VARIED carriers with no
+ * Hardened encoding wrappers: plausible, VARIED carriers with no
  * "base64"/"ROT13" keyword, so the suite tests actual DECODING, not carrier-phrase anomaly. A bare
  * judge (no normalizer) should score ~0 on these; the cascade normalizer decodes and then catches
  * them. Carrier choice is deterministic from the payload so suites stay reproducible.

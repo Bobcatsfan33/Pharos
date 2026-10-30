@@ -58,7 +58,7 @@ export interface CascadeDeps {
   deadlineMs: number;
   packs: JudgePackBinding[];
   /**
-   * Active, versioned policy artifacts (Sprint 6). When provided, Tier-3 decisions come from
+   * Active, versioned policy artifacts. When provided, Tier-3 decisions come from
    * data-driven citation-level rules instead of the built-in bindings; the bindings still
    * drive which judge models run (to produce the probabilities the rules test).
    */
@@ -103,7 +103,7 @@ export interface ContentRun {
 /**
  * The production decision cascade.
  *
- * This class carries **no fault-injection path** (#82). Exercising fail modes is done
+ * This class carries **no fault-injection path**. Exercising fail modes is done
  * by `FaultInjectingCascade` in `./testing.js`, which subclasses this one and overrides
  * the judge step. Keeping the seam out of the shipped class means there is no branch a
  * production instance could take into injected failure, however its dependencies are
@@ -232,7 +232,7 @@ export class VerdictCascade {
       }
     }
     if (policyArtifacts && policyArtifacts.length > 0) {
-      // Sprint 6: data-driven citation-level pack rules over judge probabilities + fields.
+      // Data-driven citation-level pack rules over judge probabilities + fields.
       const judgeProbabilities: Record<string, number> = {};
       for (const r of judgeResults) {
         riskScore = Math.max(riskScore, r.probability);

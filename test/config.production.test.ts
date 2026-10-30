@@ -34,7 +34,7 @@ describe("production configuration posture", () => {
     expect(config.kms.provider).toBe("aws-kms");
     expect(config.tsa.provider).toBe("rfc3161");
     expect(config.judge.provider).toBe("onnx");
-    // Admission control must not silently degrade to unmetered ingest (#73).
+    // Admission control must not silently degrade to unmetered ingest.
     expect(config.api.rateLimitFailMode).toBe("closed");
   });
 

@@ -125,9 +125,9 @@ class RunState:
 
     def edge_taken(self, edge: "Edge") -> bool:
         """An edge is taken iff its source completed (a skipped source is not taken)
-        and its guard passes. Guard dialect in Phase 1: ``None`` (unconditional) or
+        and its guard passes. Guard dialect today: ``None`` (unconditional) or
         ``branch:<label>`` matched against the source router's decision. Richer CEL
-        guards arrive with the policy engine in Phase 4 and default to permissive."""
+        guards arrive with the policy engine and default to permissive."""
         src = self.steps.get(edge.from_)
         if not (src and src.status == "completed"):
             return False

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { VerdictEngine, type VerdictRequest, type LiabilityContext } from "@pharos/core";
 import { loadDefaultRegistry, ModelRegistry, type AsyncJudge } from "@pharos/judge";
 import { VerdictCascade, DEFAULT_PACK_BINDINGS, fingerprintVerdict } from "@pharos/cascade";
-// Fault injection lives outside the shipped class (#82) and is reached only by this
+// Fault injection lives outside the shipped class and is reached only by this
 // explicit deep import, never from the package index.
 import { FaultInjectingCascade, type CascadeFaults } from "@pharos/cascade/testing";
 

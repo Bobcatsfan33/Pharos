@@ -20,7 +20,7 @@ export interface AppendInput {
   verdict: VerdictContext;
   liability: LiabilityContext;
   /**
-   * Optional replay guard (#74). When present, the append and the claim on the key
+   * Optional replay guard. When present, the append and the claim on the key
    * commit together, so a redelivery of the same request cannot seal a second record.
    */
   idempotency?: IdempotencyClaim;
@@ -60,7 +60,7 @@ export interface EvidenceStoreDeps {
   pool: Pool;
   worm: WormStore;
   signer: SigningProvider;
-  /** Resolve the KMS key name for a tenant. Sprint 0: per-environment; Sprint 1: per-tenant. */
+  /** Resolve the KMS key name for a tenant (one key per tenant). */
   resolveKeyName: (tenantId: string) => string;
   now?: () => Date;
 }
@@ -258,7 +258,7 @@ export class EvidenceStore {
   }
 
   /**
-   * Resolve a previously-claimed idempotency key (#74).
+   * Resolve a previously-claimed idempotency key.
    *
    * Returns the sealed record the key produced, or null if the key is unused. Throws
    * IdempotencyConflictError when the key was claimed by a materially different
@@ -292,7 +292,7 @@ export class EvidenceStore {
   }
 
   /**
-   * Reconcile this tenant's committed records against the WORM objects that exist (#77).
+   * Reconcile this tenant's committed records against the WORM objects that exist.
    *
    * The claim that a post-PUT commit failure is "harmless because it is detected by
    * reconcile()" is only true if reconcile() exists and is run. This supplies the

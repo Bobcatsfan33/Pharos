@@ -259,7 +259,7 @@ describe("Causeway — escalation round trip (atomic claim)", () => {
       maxRetries: 0,
       localFailMode: "fail_closed",
     });
-    // S3-T2: the SDK local fail-mode is reversibility-aware. An irreversible action fails
+    // The SDK local fail-mode is reversibility-aware. An irreversible action fails
     // CLOSED (escalate) — the safe default. (Reversible→fail-open is covered in
     // test/sdk.failmode.test.ts.)
     const res = await offline.submit({

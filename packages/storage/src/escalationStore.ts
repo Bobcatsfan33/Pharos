@@ -166,7 +166,7 @@ export class EscalationStore {
 
   /**
    * Look up the escalation parked under a client idempotency key. Used by the ingest
-   * replay path (#74) so a redelivered submission reports the escalation it already
+   * replay path so a redelivered submission reports the escalation it already
    * created, instead of appearing to have created none.
    */
   async getByIdempotencyKey(tenantId: string, idempotencyKey: string): Promise<Escalation | null> {

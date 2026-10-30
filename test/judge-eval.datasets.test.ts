@@ -9,7 +9,7 @@ import {
 } from "@pharos/judge-eval";
 
 /**
- * Validity of the committed eval datasets (roadmap S5-T1 + §7-10(a)). These assert the dataset
+ * Validity of the committed eval datasets (see docs/benchmarks/judge-evals.md). These assert the dataset
  * SHAPE and VALIDITY contract that the harness and the honesty of the baseline depend on. The
  * separate leakage gate lives in judge-eval.leakage.test.ts.
  */

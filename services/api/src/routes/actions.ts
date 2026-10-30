@@ -41,7 +41,7 @@ const SubmitBodySchema = z.object({
    */
   mandateToken: z.record(z.string(), z.unknown()).optional(),
   /**
-   * Optional client replay guard (#74). Supplying it makes ingest exactly-once for
+   * Optional client replay guard. Supplying it makes ingest exactly-once for
    * this request: a redelivery returns the record the first delivery sealed instead of
    * sealing another. Also keys the escalation parked on an `escalate` verdict.
    */
@@ -126,7 +126,7 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
     );
     if (!principal) return reply;
 
-    // Replay guard (#74). Resolved after authorization — an unauthenticated caller must
+    // Replay guard. Resolved after authorization — an unauthenticated caller must
     // not be able to probe which idempotency keys a tenant has used.
     const fingerprint = body.idempotencyKey ? requestFingerprint(body) : null;
 
@@ -178,7 +178,7 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
     };
 
     // Resolve a stored mandate, if referenced, and seal it into the record.
-    // Mandate authority is derived server-side, never asserted by the caller (#81).
+    // Mandate authority is derived server-side, never asserted by the caller.
     //
     // The rest of `liability` is a caller *declaration* about the action — blast radius,
     // oversight mode — which Pharos seals as evidence of what was asserted. `mandate` is

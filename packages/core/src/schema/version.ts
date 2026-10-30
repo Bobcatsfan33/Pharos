@@ -1,7 +1,7 @@
 /**
  * The unified ActionRecord schema version.
  *
- * Sprint 0 freezes v1.0.0. The schema is versioned explicitly from day one: every
+ * Version 1.0.0 is frozen. The schema is versioned explicitly from day one: every
  * persisted record carries this string, and migration adapters translate legacy
  * shapes (Flightline liability records, AI Lighthouse verdict records) into it.
  *

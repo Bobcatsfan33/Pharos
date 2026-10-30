@@ -28,7 +28,7 @@ def _retry_after(headers: httpx.Headers) -> Optional[float]:
 def map_status_to_error(status: int, body: str, retry_after: Optional[float]) -> ModelError:
     """Normalize an HTTP status + body into the taxonomy. Order matters: a 400 that
     mentions context length is a distinct, non-retryable signal that should trigger
-    the context compiler (Phase 3), not a blind retry."""
+    the context compiler, not a blind retry."""
     low = body.lower()
     if status == 429:
         return ModelError("rate_limit", body, retry_after=retry_after)

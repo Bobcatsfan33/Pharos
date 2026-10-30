@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { execSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 
-// S3-T2: KMS-unavailable failure mode. Uses a DEDICATED KMS emulator on its own port so the
+// KMS-unavailable failure mode. Uses a DEDICATED KMS emulator on its own port so the
 // test can kill it mid-run without disturbing the shared aws-kms emulator (:8088). Real
 // Postgres + WORM via buildPlatform. Proves: KMS down at seal time ⇒ 503 kms_unavailable, the
 // pharos_kms_unavailable_total metric increments, and NO partial record is written.

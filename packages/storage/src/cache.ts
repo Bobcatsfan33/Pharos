@@ -4,7 +4,7 @@ import { Redis } from "ioredis";
  * Deadline-bound verdict cache.
  *
  * Repeated action shapes can reuse a recent verdict within a short TTL to stay inside
- * the latency budget. Sprint 0 provides the cache primitive; Sprint 2 (Lantern) wires
+ * the latency budget. This module provides the cache primitive; the cascade wires
  * semantic/plan-level cache keys into the cascade.
  */
 export class VerdictCache {

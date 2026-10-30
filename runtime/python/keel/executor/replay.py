@@ -1,7 +1,7 @@
 """Replay & diff over recorded event logs.
 
 Because every nondeterministic value (clock, ids, model/tool output) was recorded
-through an L1 port, a run's log is self-describing. Phase 1 ships two log-level
+through an L1 port, a run's log is self-describing. Two log-level
 operations that this enables; full *re-execution* replay with ReplayClock/ReplayIdGen
 driving live downstream steps is P2-6.
 

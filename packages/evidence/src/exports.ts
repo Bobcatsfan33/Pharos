@@ -77,7 +77,7 @@ export function sr117ModelRiskExport(tenantId: string, records: ActionRecord[]) 
     })),
     developmentImplementationUse:
       "Cascade Tier 1 deterministic rules, Tier 2 statistical risk, Tier 3 served judges; every verdict cites the producing version.",
-    ongoingMonitoring: "Continuous sampling-based assurance with Wilson-score bounds (Sprint 7).",
+    ongoingMonitoring: "Continuous sampling-based assurance with Wilson-score bounds.",
     decisions: records.map((r) => ({
       sequence: r.content.sequence,
       decision: r.content.verdict.decision,

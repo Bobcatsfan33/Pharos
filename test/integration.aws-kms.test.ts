@@ -12,7 +12,7 @@ import {
 } from "@pharos/core";
 import { runSigningConformance } from "./signingConformance.js";
 
-// AwsKms integration against a KMS emulator (nsmithuk/local-kms; see S3-T0 spike). CI provides
+// AwsKms integration against a KMS emulator (nsmithuk/local-kms). CI provides
 // the emulator on this endpoint; locally: `docker run -d -p 8088:8080 nsmithuk/local-kms`.
 // Self-provided default mirrors the other integration tests (Postgres/Redis/MinIO).
 process.env.PHAROS_KMS_AWS_ENDPOINT ??= "http://localhost:8088";

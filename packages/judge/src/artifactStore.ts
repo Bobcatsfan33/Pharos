@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 
 /**
- * External artifact store for transformer-judge blobs (Sprint 6, tech-lead ruling).
+ * External artifact store for transformer-judge blobs.
  *
  * The ONNX + tokenizer blobs are GitHub Release assets (too large for git; LFS bandwidth is worse
  * on a public repo). Only the tiny manifest is committed. At load time we fetch each asset from the

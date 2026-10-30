@@ -197,7 +197,7 @@ class PharosClient:
         ``sealed`` — a ``threading.Thread`` whose ``result`` attribute holds the server's reply
         (or ``error``) once it joins. Call ``result["sealed"].join()`` to wait for the record.
         """
-        # Validate BEFORE transmit and before any fail-mode path (#80). This raises rather
+        # Validate BEFORE transmit and before any fail-mode path. This raises rather
         # than falling back: an unvalidated liability would otherwise pick the local
         # fail-mode, so a typo could allow an irreversible action the server never saw.
         validate_submit_input(kwargs)

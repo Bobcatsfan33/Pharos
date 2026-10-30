@@ -59,11 +59,11 @@ export interface VerdictEngineOptions {
 }
 
 /**
- * Sprint 0 decision engine — Tier 1 only (deterministic rules).
+ * Tier-1 decision engine (deterministic rules).
  *
  * This is deliberately honest about its scope: it implements the deterministic tier
  * of the cascade (mandate-limit enforcement, expiry, and an explicit deny list). The
- * statistical Tier 2 and the served-model Tier 3 are introduced in Sprint 2 (Lantern)
+ * the statistical Tier 2 and the served-model Tier 3 live in the cascade package
  * behind this same interface, with short-circuiting so a Tier-1 hit skips later tiers.
  */
 export class VerdictEngine {
