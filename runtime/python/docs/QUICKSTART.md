@@ -19,14 +19,14 @@ pip install keel              # core: SQLite + content-addressed blobs, zero ser
 pip install 'keel[viewer]'    # adds the local trace viewer (FastAPI + a static SPA)
 ```
 
-By default KEEL writes its event log to `./keel.db` and blobs to `./blobs/`. Override
+By default Pharos Runtime writes its event log to `./keel.db` and blobs to `./blobs/`. Override
 with `--db` / `--blobs` or the `KEEL_DB` / `KEEL_BLOBS` environment variables.
 
 ---
 
 ## 1. Define a graph (KIR)
 
-Create `pipeline.py`. KEEL runs **KIR** — a graph of typed nodes. Exposing a
+Create `pipeline.py`. Pharos Runtime runs **KIR** — a graph of typed nodes. Exposing a
 module-level `graph` is all `keel run` needs. (The optional `Agent`/`Task`/`Crew` DSL
 in [`examples/authoring_dsl.py`](../examples/authoring_dsl.py) compiles to this same
 KIR; it is a convenience, not the product.)

@@ -18,7 +18,7 @@ schema change that orphans an existing log.
 
 ## Versioning
 
-KEEL follows semantic versioning once it reaches 1.0. Pre-1.0 (current), minor versions
+Pharos Runtime follows semantic versioning once it reaches 1.0. Pre-1.0 (current), minor versions
 may contain breaking changes, but:
 
 - the **event-log format** is forward-compatible across versions via upcasters (above);
@@ -58,7 +58,7 @@ has shipped with the deprecation in place. Deprecations are noted in `CHANGELOG.
 
 ## Why you can rely on this
 
-Longevity is enforced by the same machinery as everything else in KEEL: the golden
+Longevity is enforced by the same machinery as everything else in Pharos Runtime: the golden
 corpus and regression suite fail CI if an old log stops replaying, `import-linter` keeps
 the layers from tangling, and `mypy --strict` + the determinism lint keep the substrate
 honest. The guarantees are gated, not promised.

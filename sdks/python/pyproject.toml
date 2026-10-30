@@ -1,6 +1,6 @@
 [project]
 name = "getpharos"
-version = "0.2.0"
+version = "0.3.0"
 description = "Pharos SDK — submit agent actions for a real-time policy verdict and sealed evidence."
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -16,3 +16,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["pharos_sdk"]
+
+[tool.setuptools.package-data]
+pharos_sdk = ["py.typed"]

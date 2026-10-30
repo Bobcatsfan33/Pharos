@@ -1,4 +1,4 @@
-# KEEL determinism contract
+# Pharos Runtime determinism contract
 
 > **Status: enforced (M1).** This is the written contract *and* it is enforced in code:
 > a CI **nondeterminism lint gate** (`python -m keel._lint.determinism keel`) blocks any

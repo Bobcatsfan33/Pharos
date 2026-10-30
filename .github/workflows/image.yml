@@ -11,6 +11,7 @@ on:
       - "services/**"
       - "apps/**"
       - "runtime/python/**"
+      - "sdks/python/**"
       - ".github/workflows/image.yml"
       - "deploy/INSTALL.md"
   push:
@@ -143,7 +144,8 @@ jobs:
       - name: build the Pharos Runtime image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
-          context: runtime/python
+          context: .
+          file: runtime/python/Dockerfile
           load: true
           push: false
           tags: ${{ env.LOCAL_RUNTIME_IMAGE }}
@@ -369,7 +371,8 @@ jobs:
         name: build and publish Pharos Runtime
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
-          context: runtime/python
+          context: .
+          file: runtime/python/Dockerfile
           push: true
           tags: ${{ steps.runtime-metadata.outputs.tags }}
           labels: ${{ steps.runtime-metadata.outputs.labels }}

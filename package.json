@@ -24,7 +24,7 @@
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down -v",
     "infra:logs": "docker compose logs -f",
-    "runtime:install": "python3 -m pip install -e 'runtime/python[dev,viewer,pg,otel]'",
+    "runtime:install": "python3 -m pip install -e sdks/python -e 'runtime/python[dev,viewer,pg,otel]'",
     "runtime:lint": "python3 -m ruff check runtime/python",
     "runtime:typecheck": "cd runtime/python && python3 -m mypy keel pharos_runtime",
     "runtime:test": "cd runtime/python && python3 -m pytest -q",

@@ -116,15 +116,15 @@ jobs:
         with:
           python-version: "3.11"
       - name: test and build Pharos Runtime
-        working-directory: runtime/python
         run: |
-          pip install -e ".[dev,viewer]" build twine
-          pytest -q
-          python -m build
-          twine check dist/*
+          pip install -e sdks/python -e "runtime/python[dev,viewer]" build twine
+          (cd runtime/python && pytest -q && python -m build && twine check dist/*)
       - name: install the built wheel and smoke both command names
+        # The runtime depends on the SDK released from this same tag; install the SDK from
+        # the checkout so the smoke test does not wait on PyPI propagation.
         run: |
           python -m venv /tmp/pharos-runtime-release-smoke
+          /tmp/pharos-runtime-release-smoke/bin/pip install sdks/python
           /tmp/pharos-runtime-release-smoke/bin/pip install runtime/python/dist/*.whl
           /tmp/pharos-runtime-release-smoke/bin/pharos --help | grep -q "usage: pharos"
           /tmp/pharos-runtime-release-smoke/bin/keel --help | grep -q "usage: keel"

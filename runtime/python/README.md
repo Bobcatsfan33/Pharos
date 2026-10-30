@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Bobcatsfan33/Pharos/actions/workflows/ci.yml/badge.svg)](https://github.com/Bobcatsfan33/Pharos/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](../../LICENSE)
 [![Typed: mypy --strict](https://img.shields.io/badge/mypy-strict-blue.svg)](https://mypy-lang.org/)
 [![Lint: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Layers: import-linter](https://img.shields.io/badge/layers-import--linter-blueviolet.svg)](https://import-linter.readthedocs.io/)
@@ -113,7 +113,7 @@ pip install 'pharos-runtime[viewer]'   # adds the local trace viewer
 pharos run --mock examples/research_pipeline.py   # durable, traced, budgeted — no key
 pharos ls                                         # list runs
 pharos show <run_id>                              # full event timeline
-keel view                                       # the dashboard: runs/steps/prompts/tokens/$
+pharos view                                       # the dashboard: runs/steps/prompts/tokens/$
 ```
 
 The dashboard is a single-file SPA (no build step) styled like macOS and laid out
@@ -179,7 +179,7 @@ are replayed and **never re-billed** (asserted in CI, not screenshotted).
 
 `pharos run | ls | show | resume | approve | replay | diff | simulate | test | audit | migrate | import | view`
 
-`keel` remains an equivalent compatibility command during the migration window.
+`keel` remains as a compatibility alias for one more release; new scripts should call `pharos`.
 
 ## Container
 
@@ -211,10 +211,10 @@ and latency-percentile (p50/p95/p99) benchmarks + a multi-worker crash soak (0 r
 
 ## Contributing & longevity
 
-Contributions are welcome — start with [`CONTRIBUTING.md`](CONTRIBUTING.md). Adding a
+Contributions are welcome — the house rules for the whole monorepo, including the
+runtime's own gates, are in the root [`CONTRIBUTING.md`](../../CONTRIBUTING.md). Adding a
 framework adapter is the most welcome and best-scoped contribution
-([`docs/ADAPTER-AUTHORS.md`](docs/ADAPTER-AUTHORS.md)). See
-[`GOVERNANCE.md`](GOVERNANCE.md) for how decisions are made and how to become a
-maintainer, [`SECURITY.md`](SECURITY.md) to report a vulnerability, and
-[`docs/STABILITY.md`](docs/STABILITY.md) for the stable-surface and schema-evolution
-guarantees (a run recorded on schema *n* replays on *n+1*, gated by the golden corpus).
+([`docs/ADAPTER-AUTHORS.md`](docs/ADAPTER-AUTHORS.md)). Report vulnerabilities through the
+root [`SECURITY.md`](../../SECURITY.md). [`docs/STABILITY.md`](docs/STABILITY.md) records
+the stable-surface and schema-evolution guarantees (a run recorded on schema *n* replays
+on *n+1*, gated by the golden corpus).

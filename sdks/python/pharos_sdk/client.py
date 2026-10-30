@@ -54,8 +54,18 @@ class PharosClient:
         if self.on_event:
             self.on_event(event)
 
-    def _request(self, method: str, path: str, body: Optional[dict] = None) -> dict:
-        url = f"{self.base_url}{path}"
+    def request(self, method: str, path: str, body: Optional[dict] = None) -> dict:
+        """Send one request to the Pharos API and return the ``data`` of its envelope.
+
+        This is the raw protocol call that ``submit`` and ``claim`` are built on. It never
+        applies the local fail-mode: a 4xx raises ``PharosError`` with the server's error
+        code (not retryable), a 5xx or network failure is retried ``max_retries`` times and
+        then raised as ``PharosError(code="unavailable")``, and a response that is not a
+        well-formed ``{success, data, error}`` envelope raises ``code="invalid_response"``.
+        Callers that need to decide fail-open / fail-closed themselves (the Pharos Runtime
+        does) use this and handle ``unavailable``; everyone else should use ``submit``.
+        """
+        url = f"{self.base_url.rstrip('/')}{path}"
         timeout = self.deadline_ms / 1000.0
         last_err: Optional[Exception] = None
         for attempt in range(self.max_retries + 1):
@@ -66,19 +76,34 @@ class PharosClient:
             req = urllib.request.Request(url, data=data, headers=headers, method=method)
             try:
                 with urllib.request.urlopen(req, timeout=timeout) as resp:
-                    payload = json.loads(resp.read().decode() or "{}")
-                    return payload.get("data", {})
+                    raw = resp.read().decode() or "{}"
+                try:
+                    payload = json.loads(raw)
+                except json.JSONDecodeError:
+                    last_err = PharosError("response was not JSON", "invalid_response")
+                    payload = None
+                if payload is not None:
+                    if not isinstance(payload, dict) or payload.get("success") is not True:
+                        raise PharosError("invalid response envelope", "invalid_response")
+                    data_out = payload.get("data")
+                    if not isinstance(data_out, dict):
+                        raise PharosError("response envelope has no data", "invalid_response")
+                    return data_out
+            except PharosError as e:
+                if e.code != "invalid_response":
+                    raise
+                last_err = e
             except urllib.error.HTTPError as e:
-                detail = {}
+                detail: Dict[str, Any] = {}
                 try:
                     detail = json.loads(e.read().decode() or "{}")
-                except Exception:
+                except Exception:  # noqa: BLE001 - a non-JSON error body is still an error
                     pass
+                error = detail.get("error") if isinstance(detail, dict) else None
+                code = error.get("code") if isinstance(error, dict) else None
                 if 400 <= e.code < 500:
                     raise PharosError(
-                        f"request failed: {detail.get('error', {}).get('code', e.reason)}",
-                        detail.get("error", {}).get("code", "client_error"),
-                        e.code,
+                        f"request failed: {code or e.reason}", code or "client_error", e.code
                     )
                 last_err = PharosError(f"server error {e.code}", "server_error", e.code)
             except Exception as e:  # noqa: BLE001 - network/timeout
@@ -86,7 +111,17 @@ class PharosClient:
             if attempt < self.max_retries:
                 self._emit({"type": "retry", "attempt": attempt, "error": str(last_err)})
                 time.sleep((2 ** attempt) * 0.025)
-        raise last_err if last_err else PharosError("request failed")
+        if isinstance(last_err, PharosError) and last_err.code == "invalid_response":
+            raise last_err
+        if isinstance(last_err, PharosError) and last_err.code == "server_error":
+            raise PharosError(str(last_err), "unavailable", last_err.status)
+        raise PharosError(
+            f"Pharos is unavailable: {type(last_err).__name__ if last_err else 'unknown'}",
+            "unavailable",
+        )
+
+    # Kept for callers that reached for the private name; ``request`` is the public API.
+    _request = request
 
     def _root_key_for(self, key_id: Any) -> Optional[dict]:
         if not self.mandate_token_root_keys or not isinstance(key_id, str):
@@ -202,7 +237,7 @@ class PharosClient:
             if e.status and 400 <= e.status < 500:
                 raise
             return self._local_fallback(start, kwargs)
-        except Exception:
+        except Exception:  # noqa: BLE001 - any transport failure takes the local fail-mode
             return self._local_fallback(start, kwargs)
 
     def _local_fallback(self, start: float, request: Optional[dict] = None) -> dict:

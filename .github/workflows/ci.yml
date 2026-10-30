@@ -445,8 +445,8 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
-      - name: Install Pharos Runtime
-        run: python -m pip install -e runtime/python
+      - name: Install Pharos SDK and Runtime
+        run: python -m pip install -e sdks/python -e runtime/python
       - name: Pharos Runtime end-to-end
         run: pnpm runtime:e2e
         env:
@@ -467,8 +467,8 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
-      - name: Install Pharos Runtime development dependencies
-        run: python -m pip install -e "runtime/python[dev,viewer]"
+      - name: Install Pharos SDK and Runtime development dependencies
+        run: python -m pip install -e sdks/python -e "runtime/python[dev,viewer]"
       - name: Runtime lint, types, architecture, and tests
         working-directory: runtime/python
         run: |
@@ -479,6 +479,9 @@ jobs:
       - name: Runtime determinism boundary
         working-directory: runtime/python
         run: python -m keel._lint.determinism keel
+      - name: Runtime byte-identical replay of recorded runs
+        working-directory: runtime/python
+        run: python -m keel.cli regress run --suite tests/regression/suite --junit regression-junit.xml
       - name: Runtime performance gates
         working-directory: runtime/python
         run: |
