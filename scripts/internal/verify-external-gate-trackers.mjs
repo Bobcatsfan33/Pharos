@@ -3,9 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const manifestPath = path.resolve(
-  process.argv[2] ?? path.join(root, "docs/enterprise-readiness.json"),
+  process.argv[2] ?? path.join(root, "docs/internal/enterprise-readiness.json"),
 );
 const repository = "Bobcatsfan33/Pharos";
 const issuePattern = /^https:\/\/github\.com\/Bobcatsfan33\/Pharos\/issues\/([1-9]\d*)$/;

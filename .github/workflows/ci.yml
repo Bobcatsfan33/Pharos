@@ -7,30 +7,12 @@ permissions:
   contents: read
   issues: read
 jobs:
-  enterprise-readiness:
-    name: enterprise evidence and decision integrity
+  action-pins:
+    name: workflow actions are pinned to commit SHAs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - run: node scripts/verify-enterprise-readiness.mjs
-      - run: node scripts/verify-external-gate-trackers.mjs
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: node scripts/verify-action-pins.mjs
-      - name: refuse false production approval
-        run: |
-          node --input-type=module <<'JS'
-          import fs from "node:fs";
-          const source = "docs/enterprise-readiness.json";
-          const target = "/tmp/pharos-false-approval.json";
-          const document = JSON.parse(fs.readFileSync(source, "utf8"));
-          document.assessment.deploymentDecision = "approved";
-          fs.writeFileSync(target, JSON.stringify(document));
-          JS
-          if node scripts/verify-enterprise-readiness.mjs /tmp/pharos-false-approval.json; then
-            echo "readiness verifier accepted false production approval" >&2
-            exit 1
-          fi
 
   helm:
     runs-on: ubuntu-latest

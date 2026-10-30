@@ -56,7 +56,7 @@ honesty, not removed as inconvenient.
   FINRA clause cited, a mandated one passes, and the evidence bundle verifies offline with
   chain **PASS** and anchor **PASS**. Hermetic: local KMS and local TSA.
 - Live external-gate transcripts for AWS KMS and a real RFC 3161 authority
-  (`docs/evidence/`), closing the last clauses of #34 and #35.
+  (`docs/internal/evidence/`), closing the last clauses of #34 and #35.
 - Explicit, documented AWS KMS key identifiers (#34 follow-up).
 
 ### Fixed
@@ -71,7 +71,7 @@ honesty, not removed as inconvenient.
 
 - README rewritten for a first-time visitor: what/who/why in three paragraphs, an
   architecture diagram, and a quickstart that was executed on a clean checkout rather than
-  assumed. Sprint history moved to `docs/status.md`.
+  assumed. Sprint history moved to `docs/internal/status.md`.
 - `@getpharos/sdk` **0.1.1 → 0.2.0**; `getpharos` (Python) **0.2.0**.
 
 ### Still true, and still published
@@ -79,7 +79,7 @@ honesty, not removed as inconvenient.
 The Tier-3 judges on the default path are linear bag-of-words classifiers, defeated by
 paraphrase. The transformer judges remain **restricted pre-production**; no judge is
 promoted in this release. The p99 3.7 ms figure was measured with the linear judges and is
-not a transformer claim. `docs/enterprise-readiness.json` reads `not-approved` with 6 open
+not a transformer claim. `docs/internal/enterprise-readiness.json` reads `not-approved` with 6 open
 blocking gates.
 
 ## [0.1.0] — 2026-07-21

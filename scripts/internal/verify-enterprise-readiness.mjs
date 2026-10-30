@@ -4,8 +4,10 @@ import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const selected = path.resolve(process.argv[2] ?? path.join(root, "docs/enterprise-readiness.json"));
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const selected = path.resolve(
+  process.argv[2] ?? path.join(root, "docs/internal/enterprise-readiness.json"),
+);
 const requiredControls = new Set([
   "GOV-01",
   "SDLC-01",

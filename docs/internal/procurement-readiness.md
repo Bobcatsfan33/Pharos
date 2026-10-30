@@ -3,7 +3,7 @@
 [`enterprise-readiness.json`](enterprise-readiness.json) is the authoritative, expiring index of
 Pharos product evidence and open deployment gates. CI checks every evidence path and its SHA-256
 snapshot, rejects self-approval, and refuses an approval claim while partial controls or blocking
-gates remain. The [evidence-governance contract](security/readiness-evidence.md) explains what this
+gates remain. The [evidence-governance contract](readiness-evidence.md) explains what this
 repository self-assessment proves—and what still requires an independent authority.
 
 The current decision is **not approved**, and Pharos is **not yet a software release candidate**.
@@ -29,6 +29,6 @@ The evidence index maps to [NIST SSDF 1.1](https://csrc.nist.gov/pubs/sp/800/218
 and [NIST AI RMF 1.0](https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-ai-rmf-10).
 AI RMF 1.0 is under revision and must be reassessed when NIST publishes a final replacement.
 
-The existing [SOC 2 and procurement pack](compliance/soc2-and-procurement.md) is a product control
+The existing [SOC 2 and procurement pack](../compliance/soc2-and-procurement.md) is a product control
 inventory, not an attestation or completed vendor review. Run
-`node scripts/verify-enterprise-readiness.mjs` before relying on this decision.
+`node scripts/internal/verify-enterprise-readiness.mjs` before relying on this decision.

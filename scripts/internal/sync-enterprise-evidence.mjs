@@ -5,8 +5,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { format } from "prettier";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const manifestPath = path.join(root, "docs/enterprise-readiness.json");
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const manifestPath = path.join(root, "docs/internal/enterprise-readiness.json");
 const document = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 
 function collectEvidence() {

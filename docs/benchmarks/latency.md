@@ -61,7 +61,7 @@ separately and excluded from request latency.
 
 ## Judge path (D1)
 
-Workstream D1 of the [judgement-family handoff](../handoff/2026-10-29-judgement-family-and-primitives.md)
+Workstream D1 of the [judgement-family handoff](../internal/handoff/2026-10-29-judgement-family-and-primitives.md)
 added a typed judge panel: content models run only for the action types their pack binds
 (`PHAROS_JUDGE_ROUTING=strict`, the default), a deterministic structural judge runs on every
 Tier-3 action, and the applicable judges run concurrently under the cascade deadline. Each

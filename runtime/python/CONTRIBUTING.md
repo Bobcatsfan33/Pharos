@@ -42,7 +42,7 @@ Two non-obvious rules the gates enforce, both load-bearing for the product:
 - **Small, focused, tested.** Add or update tests in the same PR. New behaviour without
   a test that would fail without it is unlikely to merge.
 - **Prove claims in CI.** KEEL only ships a guarantee after a test proves it (see
-  `docs/STRATEGY.md`). If your change asserts "byte-identical" or a performance number,
+  `docs/internal/runtime/STRATEGY.md` at the repository root). If your change asserts "byte-identical" or a performance number,
   add the test or benchmark that backs it.
 - **Don't break replay.** If you touch the event envelope, serialization, or a node
   handler, the golden corpus (`tests/golden`) and the regression suite

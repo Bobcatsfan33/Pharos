@@ -64,13 +64,13 @@
       "evidence": [
         "SECURITY.md",
         "docs/LIMITATIONS.md",
-        "docs/ROADMAP.md",
+        "docs/internal/prototype-roadmap.md",
         "docs/assurance-and-risk.md",
-        "docs/external-readiness/README.md",
-        "docs/external-readiness/evidence-receipt.schema.json",
-        "docs/procurement-readiness.md",
-        "docs/security/readiness-evidence.md",
-        "scripts/verify-external-gate-trackers.mjs"
+        "docs/internal/external-readiness/README.md",
+        "docs/internal/external-readiness/evidence-receipt.schema.json",
+        "docs/internal/procurement-readiness.md",
+        "docs/internal/readiness-evidence.md",
+        "scripts/internal/verify-external-gate-trackers.mjs"
       ],
       "gaps": []
     },
@@ -110,7 +110,7 @@
         ".github/workflows/image.yml",
         ".github/workflows/release.yml",
         "docs/security/release-assurance.md",
-        "docs/evidence/2026-08-10-github-release-controls.md"
+        "docs/internal/evidence/2026-08-10-github-release-controls.md"
       ],
       "gaps": [
         "Live main protection, the active v* tag ruleset, environment ref restrictions, and disabled administrator bypass are implemented. The release environments still have no required reviewer because no independent collaborator is available, the npm trusted-publisher environment must be updated, and no protected release exercise has been retained."
@@ -165,7 +165,7 @@
       "frameworks": ["csa-ccm-caiq-4.1"],
       "evidence": [
         "docs/operations.md",
-        "docs/code-audit-durable-stores.md",
+        "docs/internal/code-audit-durable-stores.md",
         "docs/runbooks/gateway-held-key-rotation.md"
       ],
       "gaps": [
@@ -229,7 +229,7 @@
         "packages/judge/models/manifest.json",
         ".github/workflows/judge-parity.yml",
         ".github/workflows/training.yml",
-        "docs/evidence/2026-08-10-onnx-runtime-qualification.md",
+        "docs/internal/evidence/2026-08-10-onnx-runtime-qualification.md",
         "packages/judge/src/onnxModel.ts",
         "training/corpus.py",
         "training/check_leakage.py",
@@ -269,7 +269,7 @@
         "https://github.com/Bobcatsfan33/Pharos/issues/37",
         "https://github.com/Bobcatsfan33/Pharos/issues/91"
       ],
-      "handoff": "docs/external-readiness/eng-judges.md",
+      "handoff": "docs/internal/external-readiness/eng-judges.md",
       "evidence": [],
       "evidenceReceipt": null,
       "completion": null
@@ -282,7 +282,7 @@
       "ownerRole": "Product Security",
       "acceptanceCriteria": "Signed report covers API, gateway, console, SDKs, PDP, tenant isolation, evidence chain, KMS, TSA, WORM, and deployment; critical and high findings are closed or CISO-accepted.",
       "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/164"],
-      "handoff": "docs/external-readiness/ext-pentest.md",
+      "handoff": "docs/internal/external-readiness/ext-pentest.md",
       "evidence": [],
       "evidenceReceipt": null,
       "completion": null
@@ -295,7 +295,7 @@
       "ownerRole": "Security, PKI, and Legal",
       "acceptanceCriteria": "Approved production KMS keys and roles, independently obtained TSA pins, rotation evidence, and outside-counsel admissibility review are retained.",
       "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/165"],
-      "handoff": "docs/external-readiness/ext-trust.md",
+      "handoff": "docs/internal/external-readiness/ext-trust.md",
       "evidence": [],
       "evidenceReceipt": null,
       "completion": null
@@ -308,7 +308,7 @@
       "ownerRole": "SRE",
       "acceptanceCriteria": "Protected release approval and tag controls, customer-topology deployment, backup restore, failover, RPO/RTO, alerts, SLOs, support, incident, escalation, and notification procedures are exercised and signed.",
       "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/166"],
-      "handoff": "docs/external-readiness/ext-operations.md",
+      "handoff": "docs/internal/external-readiness/ext-operations.md",
       "evidence": [],
       "evidenceReceipt": null,
       "completion": null
@@ -321,7 +321,7 @@
       "ownerRole": "GRC and Legal",
       "acceptanceCriteria": "Applicable SOC 2 or ISO evidence, SIG or CAIQ responses, DPA, privacy and residency terms, subprocessors, insurance, accessibility, support, and license terms are approved.",
       "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/167"],
-      "handoff": "docs/external-readiness/ext-compliance.md",
+      "handoff": "docs/internal/external-readiness/ext-compliance.md",
       "evidence": [],
       "evidenceReceipt": null,
       "completion": null
@@ -334,7 +334,7 @@
       "ownerRole": "Product",
       "acceptanceCriteria": "Approved pilot and production references demonstrate adoption, efficacy, operations, and support across the intended regulated-market boundary.",
       "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/168"],
-      "handoff": "docs/external-readiness/ext-customers.md",
+      "handoff": "docs/internal/external-readiness/ext-customers.md",
       "evidence": [],
       "evidenceReceipt": null,
       "completion": null
@@ -342,11 +342,11 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-10-30",
+    "generatedAt": "2026-10-31",
     "files": [
       {
         "path": ".github/CODEOWNERS",
-        "sha256": "c73eb1b219620f9ec132cd8bea200c17f203165ddeca72a40c85c454b8944f03"
+        "sha256": "9093d2780cad7eb990a47f6445f693b2638b1d18b0e38335f33b5f560ba66246"
       },
       {
         "path": ".github/dependabot.yml",
@@ -354,7 +354,7 @@
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "26599ec27d7e53eee798038f5183a05aad2a65d3596a85b3952415fc93458b40"
+        "sha256": "89a2c1400267763936e4ce5d5eacc8129ad0ad93d9c97ec6c6fba4d871dd6fd7"
       },
       {
         "path": ".github/workflows/codeql.yml",
@@ -386,11 +386,7 @@
       },
       {
         "path": "docs/LIMITATIONS.md",
-        "sha256": "affc604be10d167b99f55a6bf0cc24835ba1930b1475582f72e70fd01f0455ac"
-      },
-      {
-        "path": "docs/ROADMAP.md",
-        "sha256": "ca65558981d2d37169c8e890766013df97f60cf36a6178549636ae040517aaf4"
+        "sha256": "1e967c0d110a388030fc5cb6d2ec68f413f40dbb04569954a7049a13fafc4b10"
       },
       {
         "path": "docs/assurance-and-risk.md",
@@ -410,7 +406,7 @@
       },
       {
         "path": "docs/benchmarks/latency.md",
-        "sha256": "17ac31a9b08ea766b7f5259885fb4211c8210721c3d9be599b488afc30d05c5a"
+        "sha256": "afc450f51946acdfa8f2d966d7a839b6ba9a44f8d240451d8b2e09fabbf4091c"
       },
       {
         "path": "docs/benchmarks/onnx-local-reference.json",
@@ -419,10 +415,6 @@
       {
         "path": "docs/benchmarks/system-encoding-eval.md",
         "sha256": "ef6dede873dfbd1a7ab943573003d54781ce8749edefae7398bd7d5f8cae7b1b"
-      },
-      {
-        "path": "docs/code-audit-durable-stores.md",
-        "sha256": "8c5e9f02aaebe1118b02f5052b6de7c9bcbd93abe73cf25a1700ed9af10caee9"
       },
       {
         "path": "docs/compliance/soc2-and-procurement.md",
@@ -437,52 +429,68 @@
         "sha256": "bcc8ef5b8348baf5d151690f01ad471f3ff349a96d83033858772d1a4dee8505"
       },
       {
-        "path": "docs/evidence/2026-08-10-github-release-controls.md",
-        "sha256": "443748246ac1e5d456809d61eaee434860cc7ac5c286c43feb8bd7757850e373"
-      },
-      {
-        "path": "docs/evidence/2026-08-10-onnx-runtime-qualification.md",
-        "sha256": "53eaab832a12f78fe1e6be66f15ecd0c617df0a9fcce4fe1f5dc9a95f8573d9d"
-      },
-      {
-        "path": "docs/external-readiness/README.md",
-        "sha256": "f55b414894881769ae0a186d6088620e29eef4ed06d3b0256ae11f96bb290bee"
-      },
-      {
-        "path": "docs/external-readiness/eng-judges.md",
-        "sha256": "c1078f287fc8bf039a9708be405b04c5ff92840f9ebe143eb813f1a559aacb8f"
-      },
-      {
-        "path": "docs/external-readiness/evidence-receipt.schema.json",
-        "sha256": "7428badfd976e05798771e1433698ae04fbe8e42903c6d470f599297a151f3ee"
-      },
-      {
-        "path": "docs/external-readiness/ext-compliance.md",
-        "sha256": "06605536acbf32c64b40aa8b84a4ae9f90bf41f61a7812f71712e9bd39230673"
-      },
-      {
-        "path": "docs/external-readiness/ext-customers.md",
-        "sha256": "7e6520c4abc3479c3fb9b2a717056e25c3dec882d1199409e7bce8862c9b079c"
-      },
-      {
-        "path": "docs/external-readiness/ext-operations.md",
-        "sha256": "d9c4ec2b544ce18a58b05ee73a38ddea71bc08f617ee14b0fc619e2da7dea18e"
-      },
-      {
-        "path": "docs/external-readiness/ext-pentest.md",
-        "sha256": "9c3afa45e142777d29504c88c29842569c4ce3aeb11dbe2fce5b63beedafde2b"
-      },
-      {
-        "path": "docs/external-readiness/ext-trust.md",
-        "sha256": "cfc72c7a3571a4f879f8a3646e8073f0c851e04be8c6c9f6654df6f52babf238"
-      },
-      {
         "path": "docs/identity-and-tenancy.md",
         "sha256": "d3acb7748429870ac8c54fca22bb3df027c358f9bd66a379cb83e0aaaa6a9e7b"
       },
       {
         "path": "docs/incident-response.md",
         "sha256": "7a9cd24d3784143fdfe900b47cb1119a1f9818d9ae018ce3e14177546be99f27"
+      },
+      {
+        "path": "docs/internal/code-audit-durable-stores.md",
+        "sha256": "44d6d1bad6384bb377182b6a0c3893b72ecb489d14a7b713366a1cdaafb03115"
+      },
+      {
+        "path": "docs/internal/evidence/2026-08-10-github-release-controls.md",
+        "sha256": "443748246ac1e5d456809d61eaee434860cc7ac5c286c43feb8bd7757850e373"
+      },
+      {
+        "path": "docs/internal/evidence/2026-08-10-onnx-runtime-qualification.md",
+        "sha256": "53eaab832a12f78fe1e6be66f15ecd0c617df0a9fcce4fe1f5dc9a95f8573d9d"
+      },
+      {
+        "path": "docs/internal/external-readiness/README.md",
+        "sha256": "be8ed6c9d9d5ebf0f246ac3c5117d0bf90fbdbb3c002aed1b46cd1513559c7a0"
+      },
+      {
+        "path": "docs/internal/external-readiness/eng-judges.md",
+        "sha256": "c1078f287fc8bf039a9708be405b04c5ff92840f9ebe143eb813f1a559aacb8f"
+      },
+      {
+        "path": "docs/internal/external-readiness/evidence-receipt.schema.json",
+        "sha256": "7428badfd976e05798771e1433698ae04fbe8e42903c6d470f599297a151f3ee"
+      },
+      {
+        "path": "docs/internal/external-readiness/ext-compliance.md",
+        "sha256": "06605536acbf32c64b40aa8b84a4ae9f90bf41f61a7812f71712e9bd39230673"
+      },
+      {
+        "path": "docs/internal/external-readiness/ext-customers.md",
+        "sha256": "7e6520c4abc3479c3fb9b2a717056e25c3dec882d1199409e7bce8862c9b079c"
+      },
+      {
+        "path": "docs/internal/external-readiness/ext-operations.md",
+        "sha256": "d9c4ec2b544ce18a58b05ee73a38ddea71bc08f617ee14b0fc619e2da7dea18e"
+      },
+      {
+        "path": "docs/internal/external-readiness/ext-pentest.md",
+        "sha256": "9c3afa45e142777d29504c88c29842569c4ce3aeb11dbe2fce5b63beedafde2b"
+      },
+      {
+        "path": "docs/internal/external-readiness/ext-trust.md",
+        "sha256": "cfc72c7a3571a4f879f8a3646e8073f0c851e04be8c6c9f6654df6f52babf238"
+      },
+      {
+        "path": "docs/internal/procurement-readiness.md",
+        "sha256": "64b3eaea771a6745eb66f46510bf4af15a1d4c794f93e374c97c00b0e327e779"
+      },
+      {
+        "path": "docs/internal/prototype-roadmap.md",
+        "sha256": "ca65558981d2d37169c8e890766013df97f60cf36a6178549636ae040517aaf4"
+      },
+      {
+        "path": "docs/internal/readiness-evidence.md",
+        "sha256": "1b928a9ab401b85b8ce1a6e284e9ac5dda69b243b0e23d1de8609fee624f75b3"
       },
       {
         "path": "docs/legal/admissibility.md",
@@ -495,10 +503,6 @@
       {
         "path": "docs/operations.md",
         "sha256": "de8c84af8f52b7e830b17068fc9c6f8cad6b47937305a6f13caf8dcc578a3f82"
-      },
-      {
-        "path": "docs/procurement-readiness.md",
-        "sha256": "2b5d86efadc23239ce110b92c390e08d6e9e8eee4e342a27136333a2d2a6c6de"
       },
       {
         "path": "docs/review-operations.md",
@@ -533,10 +537,6 @@
         "sha256": "2574a875bd7b38587a6fe5e9df21ae2c526069469a215b26cb9b6a10f1939cdf"
       },
       {
-        "path": "docs/security/readiness-evidence.md",
-        "sha256": "544eac89b42da2c5d8966ea6583d86e11f94b1cf8f324100c73e527f4a71e546"
-      },
-      {
         "path": "docs/security/release-assurance.md",
         "sha256": "1a6491d5f9e9b9af9749c412b9327aac6f5789b949302a0b28ec38a3ceeb39ea"
       },
@@ -553,8 +553,8 @@
         "sha256": "767f1c644c0f7ced7445db05856fd5387289b820ed3579eae42432533e9af309"
       },
       {
-        "path": "scripts/verify-external-gate-trackers.mjs",
-        "sha256": "ab5fe75e4fcccebb32bfd9b7488ae64f144d0870bc594856eaa045b7272a4dac"
+        "path": "scripts/internal/verify-external-gate-trackers.mjs",
+        "sha256": "95a877242860977e6ca04e2e50f168c20ec5b475243569f1017e9a08004c701a"
       },
       {
         "path": "services/api/src/platform.ts",

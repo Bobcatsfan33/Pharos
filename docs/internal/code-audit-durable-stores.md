@@ -7,12 +7,12 @@ codebase (verified by code audit)."* This document records that audit.
 
 | Tier | Technology | What it holds | Module |
 |------|-----------|---------------|--------|
-| Operational state | **Postgres** | tenants, chain heads, the chained `action_records`, encrypted gateway continuations | [`packages/storage/src/migrations.ts`](../packages/storage/src/migrations.ts), [`evidenceStore.ts`](../packages/storage/src/evidenceStore.ts), [`heldRequestStore.ts`](../packages/storage/src/heldRequestStore.ts) |
-| Evidence chain | **S3 WORM** (Object Lock, COMPLIANCE) | sealed records, immutable | [`packages/storage/src/wormStore.ts`](../packages/storage/src/wormStore.ts) |
-| Verdict cache | **Redis** | deadline-bound verdict cache (TTL) | [`packages/storage/src/cache.ts`](../packages/storage/src/cache.ts) |
+| Operational state | **Postgres** | tenants, chain heads, the chained `action_records`, encrypted gateway continuations | [`packages/storage/src/migrations.ts`](../../packages/storage/src/migrations.ts), [`evidenceStore.ts`](../../packages/storage/src/evidenceStore.ts), [`heldRequestStore.ts`](../../packages/storage/src/heldRequestStore.ts) |
+| Evidence chain | **S3 WORM** (Object Lock, COMPLIANCE) | sealed records, immutable | [`packages/storage/src/wormStore.ts`](../../packages/storage/src/wormStore.ts) |
+| Verdict cache | **Redis** | deadline-bound verdict cache (TTL) | [`packages/storage/src/cache.ts`](../../packages/storage/src/cache.ts) |
 
 The write path commits operational state and evidence together or not at all — see
-[`evidenceStore.ts`](../packages/storage/src/evidenceStore.ts) `append()`.
+[`evidenceStore.ts`](../../packages/storage/src/evidenceStore.ts) `append()`.
 
 ## What is intentionally NOT platform state
 
@@ -21,7 +21,7 @@ The write path commits operational state and evidence together or not at all —
   are AES-256-GCM encrypted and permission-gated; it is deliberately not described as an HSM. In
   production it is replaced by a real KMS (AWS KMS / CloudHSM) and Pharos persists no key
   material at all. It is a separate subsystem with a separate persistence concern by design
-  ([`packages/core/src/signing/`](../packages/core/src/signing/)).
+  ([`packages/core/src/signing/`](../../packages/core/src/signing/)).
 - **Redis cache**: a *cache*, not a store of record — it is deadline-bound and
   reconstructible. The authoritative chain is Postgres + WORM; losing Redis loses no
   evidence.

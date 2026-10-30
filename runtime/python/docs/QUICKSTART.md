@@ -242,4 +242,4 @@ The same code runs unchanged at scale — swapping a backend is a config line:
   or a NATS subject.
 
 See the [README](../README.md) for the architecture and the
-[`docs/PHASE*_STATUS.md`](.) docs for the full feature map.
+the historical milestone notes under `docs/internal/runtime/` at the repository root for the full feature map.

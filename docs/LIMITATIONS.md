@@ -15,7 +15,7 @@ Postgres RLS multi-tenant isolation under a `NOBYPASSRLS` app role, the engineer
 fail-open / fail-closed deadline behavior, and the CI gate that fails the build if
 integration tests skip. Those claims stand.
 
-Task IDs below reference [`docs/ROADMAP.md`](ROADMAP.md) and the enterprise engineering
+Task IDs below reference [`docs/internal/prototype-roadmap.md`](internal/prototype-roadmap.md) and the enterprise engineering
 roadmap.
 
 ---

@@ -27,8 +27,8 @@ owner must return before its blocking gate can close.
    `completion`, refresh the evidence snapshot, and run:
 
    ```bash
-   node scripts/sync-enterprise-evidence.mjs
-   node scripts/verify-enterprise-readiness.mjs
+   node scripts/internal/sync-enterprise-evidence.mjs
+   node scripts/internal/verify-enterprise-readiness.mjs
    ```
 
 7. An approver distinct from the repository preparer verifies the external locator, artifact digest,

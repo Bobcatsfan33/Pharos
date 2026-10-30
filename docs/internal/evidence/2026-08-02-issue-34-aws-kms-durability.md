@@ -17,7 +17,7 @@ $ git rev-parse HEAD origin/main
 05d79bf3ea2b01ad86118e6a2f88e0bdf259d667
 05d79bf3ea2b01ad86118e6a2f88e0bdf259d667
 
-$ node scripts/verify-enterprise-readiness.mjs
+$ node scripts/internal/verify-enterprise-readiness.mjs
 enterprise readiness manifest valid: 12 controls, 6 open blocking gates,
 decision=not-approved, reviewBy=2026-10-29
 (exit 0)

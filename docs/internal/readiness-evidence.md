@@ -1,20 +1,22 @@
 # Enterprise readiness evidence governance
 
-`docs/enterprise-readiness.json` is a repository self-assessment. It is an engineering control,
+`enterprise-readiness.json` is a repository self-assessment. It is an engineering control,
 not an independent audit, certification, authorization to operate, or production approval.
 
 ## Drift integrity
 
 Every file cited by a control or completed external gate is listed exactly once in the manifest's
-`evidenceSnapshot`, with a SHA-256 digest over its reviewed bytes. CI recomputes every digest and
-fails if evidence changes without an intentional snapshot update, if a cited file is missing or a
-symlink, or if the inventory contains uncited material.
+`evidenceSnapshot`, with a SHA-256 digest over its reviewed bytes. The verifier, run by a
+maintainer before any manifest change is committed, recomputes every digest and fails if evidence
+changes without an intentional snapshot update, if a cited file is missing or a symlink, or if the
+inventory contains uncited material. It is deliberately not a CI gate: a self-assessment cannot be
+its own independent assessor.
 
 After reviewing a legitimate evidence change, refresh the inventory and verify it:
 
 ```bash
-node scripts/sync-enterprise-evidence.mjs
-node scripts/verify-enterprise-readiness.mjs
+node scripts/internal/sync-enterprise-evidence.mjs
+node scripts/internal/verify-enterprise-readiness.mjs
 ```
 
 The snapshot detects stale or accidental evidence substitution inside a proposed revision. It does
@@ -24,7 +26,7 @@ the external approvals below provide the surrounding change-control boundary.
 
 ## Approval separation
 
-The current decision is `not-approved`, and `assessment.approval` must therefore be `null`. CI will
+The current decision is `not-approved`, and `assessment.approval` must therefore be `null`. The verifier will
 reject an `approved` decision unless all control gaps and blocking gates are closed and the manifest
 contains:
 

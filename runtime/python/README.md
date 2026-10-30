@@ -200,7 +200,7 @@ legacy alias).
 The product is the substrate (L1/L2): determinism and durability. Frameworks are
 distribution, not competition — Pharos Runtime runs underneath LangGraph, CrewAI, the
 OpenAI Agents SDK, and the Anthropic SDK. The strategy, milestones, and per-milestone
-proof are in [`docs/STRATEGY.md`](docs/STRATEGY.md); the determinism contract is
+proof are in [`docs/internal/runtime/STRATEGY.md`](../../docs/internal/runtime/STRATEGY.md); the determinism contract is
 [`docs/DETERMINISM.md`](docs/DETERMINISM.md); reproducible numbers are in
 [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
