@@ -1,4 +1,4 @@
-# The decision cascade (Sprint 2 — Lantern)
+# The decision cascade
 
 The cascade is the central technical claim of Pharos: deterministic, citation-backed
 verdicts under a hard latency budget. It is implemented in
@@ -55,7 +55,10 @@ tier costs the slowest judge, not the sum
 **Routing.** Each pack binding names the action-type prefixes its model is for: the FINRA
 promissory and PHI models bind to communications and disclosures (`email.`, `message.`,
 `document.`, `file.`, …), the funds-movement model to `payment.`, `wire.`, `transfer.` and the
-like (`DEFAULT_PACK_BINDINGS` in [`@pharos/cascade`](../packages/cascade/src/index.ts)).
+like. The bindings are declared by each pack in
+[`packages/policy/packs/*.json`](../packages/policy/packs) (`judgeBindings`); the cascade's
+`DEFAULT_PACK_BINDINGS` is derived from them, so adding a concern is adding a binding to a
+pack file.
 Under the default `PHAROS_JUDGE_ROUTING=strict` a `crm.update` or a shell command runs no
 transformer at all. `PHAROS_JUDGE_ROUTING=all` restores the pre-D1 behaviour of every model on
 every action. Routing changes *which* models score an action; it does not change any model.
@@ -101,7 +104,7 @@ The chaos behavior is exercised in tests, not just asserted in prose:
   `latency.deadlineBreached = true`.
 - **Postgres down mid-verdict** — `integration.lantern.test.ts` verifies that with the
   database unavailable no partial/unsealed verdict is returned (verdict + evidence are atomic;
-  the Sprint 0 guarantee holds under fault).
+  the atomicity guarantee holds under fault).
 - **Redis down** — the verdict cache and rate limiter fail open (best-effort); verdicts are
   unaffected because the authoritative path is Postgres + WORM, not the cache.
 

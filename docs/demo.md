@@ -126,9 +126,9 @@ Honesty matters more than a clean demo, so:
 - **The timestamp authority is `local`** — a simulated TSA with independent keys, which is
   what makes the demo free and hermetic. A real RFC 3161 run against a public authority,
   with the certificate pin verified, is recorded in
-  [evidence/2026-08-02-issue-35-live-tsa-bundle.md](evidence/2026-08-02-issue-35-live-tsa-bundle.md).
+  [evidence/2026-08-02-issue-35-live-tsa-bundle.md](internal/evidence/2026-08-02-issue-35-live-tsa-bundle.md).
 - **Signing is local Ed25519**, not AWS KMS. The live AWS KMS durability run is in
-  [evidence/2026-08-02-issue-34-aws-kms-durability.md](evidence/2026-08-02-issue-34-aws-kms-durability.md).
+  [evidence/2026-08-02-issue-34-aws-kms-durability.md](internal/evidence/2026-08-02-issue-34-aws-kms-durability.md).
 - The escalation is shown reaching a verdict; the full **review workflow** (queue routing,
   SLA, human resolution, resume) is exercised in the integration suite rather than here.
 
