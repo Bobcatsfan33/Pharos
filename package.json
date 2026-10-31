@@ -48,7 +48,7 @@
     "bench:mandate-token": "tsx scripts/bench-mandate-token.ts"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.1144.0",
+    "@aws-sdk/client-s3": "^3.1158.0",
     "@changesets/cli": "^3.0.3",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.3",
