@@ -1,4 +1,4 @@
-# ActionRecord Schema v1.1.0
+# ActionRecord Schema v1.1.1
 
 The `ActionRecord` is the universal event of the Pharos platform — one event, two
 consumers. It carries the **Beam** (Decide) verdict context and the **Ledger** (Prove)
@@ -21,7 +21,7 @@ A record has two top-level parts:
 
 ```
 content
-├─ schemaVersion : "1.0.0"|"1.1.0"    every record self-describes its version (hashed+signed)
+├─ schemaVersion : "1.0.0"|"1.1.0"|"1.1.1"   every record self-describes its version (hashed+signed)
 ├─ id            : uuid               globally unique record id
 ├─ tenantId      : string             isolation boundary
 ├─ sequence      : int ≥ 0            per-tenant monotonic; 0 is genesis
@@ -41,7 +41,9 @@ replay), `latency` (`totalMs`, `perTier`, `deadlineMs`, `deadlineBreached`).
 
 **`LiabilityContext`** (Ledger): `mandate` (id, scope, limits, grantor, expiry,
 version), `oversightMode` (`autonomous|human_in_loop|human_on_loop`), `blastRadius`
-(financial amount, currency, reversibility), `modelMetadata` (provider, model, version).
+(financial amount, currency, reversibility), `modelMetadata` (provider, model, version),
+and — from 1.1.1, only when a MandateToken was presented — `mandateToken` (`rootKeyId`,
+`blockHashes[]`, `headHash`, `verification`, optional `effective` authority).
 
 ### `seal`
 
@@ -61,9 +63,20 @@ seal
 - **MAJOR** — breaking change; requires a forward migration adapter and a documented
   re-verification procedure for the chain.
 
-Current version: **`1.1.0`**. Migration adapters translate the two legacy shapes (AI
+Current version: **`1.1.1`**. Migration adapters translate the two legacy shapes (AI
 Lighthouse verdict records, Flightline liability events) into the current version and
 back: [`packages/core/src/migration/`](../packages/core/src/migration/).
+
+### v1.1.1 — `liability.mandateToken` seals a presented MandateToken
+
+See [ADR 0007](adr/0007-mandate-token-schema-v1-1-1.md) and Workstream A of the
+[judgement-family handoff](handoff/2026-10-29-judgement-family-and-primitives.md). PATCH, per
+the rule above: one optional field, no migration. When an agent presents a signed, attenuable
+MandateToken, the record seals the token's content-hashed blocks, the verifier's answer, and
+the authority that was in force — never the token itself, which carries the holder's ephemeral
+secret. A verified token supersedes the server-side mandate in `liability.mandate`; a refused one
+leaves `mandate: null` and records why, so replay reaches the same Tier-1 block from the record
+alone.
 
 ### v1.1.0 — `seal.algorithm` states the real signing algorithm
 

@@ -1,6 +1,6 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import { randomUUID } from "node:crypto";
-import type { LiabilityInput, PharosClient, ActionInput } from "@getpharos/sdk";
+import type { LiabilityInput, MandateToken, PharosClient, ActionInput } from "@getpharos/sdk";
 import type {
   HeldGatewayRequest,
   HeldRequestAcquireResult,
@@ -30,6 +30,12 @@ export interface GatewayOptions {
     action?: Partial<ActionInput>;
     liability?: LiabilityInput;
     mandateId?: string;
+    /**
+     * A MandateToken the agent holds (Workstream A). The SDK verifies it locally when the
+     * client was configured with the tenant's root keys — a structurally invalid token is a
+     * Tier-1 block answered here as 403 — and the server verifies and seals it regardless.
+     */
+    mandateToken?: MandateToken;
   };
   fetchImpl?: typeof fetch;
   /** Dependency probe used by /__pharos/readyz. Throw to report not-ready. */
@@ -129,9 +135,11 @@ export function createGatewayApp(opts: GatewayOptions): FastifyInstance {
     action: ActionInput;
     liability: LiabilityInput;
     mandateId?: string;
+    mandateToken?: MandateToken;
   } {
     const mapped = opts.mapAction?.(req) ?? {};
     return {
+      ...(mapped.mandateToken ? { mandateToken: mapped.mandateToken } : {}),
       action: {
         type: mapped.action?.type ?? `egress.${req.method.toLowerCase()}`,
         agentId: mapped.action?.agentId ?? opts.agentId,
@@ -196,12 +204,13 @@ export function createGatewayApp(opts: GatewayOptions): FastifyInstance {
       body: request.body,
       headers: {},
     };
-    const { action, liability, mandateId } = actionFor(req);
+    const { action, liability, mandateId, mandateToken } = actionFor(req);
     const submitted = await opts.client.submit({
       tenantId: opts.tenantId,
       action,
       liability,
       mandateId,
+      ...(mandateToken ? { mandateToken } : {}),
     });
     const decision = submitted.verdict.decision;
 

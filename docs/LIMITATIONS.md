@@ -268,6 +268,39 @@ promotes a judge or changes entry 1 or 2.
 
 ---
 
+## 9. MandateToken: offline verifiers cannot see revocation; local allow is optimistic; resources are carried, not enforced
+
+**Today:** Workstream A added portable, attenuable mandates
+([`packages/core/src/mandate-token/`](../packages/core/src/mandate-token/), ADR 0007). Three
+things an honest reader should know.
+
+- **Revocation is server-side only.** `verifyMandateToken` proves signatures, chain position,
+  narrowing, and expiry from the published key alone. It cannot know that the stored mandate
+  was revoked after the token was minted. The server checks that at submit time and seals
+  `mandate-revoked`; an SDK or gateway holding only the keyset will still consider such a token
+  valid until it expires. Keep token lifetimes short where revocation latency matters.
+- **`localAllow` is an optimistic decision, off by default.** When a tenant turns it on, the SDK
+  allows a reversible, zero-amount, in-scope action locally from the token and submits the same
+  request behind it. The sealed server verdict is authoritative and Tier 2/3 may disagree; the
+  SDK reports divergence (`local-verdict-diverged`) but the side effect may already have run.
+  That is the trade the handoff describes, and it is the tenant's to make.
+- **Resources narrow but are not yet bound to the payload.** A token's `scope.resources` is
+  verified to only narrow and is sealed in `effective`, but no Tier-1 rule maps an action's
+  payload to a resource identifier yet, so an in-scope action type against an out-of-scope
+  resource is not blocked by the token. Action types are enforced.
+
+**Also true:** the structural judge does not read tokens (its mandate-scope check sees the
+token-derived binding's `limits`, which carry no action types by design); the follow-up for
+Workstream D3 is filed. Throughput in
+[latency.md](benchmarks/latency.md#tier-1-mandate-token-path-workstream-a) is Tier-1-only on one
+process and says nothing about the judges.
+
+**Gate:** a resource-binding rule with a documented payload convention; a revocation
+distribution the offline verifier can consult (a signed revocation list in the keyset, or
+short-lived tokens as policy); D3 deciding how judges consume `effective`.
+
+---
+
 ---
 
 *Maintenance: when a roadmap task above lands, delete its entry here (and the corresponding

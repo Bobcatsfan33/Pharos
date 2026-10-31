@@ -113,3 +113,33 @@ is fast because routing keeps the transformers off it entirely, which is a chang
 models run for which action types (see [decision-cascade.md](../decision-cascade.md)), not a
 change in model speed. Nothing here moves the production throughput gate above, promotes a
 judge, or alters the 800 ms objective. Sealing is still outside the measured window.
+
+## Tier-1 mandate-token path (Workstream A)
+
+Workstream A of the [judgement-family handoff](../handoff/2026-10-29-judgement-family-and-primitives.md)
+added portable, attenuable MandateTokens. On the request path a presented token costs one root
+signature verification, one Ed25519 verification per attenuation block, the proof check, and the
+Tier-1 rules. This row measures exactly that and nothing else: no Tier 2/3, no sealing.
+
+Run it with:
+
+```bash
+PHAROS_BENCH_OUTPUT=docs/benchmarks/mandate-token.json pnpm bench:mandate-token [verdicts]
+```
+
+The committed [machine-readable run](mandate-token.json) used the same host class as the
+reference above (Apple M2, Node v25.9.0) with a 2-block token
+(4 signatures verified per verdict), alternating an in-limit allow and
+an over-ceiling block.
+
+| Metric | Measured | Gate | Result |
+|---|---:|---:|---|
+| throughput, single process | 3,040 verdicts/s | ≥ 1,000 verdicts/s | **pass** |
+| latency p50 | 0.320 ms | — | informational |
+| latency p95 | 0.367 ms | — | informational |
+| latency p99 | 0.555 ms | — | informational |
+| latency max | 1.562 ms | — | informational |
+
+The same gate runs on the CI runner as the `tier1-token-bench` job and fails the build below
+1,000 verdicts/s. This is a Tier-1-only number: it says nothing about the judge headline above,
+the throughput gate, or the D1 judge-path section, none of which it changes.

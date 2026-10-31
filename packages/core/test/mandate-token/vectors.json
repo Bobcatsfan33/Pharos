@@ -1,0 +1,1447 @@
+{
+  "generatedBy": "scripts/gen-mandate-token-vectors.ts",
+  "keyset": [
+    {
+      "keyId": "mandate:acme#v1",
+      "publicKey": "MCowBQYDK2VwAyEAZx4qfAkXyh3+pVbEGsguRMLM3ZVSjeoJQeBBXoynJGY=",
+      "algorithm": "ed25519"
+    },
+    {
+      "keyId": "mandate:other#v1",
+      "publicKey": "MCowBQYDK2VwAyEAciCzVKs9lYTtucZGBtrdVrUjHG/XHwE0fDCO1Kg8s1s=",
+      "algorithm": "ed25519"
+    },
+    {
+      "keyId": "mandate:acme-ecdsa#v1",
+      "publicKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEphm3/OPGspslv08+LJLE4+rlKCtmLCZb4r9jwrlPvwSfPxmVY7cRHj+37m74/jZj6wOyt7t0vi1p+/kVUh7fDA==",
+      "algorithm": "ecdsa-p256"
+    }
+  ],
+  "vectors": [
+    {
+      "name": "authority-only",
+      "description": "A freshly minted token with no attenuation.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGQ="
+        }
+      },
+      "result": {
+        "ok": true,
+        "code": null,
+        "effective": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"]
+        }
+      }
+    },
+    {
+      "name": "valid-chain",
+      "description": "Authority + two narrowing blocks, next-key proof.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 5000
+                }
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "actionTypes": ["payment.transfer"]
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          },
+          {
+            "checks": [
+              {
+                "kind": "expiry",
+                "value": "2035-11-01T00:00:00.000Z"
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "resources": ["acct:ops-*"]
+                }
+              },
+              {
+                "kind": "limit",
+                "value": {
+                  "reversibility": "reversible"
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T02:00:00.000Z",
+            "nextKey": "Z4tVucLkmrvQ+1Ts77A2mDKyyrUA3IwQqbbs0E3UMnk="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "Tfd0a/eb9BX20KTIqFejlwrkAVCm1DnzN0zPYpnkRlUaULjiMxi2jlYkJTbn283Gpwo9FY4fY7PPRkjoEZvlAg==",
+          "mD3mZevWu8MWHfTNYxoFZ4qKgVVjjcxQF7kC7Iyc+XnNXVM4BxojrFz43gEW0+JTv9zUChwGgchqI4axpc5KDw=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGY="
+        }
+      },
+      "result": {
+        "ok": true,
+        "code": null,
+        "effective": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2035-11-01T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.transfer"],
+            "resources": ["acct:ops-*"]
+          },
+          "limits": {
+            "financialAmount": 5000,
+            "currency": "USD",
+            "reversibility": "reversible"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"]
+        }
+      }
+    },
+    {
+      "name": "valid-sealed",
+      "description": "The same chain sealed: no further attenuation possible.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 5000
+                }
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "actionTypes": ["payment.transfer"]
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          },
+          {
+            "checks": [
+              {
+                "kind": "expiry",
+                "value": "2035-11-01T00:00:00.000Z"
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "resources": ["acct:ops-*"]
+                }
+              },
+              {
+                "kind": "limit",
+                "value": {
+                  "reversibility": "reversible"
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T02:00:00.000Z",
+            "nextKey": "Z4tVucLkmrvQ+1Ts77A2mDKyyrUA3IwQqbbs0E3UMnk="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "Tfd0a/eb9BX20KTIqFejlwrkAVCm1DnzN0zPYpnkRlUaULjiMxi2jlYkJTbn283Gpwo9FY4fY7PPRkjoEZvlAg==",
+          "mD3mZevWu8MWHfTNYxoFZ4qKgVVjjcxQF7kC7Iyc+XnNXVM4BxojrFz43gEW0+JTv9zUChwGgchqI4axpc5KDw=="
+        ],
+        "proof": {
+          "kind": "sealed",
+          "signature": "sIE2sCy2Op+3NVziMQb4PU1HTA+wpHUyH1s5v6prmbh4+7QjCW9063b3SAsGQ7EGbJGUpp0Zn0zRrzxm0N6OBQ=="
+        }
+      },
+      "result": {
+        "ok": true,
+        "code": null,
+        "effective": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2035-11-01T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.transfer"],
+            "resources": ["acct:ops-*"]
+          },
+          "limits": {
+            "financialAmount": 5000,
+            "currency": "USD",
+            "reversibility": "reversible"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"]
+        }
+      }
+    },
+    {
+      "name": "truncated-chain",
+      "description": "Last block removed; the proof no longer matches the head's next key.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 5000
+                }
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "actionTypes": ["payment.transfer"]
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "Tfd0a/eb9BX20KTIqFejlwrkAVCm1DnzN0zPYpnkRlUaULjiMxi2jlYkJTbn283Gpwo9FY4fY7PPRkjoEZvlAg=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGY="
+        }
+      },
+      "result": {
+        "ok": false,
+        "code": "proof",
+        "effective": null
+      }
+    },
+    {
+      "name": "widened-scope",
+      "description": "A correctly signed block whose scope check names an action type the authority never granted.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "scope",
+                "value": {
+                  "actionTypes": ["payment.transfer", "wire.send"]
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "tk6B4pjd88Jh0Kj3yCa8bBsWvO4NMmxBhdiHI82Ud53FNijH4Xfi50CxU++Umu6ciyNJb/EzrtGMtnMRssZfCA=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGU="
+        }
+      },
+      "result": {
+        "ok": false,
+        "code": "widening",
+        "effective": null
+      }
+    },
+    {
+      "name": "widened-limit",
+      "description": "A correctly signed block that raises the monetary ceiling.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 30000
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "Akta5xAEFI5mAHZy4038fRbPsQnA69Jrrf68DLV9Hc8LDyw0MAWl6STCXP410Z+2IxH6QE4oi/iDw9725RpIAg=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGU="
+        }
+      },
+      "result": {
+        "ok": false,
+        "code": "widening",
+        "effective": null
+      }
+    },
+    {
+      "name": "widened-expiry",
+      "description": "A correctly signed block that extends the expiry.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "expiry",
+                "value": "2037-12-31T00:00:00.000Z"
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "mLdCAmntLieNBKwoStM110baBjjWpHVzvKMv9B+hCPGx3jeWPqX4l6tVMBYbNr5bVyMg6T926LLy6gFRFNZ2Aw=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGU="
+        }
+      },
+      "result": {
+        "ok": false,
+        "code": "widening",
+        "effective": null
+      }
+    },
+    {
+      "name": "expired",
+      "description": "Valid chain evaluated after its (attenuated) expiry.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2036-01-01T00:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 5000
+                }
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "actionTypes": ["payment.transfer"]
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          },
+          {
+            "checks": [
+              {
+                "kind": "expiry",
+                "value": "2035-11-01T00:00:00.000Z"
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "resources": ["acct:ops-*"]
+                }
+              },
+              {
+                "kind": "limit",
+                "value": {
+                  "reversibility": "reversible"
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T02:00:00.000Z",
+            "nextKey": "Z4tVucLkmrvQ+1Ts77A2mDKyyrUA3IwQqbbs0E3UMnk="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "Tfd0a/eb9BX20KTIqFejlwrkAVCm1DnzN0zPYpnkRlUaULjiMxi2jlYkJTbn283Gpwo9FY4fY7PPRkjoEZvlAg==",
+          "mD3mZevWu8MWHfTNYxoFZ4qKgVVjjcxQF7kC7Iyc+XnNXVM4BxojrFz43gEW0+JTv9zUChwGgchqI4axpc5KDw=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGY="
+        }
+      },
+      "result": {
+        "ok": false,
+        "code": "expired",
+        "effective": null
+      }
+    },
+    {
+      "name": "wrong-root",
+      "description": "The authority names another tenant's mandate key, which never signed it.",
+      "rootKeyId": "mandate:other#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:other#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 5000
+                }
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "actionTypes": ["payment.transfer"]
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          },
+          {
+            "checks": [
+              {
+                "kind": "expiry",
+                "value": "2035-11-01T00:00:00.000Z"
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "resources": ["acct:ops-*"]
+                }
+              },
+              {
+                "kind": "limit",
+                "value": {
+                  "reversibility": "reversible"
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T02:00:00.000Z",
+            "nextKey": "Z4tVucLkmrvQ+1Ts77A2mDKyyrUA3IwQqbbs0E3UMnk="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "Tfd0a/eb9BX20KTIqFejlwrkAVCm1DnzN0zPYpnkRlUaULjiMxi2jlYkJTbn283Gpwo9FY4fY7PPRkjoEZvlAg==",
+          "mD3mZevWu8MWHfTNYxoFZ4qKgVVjjcxQF7kC7Iyc+XnNXVM4BxojrFz43gEW0+JTv9zUChwGgchqI4axpc5KDw=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGY="
+        }
+      },
+      "result": {
+        "ok": false,
+        "code": "root-signature",
+        "effective": null
+      }
+    },
+    {
+      "name": "root-key-mismatch",
+      "description": "The authority names a key other than the one presented.",
+      "rootKeyId": "mandate:other#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 5000
+                }
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "actionTypes": ["payment.transfer"]
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          },
+          {
+            "checks": [
+              {
+                "kind": "expiry",
+                "value": "2035-11-01T00:00:00.000Z"
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "resources": ["acct:ops-*"]
+                }
+              },
+              {
+                "kind": "limit",
+                "value": {
+                  "reversibility": "reversible"
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T02:00:00.000Z",
+            "nextKey": "Z4tVucLkmrvQ+1Ts77A2mDKyyrUA3IwQqbbs0E3UMnk="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "Tfd0a/eb9BX20KTIqFejlwrkAVCm1DnzN0zPYpnkRlUaULjiMxi2jlYkJTbn283Gpwo9FY4fY7PPRkjoEZvlAg==",
+          "mD3mZevWu8MWHfTNYxoFZ4qKgVVjjcxQF7kC7Iyc+XnNXVM4BxojrFz43gEW0+JTv9zUChwGgchqI4axpc5KDw=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGY="
+        }
+      },
+      "result": {
+        "ok": false,
+        "code": "root-key-mismatch",
+        "effective": null
+      }
+    },
+    {
+      "name": "replayed-ephemeral-key",
+      "description": "Block 0 republishes the authority's ephemeral key; every signature verifies, the reuse is refused.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 100
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+          },
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 50
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T02:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "5yohIFIJPWXwUMHs3yFABkmWv2SyI0Q/OWSpIzVPXh81R2Qs5goXbQ26BNCvMp/KZxOg6lz53vxc5moD0QcmCw==",
+          "2nYqq2/jo/2yTAYrn1jqrIVM+3SR3FY1pCXYo6ZVdh8DF5VMFyLCqo5k/VoyXXh/ml14ivw4mD5ohbE7iolODg=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGU="
+        }
+      },
+      "result": {
+        "ok": false,
+        "code": "key-reuse",
+        "effective": null
+      }
+    },
+    {
+      "name": "tampered-block",
+      "description": "A block edited after signing.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 24000
+                }
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "actionTypes": ["payment.transfer"]
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          },
+          {
+            "checks": [
+              {
+                "kind": "expiry",
+                "value": "2035-11-01T00:00:00.000Z"
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "resources": ["acct:ops-*"]
+                }
+              },
+              {
+                "kind": "limit",
+                "value": {
+                  "reversibility": "reversible"
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T02:00:00.000Z",
+            "nextKey": "Z4tVucLkmrvQ+1Ts77A2mDKyyrUA3IwQqbbs0E3UMnk="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "Tfd0a/eb9BX20KTIqFejlwrkAVCm1DnzN0zPYpnkRlUaULjiMxi2jlYkJTbn283Gpwo9FY4fY7PPRkjoEZvlAg==",
+          "mD3mZevWu8MWHfTNYxoFZ4qKgVVjjcxQF7kC7Iyc+XnNXVM4BxojrFz43gEW0+JTv9zUChwGgchqI4axpc5KDw=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGY="
+        }
+      },
+      "result": {
+        "ok": false,
+        "code": "block-signature",
+        "effective": null
+      }
+    },
+    {
+      "name": "reordered-blocks",
+      "description": "Blocks swapped: signatures are bound to position.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "expiry",
+                "value": "2035-11-01T00:00:00.000Z"
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "resources": ["acct:ops-*"]
+                }
+              },
+              {
+                "kind": "limit",
+                "value": {
+                  "reversibility": "reversible"
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T02:00:00.000Z",
+            "nextKey": "Z4tVucLkmrvQ+1Ts77A2mDKyyrUA3IwQqbbs0E3UMnk="
+          },
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 5000
+                }
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "actionTypes": ["payment.transfer"]
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "mD3mZevWu8MWHfTNYxoFZ4qKgVVjjcxQF7kC7Iyc+XnNXVM4BxojrFz43gEW0+JTv9zUChwGgchqI4axpc5KDw==",
+          "Tfd0a/eb9BX20KTIqFejlwrkAVCm1DnzN0zPYpnkRlUaULjiMxi2jlYkJTbn283Gpwo9FY4fY7PPRkjoEZvlAg=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGY="
+        }
+      },
+      "result": {
+        "ok": false,
+        "code": "block-signature",
+        "effective": null
+      }
+    },
+    {
+      "name": "tenant-mismatch",
+      "description": "A valid token presented for a different tenant.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "globex"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 5000
+                }
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "actionTypes": ["payment.transfer"]
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          },
+          {
+            "checks": [
+              {
+                "kind": "expiry",
+                "value": "2035-11-01T00:00:00.000Z"
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "resources": ["acct:ops-*"]
+                }
+              },
+              {
+                "kind": "limit",
+                "value": {
+                  "reversibility": "reversible"
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T02:00:00.000Z",
+            "nextKey": "Z4tVucLkmrvQ+1Ts77A2mDKyyrUA3IwQqbbs0E3UMnk="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "Tfd0a/eb9BX20KTIqFejlwrkAVCm1DnzN0zPYpnkRlUaULjiMxi2jlYkJTbn283Gpwo9FY4fY7PPRkjoEZvlAg==",
+          "mD3mZevWu8MWHfTNYxoFZ4qKgVVjjcxQF7kC7Iyc+XnNXVM4BxojrFz43gEW0+JTv9zUChwGgchqI4axpc5KDw=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGY="
+        }
+      },
+      "result": {
+        "ok": false,
+        "code": "tenant-mismatch",
+        "effective": null
+      }
+    },
+    {
+      "name": "agent-mismatch",
+      "description": "A valid token presented by a different agent.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "other-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 5000
+                }
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "actionTypes": ["payment.transfer"]
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          },
+          {
+            "checks": [
+              {
+                "kind": "expiry",
+                "value": "2035-11-01T00:00:00.000Z"
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "resources": ["acct:ops-*"]
+                }
+              },
+              {
+                "kind": "limit",
+                "value": {
+                  "reversibility": "reversible"
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T02:00:00.000Z",
+            "nextKey": "Z4tVucLkmrvQ+1Ts77A2mDKyyrUA3IwQqbbs0E3UMnk="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "Tfd0a/eb9BX20KTIqFejlwrkAVCm1DnzN0zPYpnkRlUaULjiMxi2jlYkJTbn283Gpwo9FY4fY7PPRkjoEZvlAg==",
+          "mD3mZevWu8MWHfTNYxoFZ4qKgVVjjcxQF7kC7Iyc+XnNXVM4BxojrFz43gEW0+JTv9zUChwGgchqI4axpc5KDw=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGY="
+        }
+      },
+      "result": {
+        "ok": false,
+        "code": "agent-mismatch",
+        "effective": null
+      }
+    },
+    {
+      "name": "malformed-signatures",
+      "description": "Signature count does not match block count.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 5000
+                }
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "actionTypes": ["payment.transfer"]
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "cVM+in4poHrX3PAtnypnY4BwkdlYQH82NATMmBvgMtY="
+          },
+          {
+            "checks": [
+              {
+                "kind": "expiry",
+                "value": "2035-11-01T00:00:00.000Z"
+              },
+              {
+                "kind": "scope",
+                "value": {
+                  "resources": ["acct:ops-*"]
+                }
+              },
+              {
+                "kind": "limit",
+                "value": {
+                  "reversibility": "reversible"
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T02:00:00.000Z",
+            "nextKey": "Z4tVucLkmrvQ+1Ts77A2mDKyyrUA3IwQqbbs0E3UMnk="
+          }
+        ],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ==",
+          "Tfd0a/eb9BX20KTIqFejlwrkAVCm1DnzN0zPYpnkRlUaULjiMxi2jlYkJTbn283Gpwo9FY4fY7PPRkjoEZvlAg=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGY="
+        }
+      },
+      "result": {
+        "ok": false,
+        "code": "malformed",
+        "effective": null
+      }
+    },
+    {
+      "name": "tampered-authority",
+      "description": "Authority edited after the root signed it.",
+      "rootKeyId": "mandate:acme#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 1000000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme#v1",
+          "nextKey": "6RzNRQwiyvk6j4siBOCviPGwLKhsh32YwCMAIbu++bU="
+        },
+        "blocks": [],
+        "signatures": [
+          "2YBXLSKYqhmjG1D9hItL+L4au1x9a4QP0br9HLNkkYYpLKprDpBYtLr91ENwWkKNCCLIf1mhMbS9mIC+2J21BQ=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGQ="
+        }
+      },
+      "result": {
+        "ok": false,
+        "code": "root-signature",
+        "effective": null
+      }
+    },
+    {
+      "name": "ecdsa-root",
+      "description": "Root signed by an ECDSA P-256 (AWS KMS style) mandate key.",
+      "rootKeyId": "mandate:acme-ecdsa#v1",
+      "now": "2026-10-30T12:00:00.000Z",
+      "expect": {
+        "tenantId": "acme-ecdsa",
+        "agentId": "treasury-agent"
+      },
+      "token": {
+        "v": 1,
+        "authority": {
+          "tenantId": "acme-ecdsa",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 25000,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"],
+          "keyId": "mandate:acme-ecdsa#v1",
+          "nextKey": "SvwPHZ7Q9pyQ/GSkaKm8LFEftENdqs4Pu7vw2g0m0No="
+        },
+        "blocks": [
+          {
+            "checks": [
+              {
+                "kind": "limit",
+                "value": {
+                  "financialAmount": 100
+                }
+              }
+            ],
+            "issuedAt": "2026-10-30T01:00:00.000Z",
+            "nextKey": "BFmJ3Xg7zfXE8cwN917DkKCugJC+sJ+2DZQWOA2mTZY="
+          }
+        ],
+        "signatures": [
+          "MEQCIHsFkk/Qp7S6REv3U8q0P4Mt4JhATYOPReHxTZQ6eiP8AiBJUvms+OYDM2g638kTSBauktFRav1SfDDtXY+J7u0sgg==",
+          "Y6AxQX2odp1JoAQjY0sPWe+4GpFiNLPzJDi/2RKVz3d9T4CpxweJF0CS1KQ2r0DD8eOg1yvhPA4ZSG6mQBpPCA=="
+        ],
+        "proof": {
+          "kind": "next",
+          "secret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF7tAGo="
+        }
+      },
+      "result": {
+        "ok": true,
+        "code": null,
+        "effective": {
+          "tenantId": "acme-ecdsa",
+          "agentId": "treasury-agent",
+          "mandateId": "vendor-payments",
+          "grantor": "cfo",
+          "issuedAt": "2026-10-30T00:00:00.000Z",
+          "expiresAt": "2036-11-30T00:00:00.000Z",
+          "scope": {
+            "actionTypes": ["payment.", "invoice.read"],
+            "resources": ["acct:*"]
+          },
+          "limits": {
+            "financialAmount": 100,
+            "currency": "USD",
+            "reversibility": "any"
+          },
+          "citations": ["finra-2210-promissory", "treasury-policy-7"]
+        }
+      }
+    }
+  ]
+}

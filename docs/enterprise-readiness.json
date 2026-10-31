@@ -354,7 +354,7 @@
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "529ab2457b21620667ed1919dcf215141d2da0bc6406cec896d03a0bbe44e432"
+        "sha256": "26599ec27d7e53eee798038f5183a05aad2a65d3596a85b3952415fc93458b40"
       },
       {
         "path": ".github/workflows/codeql.yml",
@@ -386,7 +386,7 @@
       },
       {
         "path": "docs/LIMITATIONS.md",
-        "sha256": "f6a94b34e11a71399eb38124c7594f4a98790038135c4166402e0f4f8c9a356e"
+        "sha256": "affc604be10d167b99f55a6bf0cc24835ba1930b1475582f72e70fd01f0455ac"
       },
       {
         "path": "docs/ROADMAP.md",
@@ -410,7 +410,7 @@
       },
       {
         "path": "docs/benchmarks/latency.md",
-        "sha256": "10292d634377fc5571438f886e2e8a956dff995c216e2f202f2ebef90a894102"
+        "sha256": "17ac31a9b08ea766b7f5259885fb4211c8210721c3d9be599b488afc30d05c5a"
       },
       {
         "path": "docs/benchmarks/onnx-local-reference.json",
@@ -430,7 +430,7 @@
       },
       {
         "path": "docs/decision-cascade.md",
-        "sha256": "c6ca663e384340d875632b54580e66ba67761742b48a77e9156bac8227c70971"
+        "sha256": "564ef62fa5559e90a75efb711b38c1d0d5aa9a25793b9efff710d9616cb77b50"
       },
       {
         "path": "docs/evidence-seal.md",

@@ -58,6 +58,11 @@ def validate_submit_input(payload: dict) -> None:
     _require_non_empty_string(payload.get("tenantId"), "tenantId")
     _optional_string(payload.get("mandateId"), "mandateId")
     _optional_string(payload.get("idempotencyKey"), "idempotencyKey")
+    if payload.get("mandateToken") is not None:
+        if not isinstance(payload["mandateToken"], dict):
+            _invalid("mandateToken", "must be an object when present")
+        if payload.get("mandateId") is not None:
+            _invalid("mandateToken", "cannot be combined with mandateId")
 
     # --- action ---
     action = payload.get("action")

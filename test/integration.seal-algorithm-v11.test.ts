@@ -101,7 +101,9 @@ async function seal(signer: SigningProvider, keyName: string, sequence = 0, prev
 describe("new records state their real algorithm", () => {
   it("seals ed25519 under LocalKms and verifies", async () => {
     const { record, keyset } = await seal(localKms!, "k-ed");
-    expect(record.content.schemaVersion).toBe("1.1.0");
+    // The current version, whatever it is: 1.1.1 since Workstream A (ADR 0007) — the
+    // seal-algorithm check applies to every version from 1.1.0 up.
+    expect(record.content.schemaVersion).toBe(ACTION_RECORD_SCHEMA_VERSION);
     expect(record.seal.algorithm).toBe("ed25519");
     expect(verifyChain([record], keyset).ok).toBe(true);
   });
@@ -183,7 +185,7 @@ describe("legacy v1.0.0 records are never failed by the new check", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("verifies a mixed chain spanning the v1.0.0 -> v1.1.0 boundary", async () => {
+  it("verifies a mixed chain spanning the v1.0.0 -> current (≥ 1.1.0) boundary", async () => {
     // The deploy-day case: records sealed before the bump, then records after it.
     const keyId = await localKms!.ensureKey("k-mixed");
 
@@ -201,7 +203,7 @@ describe("legacy v1.0.0 records are never failed by the new check", () => {
     });
 
     expect(v10.content.schemaVersion).toBe("1.0.0");
-    expect(v11.content.schemaVersion).toBe("1.1.0");
+    expect(v11.content.schemaVersion).toBe(ACTION_RECORD_SCHEMA_VERSION);
 
     const keyset: PublicKeyEntry[] = await localKms!.publishKeyset();
     const chain = verifyChain([v10, v11], keyset);

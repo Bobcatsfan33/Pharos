@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
 import { GENESIS_HASH, sha256Hex } from "@pharos/core";
 
-export type AccessAction = "view" | "export" | "share" | "verify";
+export type AccessAction = "view" | "export" | "share" | "verify" | "mint";
 
 export interface AccessAuditEntry {
   id: string;

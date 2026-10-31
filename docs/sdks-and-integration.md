@@ -133,6 +133,41 @@ and bind mandates (scope, limits, grantor, expiry). A verdict evaluates the acti
 version as a Tier-1 input and seals the exact binding into the record — e.g. a $25k mandate
 blocks a $30k action at Tier 1 (`test/integration.causeway.test.ts`).
 
+## Mandate tokens (Workstream A)
+
+A stored mandate can be issued to an agent as a **MandateToken**: signed by the tenant's
+mandate key, attenuable offline (narrower limit, earlier expiry, subset of action types or
+resources — never wider), and verifiable with nothing but the published keyset.
+
+```ts
+// Operator: mint for a stored mandate (scope policies:write).
+// POST /v1/tenants/:tenantId/mandates/:mandateId/token  { agentId, actionTypes?, ttlSeconds?, … }
+//   → { token, rootKey }
+
+import { PharosClient, attenuateMandateToken } from "@getpharos/sdk";
+
+const client = new PharosClient({ baseUrl, apiKey, mandateToken: { rootKeys: [rootKey] } });
+const narrower = await attenuateMandateToken(token, {
+  checks: [{ kind: "limit", value: { financialAmount: 500 } }],
+  issuedAt: new Date().toISOString(),
+});
+const result = await client.submit({ tenantId, action, liability, mandateToken: narrower });
+if (result.localVerdict === "mandate-token-invalid") await result.sealed; // still sealed server-side
+```
+
+```python
+client = PharosClient(base_url, api_key, mandate_token_root_keys=[root_key])
+res = client.submit(tenantId=t, action=a, liability=l, mandateToken=token)
+if res.get("localVerdict"): res["sealed"].join()
+```
+
+With root keys configured, a structurally invalid token is a Tier-1 block decided without a
+round trip and still submitted so the block has a sealed record. `localAllow`
+(`mandate_token_local_allow`) is off by default; see
+[LIMITATIONS.md §9](LIMITATIONS.md#9-mandatetoken-offline-verifiers-cannot-see-revocation-local-allow-is-optimistic-resources-are-carried-not-enforced)
+before turning it on. The gateway's `mapAction` may return `mandateToken` to present one per
+request. Design: [ADR 0007](adr/0007-mandate-token-schema-v1-1-1.md).
+
 ## External gates (not code)
 
 Publishing the SDKs to PyPI/npm and onboarding 3–5 design partners are the remaining
