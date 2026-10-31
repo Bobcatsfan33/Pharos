@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@pharos/core": "workspace:*",
-    "asn1js": "^3.0.10",
+    "asn1js": "^3.1.0",
     "pkijs": "^3.4.1"
   }
 }
