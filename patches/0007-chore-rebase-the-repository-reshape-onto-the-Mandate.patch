@@ -1,0 +1,597 @@
+From 0f4e2ee9cd0ae40d7ef69f19a08a9b3ba647e3f9 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 30 Oct 2026 22:07:07 -0400
+Subject: [PATCH 7/7] chore: rebase the repository reshape onto the
+ MandateToken work (#301)
+
+Resolves the overlap with S2-A: the a-plan handoff joins docs/internal/handoff, the
+readiness manifest digests are refreshed, the SDK types keep both the spec-derived
+vocabulary and the MandateToken surface, and the pdp-spec JSON Schema generator now
+writes prettier-formatted output so the committed schema, the format gate and the
+Python type generator's digest agree.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WQXeE9sJQ4CozZNuH73SFQ
+Signed-off-by: Claude <noreply@anthropic.com>
+---
+ docs/adr/0007-mandate-token-schema-v1-1-1.md  |   2 +-
+ docs/benchmarks/latency.md                    |   2 +-
+ docs/internal/enterprise-readiness.json       |   2 +-
+ docs/internal/status.md                       |   4 +-
+ docs/schema-v1.md                             |   2 +-
+ packages/pdp-spec/schema/pdp-v1.schema.json   | 337 ++++--------------
+ .../pdp-spec/scripts/generate-json-schema.ts  |   9 +-
+ sdks/python/pharos_sdk/types.py               |   4 +-
+ 8 files changed, 86 insertions(+), 276 deletions(-)
+
+diff --git a/docs/adr/0007-mandate-token-schema-v1-1-1.md b/docs/adr/0007-mandate-token-schema-v1-1-1.md
+index b0833bf..c64269d 100644
+--- a/docs/adr/0007-mandate-token-schema-v1-1-1.md
++++ b/docs/adr/0007-mandate-token-schema-v1-1-1.md
+@@ -1,7 +1,7 @@
+ # ADR 0007 — `liability.mandateToken` (schema v1.1.1): sealing a presented MandateToken
+ 
+ - **Status:** Accepted with Workstream A of the
+-  [judgement family and primitives handoff](../handoff/2026-10-29-judgement-family-and-primitives.md).
++  [judgement family and primitives handoff](../internal/handoff/2026-10-29-judgement-family-and-primitives.md).
+ - **Context:** ADR numbering skips 0006, reserved by the open adoption-program PR (#290).
+ - **Changes:** `ACTION_RECORD_SCHEMA_VERSION` 1.1.0 → **1.1.1**; one optional field.
+ 
+diff --git a/docs/benchmarks/latency.md b/docs/benchmarks/latency.md
+index c91c9e0..b089363 100644
+--- a/docs/benchmarks/latency.md
++++ b/docs/benchmarks/latency.md
+@@ -116,7 +116,7 @@ judge, or alters the 800 ms objective. Sealing is still outside the measured win
+ 
+ ## Tier-1 mandate-token path (Workstream A)
+ 
+-Workstream A of the [judgement-family handoff](../handoff/2026-10-29-judgement-family-and-primitives.md)
++Workstream A of the [judgement-family handoff](../internal/handoff/2026-10-29-judgement-family-and-primitives.md)
+ added portable, attenuable MandateTokens. On the request path a presented token costs one root
+ signature verification, one Ed25519 verification per attenuation block, the proof check, and the
+ Tier-1 rules. This row measures exactly that and nothing else: no Tier 2/3, no sealing.
+diff --git a/docs/internal/enterprise-readiness.json b/docs/internal/enterprise-readiness.json
+index 90274d3..d87a865 100644
+--- a/docs/internal/enterprise-readiness.json
++++ b/docs/internal/enterprise-readiness.json
+@@ -406,7 +406,7 @@
+       },
+       {
+         "path": "docs/benchmarks/latency.md",
+-        "sha256": "afc450f51946acdfa8f2d966d7a839b6ba9a44f8d240451d8b2e09fabbf4091c"
++        "sha256": "88220c4a918483f6b1cbac2f032d72402357dcb0a5b164547ea2768e3f8abcb6"
+       },
+       {
+         "path": "docs/benchmarks/onnx-local-reference.json",
+diff --git a/docs/internal/status.md b/docs/internal/status.md
+index f3fe063..6c94c4f 100644
+--- a/docs/internal/status.md
++++ b/docs/internal/status.md
+@@ -85,7 +85,7 @@ offline; an invalid token is a local Tier-1 block that is still submitted for se
+ Conformance vectors (18, shared by core, the TypeScript SDK, and the stdlib-only Python
+ verifier), a 200-chain narrowing property, and a 1,500-mutation fuzz that no edit widens
+ `effective()`. Exit gate in
+-[benchmarks/latency.md](benchmarks/latency.md#tier-1-mandate-token-path-workstream-a) and
++[benchmarks/latency.md](../benchmarks/latency.md#tier-1-mandate-token-path-workstream-a) and
+ enforced by a CI job. Honest limits in
+-[LIMITATIONS.md §9](LIMITATIONS.md#9-mandatetoken-offline-verifiers-cannot-see-revocation-local-allow-is-optimistic-resources-are-carried-not-enforced).
++[LIMITATIONS.md §9](../LIMITATIONS.md#9-mandatetoken-offline-verifiers-cannot-see-revocation-local-allow-is-optimistic-resources-are-carried-not-enforced).
+ Plan: [handoff/2026-10-30-a-plan.md](handoff/2026-10-30-a-plan.md).
+diff --git a/docs/schema-v1.md b/docs/schema-v1.md
+index 5de38a0..0b05a1b 100644
+--- a/docs/schema-v1.md
++++ b/docs/schema-v1.md
+@@ -70,7 +70,7 @@ back: [`packages/core/src/migration/`](../packages/core/src/migration/).
+ ### v1.1.1 — `liability.mandateToken` seals a presented MandateToken
+ 
+ See [ADR 0007](adr/0007-mandate-token-schema-v1-1-1.md) and Workstream A of the
+-[judgement-family handoff](handoff/2026-10-29-judgement-family-and-primitives.md). PATCH, per
++[judgement-family handoff](internal/handoff/2026-10-29-judgement-family-and-primitives.md). PATCH, per
+ the rule above: one optional field, no migration. When an agent presents a signed, attenuable
+ MandateToken, the record seals the token's content-hashed blocks, the verifier's answer, and
+ the authority that was in force — never the token itself, which carries the holder's ephemeral
+diff --git a/packages/pdp-spec/schema/pdp-v1.schema.json b/packages/pdp-spec/schema/pdp-v1.schema.json
+index 7fca9f1..38bf477 100644
+--- a/packages/pdp-spec/schema/pdp-v1.schema.json
++++ b/packages/pdp-spec/schema/pdp-v1.schema.json
+@@ -5,155 +5,75 @@
+   "description": "Generated from packages/pdp-spec/src/schema.ts. Objects accept additional properties: the contract is additive, and readers must ignore fields they do not know.",
+   "version": "1.0.0",
+   "$defs": {
+-    "Decision": {
+-      "type": "string",
+-      "enum": ["allow", "block", "modify", "escalate"]
+-    },
+-    "Reversibility": {
+-      "type": "string",
+-      "enum": ["reversible", "irreversible"]
+-    },
+-    "OversightMode": {
+-      "type": "string",
+-      "enum": ["autonomous", "human_in_loop", "human_on_loop"]
+-    },
++    "Decision": { "type": "string", "enum": ["allow", "block", "modify", "escalate"] },
++    "Reversibility": { "type": "string", "enum": ["reversible", "irreversible"] },
++    "OversightMode": { "type": "string", "enum": ["autonomous", "human_in_loop", "human_on_loop"] },
+     "FailMode": {
+-      "anyOf": [
+-        {
+-          "type": "string",
+-          "enum": ["fail_open", "fail_closed"]
+-        },
+-        {
+-          "type": "null"
+-        }
+-      ]
++      "anyOf": [{ "type": "string", "enum": ["fail_open", "fail_closed"] }, { "type": "null" }]
+     },
+     "TierReached": {
+       "anyOf": [
+-        {
+-          "type": "number",
+-          "const": 1
+-        },
+-        {
+-          "type": "number",
+-          "const": 2
+-        },
+-        {
+-          "type": "number",
+-          "const": 3
+-        },
+-        {
+-          "type": "string",
+-          "const": "human"
+-        }
++        { "type": "number", "const": 1 },
++        { "type": "number", "const": 2 },
++        { "type": "number", "const": 3 },
++        { "type": "string", "const": "human" }
+       ]
+     },
+-    "SignatureAlgorithm": {
+-      "type": "string",
+-      "enum": ["ed25519", "ecdsa-p256"]
+-    },
++    "SignatureAlgorithm": { "type": "string", "enum": ["ed25519", "ecdsa-p256"] },
+     "RuleCitation": {
+       "type": "object",
+       "properties": {
+-        "ruleId": {
+-          "type": "string",
+-          "minLength": 1
+-        },
+-        "pack": {
+-          "type": "string",
+-          "minLength": 1
+-        },
+-        "clause": {
+-          "type": "string"
+-        },
+-        "description": {
+-          "type": "string"
+-        }
++        "ruleId": { "type": "string", "minLength": 1 },
++        "pack": { "type": "string", "minLength": 1 },
++        "clause": { "type": "string" },
++        "description": { "type": "string" }
+       },
+       "required": ["ruleId", "pack"]
+     },
+     "ModelMetadata": {
+       "type": "object",
+       "properties": {
+-        "provider": {
+-          "type": "string"
+-        },
+-        "model": {
+-          "type": "string"
+-        },
+-        "version": {
+-          "type": "string"
+-        }
++        "provider": { "type": "string" },
++        "model": { "type": "string" },
++        "version": { "type": "string" }
+       },
+       "required": ["provider", "model"]
+     },
+     "BlastRadiusInput": {
+       "type": "object",
+       "properties": {
+-        "financialAmount": {
+-          "type": "number",
+-          "minimum": 0
+-        },
+-        "currency": {
+-          "type": "string"
+-        },
+-        "reversibility": {
+-          "$ref": "#/$defs/Reversibility"
+-        },
+-        "notes": {
+-          "type": "string"
+-        }
++        "financialAmount": { "type": "number", "minimum": 0 },
++        "currency": { "type": "string" },
++        "reversibility": { "$ref": "#/$defs/Reversibility" },
++        "notes": { "type": "string" }
+       },
+       "required": ["reversibility"]
+     },
+     "MandateInput": {
+       "type": "object",
+       "properties": {
+-        "id": {
+-          "type": "string",
+-          "minLength": 1
+-        },
+-        "scope": {
+-          "type": "string"
+-        },
++        "id": { "type": "string", "minLength": 1 },
++        "scope": { "type": "string" },
+         "limits": {
+           "type": "object",
+-          "propertyNames": {
+-            "type": "string"
+-          },
++          "propertyNames": { "type": "string" },
+           "additionalProperties": {}
+         },
+-        "grantor": {
+-          "type": "string"
+-        },
+-        "expiresAt": {
+-          "type": ["string", "null"]
+-        },
+-        "version": {
+-          "type": "string"
+-        }
++        "grantor": { "type": "string" },
++        "expiresAt": { "type": ["string", "null"] },
++        "version": { "type": "string" }
+       },
+       "required": ["id", "scope", "grantor"]
+     },
+     "ActionInput": {
+       "type": "object",
+       "properties": {
+-        "type": {
+-          "type": "string",
+-          "minLength": 1
+-        },
+-        "agentId": {
+-          "type": "string",
+-          "minLength": 1
+-        },
+-        "sessionId": {
+-          "type": "string"
+-        },
++        "type": { "type": "string", "minLength": 1 },
++        "agentId": { "type": "string", "minLength": 1 },
++        "sessionId": { "type": "string" },
+         "payload": {
+           "type": "object",
+-          "propertyNames": {
+-            "type": "string"
+-          },
++          "propertyNames": { "type": "string" },
+           "additionalProperties": {}
+         }
+       },
+@@ -162,91 +82,37 @@
+     "LiabilityInput": {
+       "type": "object",
+       "properties": {
+-        "mandate": {
+-          "anyOf": [
+-            {
+-              "$ref": "#/$defs/MandateInput"
+-            },
+-            {
+-              "type": "null"
+-            }
+-          ]
+-        },
+-        "oversightMode": {
+-          "$ref": "#/$defs/OversightMode"
+-        },
+-        "blastRadius": {
+-          "$ref": "#/$defs/BlastRadiusInput"
+-        },
+-        "modelMetadata": {
+-          "anyOf": [
+-            {
+-              "$ref": "#/$defs/ModelMetadata"
+-            },
+-            {
+-              "type": "null"
+-            }
+-          ]
+-        }
++        "mandate": { "anyOf": [{ "$ref": "#/$defs/MandateInput" }, { "type": "null" }] },
++        "oversightMode": { "$ref": "#/$defs/OversightMode" },
++        "blastRadius": { "$ref": "#/$defs/BlastRadiusInput" },
++        "modelMetadata": { "anyOf": [{ "$ref": "#/$defs/ModelMetadata" }, { "type": "null" }] }
+       },
+       "required": ["oversightMode", "blastRadius"]
+     },
+     "VerdictLatency": {
+       "type": "object",
+       "properties": {
+-        "totalMs": {
+-          "type": "number",
+-          "minimum": 0
+-        },
++        "totalMs": { "type": "number", "minimum": 0 },
+         "perTier": {
+           "type": "object",
+-          "propertyNames": {
+-            "type": "string"
+-          },
+-          "additionalProperties": {
+-            "type": "number",
+-            "minimum": 0
+-          }
+-        },
+-        "deadlineMs": {
+-          "type": "number",
+-          "exclusiveMinimum": 0
++          "propertyNames": { "type": "string" },
++          "additionalProperties": { "type": "number", "minimum": 0 }
+         },
+-        "deadlineBreached": {
+-          "type": "boolean"
+-        }
++        "deadlineMs": { "type": "number", "exclusiveMinimum": 0 },
++        "deadlineBreached": { "type": "boolean" }
+       },
+       "required": ["totalMs", "deadlineMs", "deadlineBreached"]
+     },
+     "Verdict": {
+       "type": "object",
+       "properties": {
+-        "decision": {
+-          "$ref": "#/$defs/Decision"
+-        },
+-        "tierReached": {
+-          "$ref": "#/$defs/TierReached"
+-        },
+-        "riskScore": {
+-          "type": "number",
+-          "minimum": 0,
+-          "maximum": 1
+-        },
+-        "ruleCitations": {
+-          "type": "array",
+-          "items": {
+-            "$ref": "#/$defs/RuleCitation"
+-          }
+-        },
+-        "failMode": {
+-          "$ref": "#/$defs/FailMode"
+-        },
+-        "judgeVersion": {
+-          "type": ["string", "null"]
+-        },
+-        "latency": {
+-          "$ref": "#/$defs/VerdictLatency"
+-        }
++        "decision": { "$ref": "#/$defs/Decision" },
++        "tierReached": { "$ref": "#/$defs/TierReached" },
++        "riskScore": { "type": "number", "minimum": 0, "maximum": 1 },
++        "ruleCitations": { "type": "array", "items": { "$ref": "#/$defs/RuleCitation" } },
++        "failMode": { "$ref": "#/$defs/FailMode" },
++        "judgeVersion": { "type": ["string", "null"] },
++        "latency": { "$ref": "#/$defs/VerdictLatency" }
+       },
+       "required": [
+         "decision",
+@@ -264,19 +130,11 @@
+         "action": {
+           "type": "object",
+           "properties": {
+-            "type": {
+-              "type": "string",
+-              "minLength": 1
+-            },
+-            "agentId": {
+-              "type": "string",
+-              "minLength": 1
+-            },
++            "type": { "type": "string", "minLength": 1 },
++            "agentId": { "type": "string", "minLength": 1 },
+             "payload": {
+               "type": "object",
+-              "propertyNames": {
+-                "type": "string"
+-              },
++              "propertyNames": { "type": "string" },
+               "additionalProperties": {}
+             }
+           },
+@@ -290,112 +148,57 @@
+                 {
+                   "type": "object",
+                   "properties": {
+-                    "id": {
+-                      "type": "string",
+-                      "minLength": 1
+-                    },
++                    "id": { "type": "string", "minLength": 1 },
+                     "limits": {
+                       "type": "object",
+-                      "propertyNames": {
+-                        "type": "string"
+-                      },
++                      "propertyNames": { "type": "string" },
+                       "additionalProperties": {}
+                     }
+                   },
+                   "required": ["id"]
+                 },
+-                {
+-                  "type": "null"
+-                }
++                { "type": "null" }
+               ]
+             },
+-            "oversightMode": {
+-              "$ref": "#/$defs/OversightMode"
+-            },
+-            "blastRadius": {
+-              "$ref": "#/$defs/BlastRadiusInput"
+-            }
++            "oversightMode": { "$ref": "#/$defs/OversightMode" },
++            "blastRadius": { "$ref": "#/$defs/BlastRadiusInput" }
+           },
+           "required": ["oversightMode", "blastRadius"]
+         },
+-        "deadlineMs": {
+-          "type": "number",
+-          "exclusiveMinimum": 0
+-        }
++        "deadlineMs": { "type": "number", "exclusiveMinimum": 0 }
+       },
+       "required": ["action", "liability"]
+     },
+     "PdpEvidenceBinding": {
+       "type": "object",
+       "properties": {
+-        "algorithm": {
+-          "$ref": "#/$defs/SignatureAlgorithm"
+-        },
+-        "contentHash": {
+-          "type": "string",
+-          "pattern": "^[0-9a-f]{64}$"
+-        },
+-        "keyId": {
+-          "type": "string",
+-          "minLength": 1
+-        },
+-        "signature": {
+-          "type": "string",
+-          "minLength": 1
+-        }
++        "algorithm": { "$ref": "#/$defs/SignatureAlgorithm" },
++        "contentHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
++        "keyId": { "type": "string", "minLength": 1 },
++        "signature": { "type": "string", "minLength": 1 }
+       },
+       "required": ["algorithm", "contentHash", "keyId", "signature"]
+     },
+     "PdpResponse": {
+       "type": "object",
+       "properties": {
+-        "specVersion": {
+-          "type": "string",
+-          "const": "1.0.0"
+-        },
+-        "decision": {
+-          "$ref": "#/$defs/Decision"
+-        },
+-        "tierReached": {
+-          "$ref": "#/$defs/TierReached"
+-        },
+-        "riskScore": {
+-          "type": "number",
+-          "minimum": 0,
+-          "maximum": 1
+-        },
+-        "ruleCitations": {
+-          "type": "array",
+-          "items": {
+-            "$ref": "#/$defs/RuleCitation"
+-          }
+-        },
+-        "failMode": {
+-          "$ref": "#/$defs/FailMode"
+-        },
+-        "judgeVersion": {
+-          "type": ["string", "null"]
+-        },
++        "specVersion": { "type": "string", "const": "1.0.0" },
++        "decision": { "$ref": "#/$defs/Decision" },
++        "tierReached": { "$ref": "#/$defs/TierReached" },
++        "riskScore": { "type": "number", "minimum": 0, "maximum": 1 },
++        "ruleCitations": { "type": "array", "items": { "$ref": "#/$defs/RuleCitation" } },
++        "failMode": { "$ref": "#/$defs/FailMode" },
++        "judgeVersion": { "type": ["string", "null"] },
+         "latency": {
+           "type": "object",
+           "properties": {
+-            "totalMs": {
+-              "type": "number",
+-              "minimum": 0
+-            },
+-            "deadlineMs": {
+-              "type": "number",
+-              "exclusiveMinimum": 0
+-            },
+-            "deadlineBreached": {
+-              "type": "boolean"
+-            }
++            "totalMs": { "type": "number", "minimum": 0 },
++            "deadlineMs": { "type": "number", "exclusiveMinimum": 0 },
++            "deadlineBreached": { "type": "boolean" }
+           },
+           "required": ["totalMs", "deadlineMs", "deadlineBreached"]
+         },
+-        "evidenceBinding": {
+-          "$ref": "#/$defs/PdpEvidenceBinding"
+-        }
++        "evidenceBinding": { "$ref": "#/$defs/PdpEvidenceBinding" }
+       },
+       "required": [
+         "specVersion",
+diff --git a/packages/pdp-spec/scripts/generate-json-schema.ts b/packages/pdp-spec/scripts/generate-json-schema.ts
+index 6f7ef08..81c042d 100644
+--- a/packages/pdp-spec/scripts/generate-json-schema.ts
++++ b/packages/pdp-spec/scripts/generate-json-schema.ts
+@@ -1,6 +1,7 @@
+ import { mkdirSync, writeFileSync } from "node:fs";
+ import { dirname, resolve } from "node:path";
+ import { fileURLToPath } from "node:url";
++import prettier from "prettier";
+ import { toJsonSchemaDocument, PDP_SPEC_VERSION } from "../src/schema.js";
+ 
+ // Renders packages/pdp-spec/schema/pdp-v1.schema.json from src/schema.ts.
+@@ -12,5 +13,11 @@ const out = resolve(
+   `pdp-v${PDP_SPEC_VERSION.split(".")[0]}.schema.json`,
+ );
+ mkdirSync(dirname(out), { recursive: true });
+-writeFileSync(out, JSON.stringify(toJsonSchemaDocument(), null, 2) + "\n");
++// Formatted the way the repo's prettier gate expects, so generate and format:check agree and
++// the digest the Python generator records is the digest of the committed bytes.
++const formatted = await prettier.format(JSON.stringify(toJsonSchemaDocument()), {
++  parser: "json",
++  ...(await prettier.resolveConfig(out)),
++});
++writeFileSync(out, formatted);
+ console.log(`wrote ${out}`);
+diff --git a/sdks/python/pharos_sdk/types.py b/sdks/python/pharos_sdk/types.py
+index 909111d..9373e9d 100644
+--- a/sdks/python/pharos_sdk/types.py
++++ b/sdks/python/pharos_sdk/types.py
+@@ -2,7 +2,7 @@
+ 
+ Generated from packages/pdp-spec/schema/pdp-v1.schema.json by
+ sdks/python/scripts/gen_types.py. Do not edit; regenerate.
+-Contract version 1.0.0, schema sha256 891c5fd96eae1152a1b522dbbac8476657900858d260f47247fee0fbee7ec151.
++Contract version 1.0.0, schema sha256 17675fa8b0c608af30611c749add9badac881050a1297c33f084ead5a6b604fe.
+ """
+ 
+ from __future__ import annotations
+@@ -10,7 +10,7 @@ from __future__ import annotations
+ from typing import Any, Literal, TypedDict, Union
+ 
+ PDP_SPEC_VERSION = '1.0.0'
+-SCHEMA_SHA256 = '891c5fd96eae1152a1b522dbbac8476657900858d260f47247fee0fbee7ec151'
++SCHEMA_SHA256 = '17675fa8b0c608af30611c749add9badac881050a1297c33f084ead5a6b604fe'
+ 
+ Decision = Literal['allow', 'block', 'modify', 'escalate']
+ 
+-- 
+2.43.0
+
