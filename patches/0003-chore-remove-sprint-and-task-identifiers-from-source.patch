@@ -1,0 +1,978 @@
+From 4663edb43fab09dcccfb7db7ad1723307d0bf02f Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 30 Oct 2026 16:43:39 -0400
+Subject: [PATCH 3/7] chore: remove sprint and task identifiers from source
+ comments
+
+Roadmap vocabulary (Sprint N, S3-T2, Phase N, issue numbers in parentheses) is
+removed from code and test comments so the source describes what the code does,
+not when it was scheduled. Dataset provenance strings are untouched because they
+are content-hashed.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WQXeE9sJQ4CozZNuH73SFQ
+Signed-off-by: Ryan Wallace <ryanwallac33@gmail.com>
+---
+ packages/cascade/src/cascade.ts                      | 6 +++---
+ packages/cascade/src/testing.ts                      | 2 +-
+ packages/core/src/schema/version.ts                  | 2 +-
+ packages/core/src/verdict/engine.ts                  | 4 ++--
+ packages/evidence/src/exports.ts                     | 2 +-
+ packages/judge-eval/src/bootstrap.ts                 | 2 +-
+ packages/judge-eval/src/dedup.ts                     | 2 +-
+ packages/judge-eval/src/gate.ts                      | 2 +-
+ packages/judge-eval/src/generate.ts                  | 2 +-
+ packages/judge-eval/src/metrics.ts                   | 2 +-
+ packages/judge-eval/src/renderMarkdown.ts            | 4 ++--
+ packages/judge-eval/src/scorer.ts                    | 4 ++--
+ packages/judge-eval/src/transforms.ts                | 2 +-
+ packages/judge/src/artifactStore.ts                  | 2 +-
+ packages/judge/src/onnxModel.ts                      | 2 +-
+ packages/sdk-ts/src/client.ts                        | 2 +-
+ packages/sdk-ts/src/validate.ts                      | 2 +-
+ packages/storage/src/cache.ts                        | 2 +-
+ packages/storage/src/escalationStore.ts              | 2 +-
+ packages/storage/src/evidenceStore.ts                | 8 ++++----
+ packages/storage/src/migrations.ts                   | 4 ++--
+ runtime/python/keel/adapters/crewai.py               | 2 +-
+ runtime/python/keel/executor/replay.py               | 2 +-
+ runtime/python/keel/executor/state.py                | 4 ++--
+ runtime/python/keel/services/model/providers/base.py | 2 +-
+ runtime/python/keel/services/replay.py               | 2 +-
+ runtime/python/keel/services/tools/contract.py       | 2 +-
+ runtime/python/keel/services/tools/gateway.py        | 2 +-
+ scripts/bench-latency.ts                             | 2 +-
+ scripts/eval-gate.ts                                 | 2 +-
+ scripts/eval-judges.ts                               | 2 +-
+ scripts/system-eval.ts                               | 2 +-
+ sdks/python/pharos_sdk/client.py                     | 2 +-
+ sdks/python/pharos_sdk/validation.py                 | 2 +-
+ sdks/python/tests/test_failmode.py                   | 2 +-
+ services/api/src/auth.ts                             | 2 +-
+ services/api/src/platform.ts                         | 4 ++--
+ services/api/src/routes/actions.ts                   | 6 +++---
+ services/api/src/routes/seal.ts                      | 2 +-
+ test/cascade.no-fault-hooks.test.ts                  | 2 +-
+ test/cascade.test.ts                                 | 2 +-
+ test/config.production.test.ts                       | 2 +-
+ test/console.security-headers.test.ts                | 2 +-
+ test/core.offline-bundle-fixtures.test.ts            | 2 +-
+ test/integration.anchoring.test.ts                   | 6 +++---
+ test/integration.aws-kms.test.ts                     | 2 +-
+ test/integration.causeway.test.ts                    | 2 +-
+ test/integration.codex.test.ts                       | 4 ++--
+ test/integration.durability.test.ts                  | 2 +-
+ test/integration.gateway-duplicate-resume.test.ts    | 4 ++--
+ test/integration.key-migration.test.ts               | 6 +++---
+ test/integration.kms-failmode.test.ts                | 2 +-
+ test/integration.lantern.test.ts                     | 2 +-
+ test/integration.seal.test.ts                        | 4 ++--
+ test/judge-eval.datasets.test.ts                     | 2 +-
+ test/judge-eval.gate.test.ts                         | 2 +-
+ test/judge-eval.leakage.test.ts                      | 2 +-
+ test/sdk.failmode.test.ts                            | 2 +-
+ 58 files changed, 78 insertions(+), 78 deletions(-)
+
+diff --git a/packages/cascade/src/cascade.ts b/packages/cascade/src/cascade.ts
+index 7a277cf..495d31d 100644
+--- a/packages/cascade/src/cascade.ts
++++ b/packages/cascade/src/cascade.ts
+@@ -58,7 +58,7 @@ export interface CascadeDeps {
+   deadlineMs: number;
+   packs: JudgePackBinding[];
+   /**
+-   * Active, versioned policy artifacts (Sprint 6). When provided, Tier-3 decisions come from
++   * Active, versioned policy artifacts. When provided, Tier-3 decisions come from
+    * data-driven citation-level rules instead of the built-in bindings; the bindings still
+    * drive which judge models run (to produce the probabilities the rules test).
+    */
+@@ -103,7 +103,7 @@ export interface ContentRun {
+ /**
+  * The production decision cascade.
+  *
+- * This class carries **no fault-injection path** (#82). Exercising fail modes is done
++ * This class carries **no fault-injection path**. Exercising fail modes is done
+  * by `FaultInjectingCascade` in `./testing.js`, which subclasses this one and overrides
+  * the judge step. Keeping the seam out of the shipped class means there is no branch a
+  * production instance could take into injected failure, however its dependencies are
+@@ -232,7 +232,7 @@ export class VerdictCascade {
+       }
+     }
+     if (policyArtifacts && policyArtifacts.length > 0) {
+-      // Sprint 6: data-driven citation-level pack rules over judge probabilities + fields.
++      // Data-driven citation-level pack rules over judge probabilities + fields.
+       const judgeProbabilities: Record<string, number> = {};
+       for (const r of judgeResults) {
+         riskScore = Math.max(riskScore, r.probability);
+diff --git a/packages/cascade/src/testing.ts b/packages/cascade/src/testing.ts
+index 6483d99..ff00fdf 100644
+--- a/packages/cascade/src/testing.ts
++++ b/packages/cascade/src/testing.ts
+@@ -3,7 +3,7 @@ import type { VerdictRequest } from "@pharos/core";
+ import { VerdictCascade, JudgeFault, type CascadeDeps, type ContentRun } from "./cascade.js";
+ 
+ /**
+- * Test-only fault injection for the decision cascade (#82).
++ * Test-only fault injection for the decision cascade.
+  *
+  * The production `VerdictCascade` previously accepted a `faults` dependency, so the
+  * shipped class contained a branch into injected failure. It was only reachable via a
+diff --git a/packages/core/src/schema/version.ts b/packages/core/src/schema/version.ts
+index f85aafc..055f256 100644
+--- a/packages/core/src/schema/version.ts
++++ b/packages/core/src/schema/version.ts
+@@ -1,7 +1,7 @@
+ /**
+  * The unified ActionRecord schema version.
+  *
+- * Sprint 0 freezes v1.0.0. The schema is versioned explicitly from day one: every
++ * Version 1.0.0 is frozen. The schema is versioned explicitly from day one: every
+  * persisted record carries this string, and migration adapters translate legacy
+  * shapes (Flightline liability records, AI Lighthouse verdict records) into it.
+  *
+diff --git a/packages/core/src/verdict/engine.ts b/packages/core/src/verdict/engine.ts
+index 0d5d780..888cc94 100644
+--- a/packages/core/src/verdict/engine.ts
++++ b/packages/core/src/verdict/engine.ts
+@@ -59,11 +59,11 @@ export interface VerdictEngineOptions {
+ }
+ 
+ /**
+- * Sprint 0 decision engine — Tier 1 only (deterministic rules).
++ * Tier-1 decision engine (deterministic rules).
+  *
+  * This is deliberately honest about its scope: it implements the deterministic tier
+  * of the cascade (mandate-limit enforcement, expiry, and an explicit deny list). The
+- * statistical Tier 2 and the served-model Tier 3 are introduced in Sprint 2 (Lantern)
++ * the statistical Tier 2 and the served-model Tier 3 live in the cascade package
+  * behind this same interface, with short-circuiting so a Tier-1 hit skips later tiers.
+  */
+ export class VerdictEngine {
+diff --git a/packages/evidence/src/exports.ts b/packages/evidence/src/exports.ts
+index 5dfad80..699e1ee 100644
+--- a/packages/evidence/src/exports.ts
++++ b/packages/evidence/src/exports.ts
+@@ -77,7 +77,7 @@ export function sr117ModelRiskExport(tenantId: string, records: ActionRecord[])
+     })),
+     developmentImplementationUse:
+       "Cascade Tier 1 deterministic rules, Tier 2 statistical risk, Tier 3 served judges; every verdict cites the producing version.",
+-    ongoingMonitoring: "Continuous sampling-based assurance with Wilson-score bounds (Sprint 7).",
++    ongoingMonitoring: "Continuous sampling-based assurance with Wilson-score bounds.",
+     decisions: records.map((r) => ({
+       sequence: r.content.sequence,
+       decision: r.content.verdict.decision,
+diff --git a/packages/judge-eval/src/bootstrap.ts b/packages/judge-eval/src/bootstrap.ts
+index 31d1996..2f6e7b4 100644
+--- a/packages/judge-eval/src/bootstrap.ts
++++ b/packages/judge-eval/src/bootstrap.ts
+@@ -59,7 +59,7 @@ export function bootstrapCI(
+ 
+ /**
+  * Paired stratified bootstrap of a delta between two scorers over the SAME records (roadmap
+- * S5-T4). Both scorers' per-record scores are resampled with the SAME indices each round, so the
++ * the eval gate). Both scorers' per-record scores are resampled with the SAME indices each round, so the
+  * pairing is preserved. Returns the delta CI (candidate − baseline).
+  */
+ export function pairedBootstrapDeltaCI(
+diff --git a/packages/judge-eval/src/dedup.ts b/packages/judge-eval/src/dedup.ts
+index 334f65c..ef56e33 100644
+--- a/packages/judge-eval/src/dedup.ts
++++ b/packages/judge-eval/src/dedup.ts
+@@ -2,7 +2,7 @@
+  * Similarity-based leakage detection (roadmap §7-10(d)): normalized exact matching is necessary
+  * but insufficient. We block feature-aligned n-gram overlap between eval and training examples.
+  *
+- * Blocking defaults (from S5-T1): token-bigram containment ≥ 0.80 OR token-trigram Jaccard ≥ 0.50.
++ * Blocking defaults: token-bigram containment ≥ 0.80 OR token-trigram Jaccard ≥ 0.50.
+  * Tokenization mirrors the judge's featurizer (lowercased alphanumeric tokens) so "feature-aligned"
+  * is literal. An optional pinned-embedding review is a *secondary* defense; the n-gram gate is
+  * mandatory and runs even without embeddings.
+diff --git a/packages/judge-eval/src/gate.ts b/packages/judge-eval/src/gate.ts
+index 4cc96bb..bce0137 100644
+--- a/packages/judge-eval/src/gate.ts
++++ b/packages/judge-eval/src/gate.ts
+@@ -9,7 +9,7 @@ import { type LabeledScore, confusionAt, ece, fpr, prAuc, recall } from "./metri
+ import { pairedBootstrapDeltaCI, type CI } from "./bootstrap.js";
+ 
+ /**
+- * The statistically-meaningful CI eval gate (roadmap S5-T4 / §7-10(c)).
++ * The statistically meaningful CI eval gate.
+  *
+  * Compares a CANDIDATE scorer against a FROZEN baseline over the same records, per sliced metric,
+  * at the frozen threshold. Each metric's candidate−baseline delta gets a deterministic paired
+diff --git a/packages/judge-eval/src/generate.ts b/packages/judge-eval/src/generate.ts
+index 39d0dca..09260f0 100644
+--- a/packages/judge-eval/src/generate.ts
++++ b/packages/judge-eval/src/generate.ts
+@@ -17,7 +17,7 @@ import {
+   type TransformName,
+ } from "./transforms.js";
+ 
+-const CLEAN_TARGET = 300; // ≥300 clean positives and ≥300 clean negatives (roadmap S5-T1)
++const CLEAN_TARGET = 300; // ≥300 clean positives and ≥300 clean negatives
+ const ADVERSARIAL_TARGET = 80; // obfuscated positives per adversarial suite
+ const NATIVE_TARGET = 60; // per native-language suite (mixed labels)
+ 
+diff --git a/packages/judge-eval/src/metrics.ts b/packages/judge-eval/src/metrics.ts
+index e944966..849efbc 100644
+--- a/packages/judge-eval/src/metrics.ts
++++ b/packages/judge-eval/src/metrics.ts
+@@ -1,5 +1,5 @@
+ /**
+- * Classification metrics for the eval harness (roadmap S5-T2).
++ * Classification metrics for the eval harness.
+  *
+  * Pure functions over `LabeledScore[]` (a label + a calibrated probability). PR-AUC is the LEAD
+  * ranking metric (§7-10(b)); ROC-AUC is secondary context. All deterministic — ties in AUC use
+diff --git a/packages/judge-eval/src/renderMarkdown.ts b/packages/judge-eval/src/renderMarkdown.ts
+index 4986f31..223abeb 100644
+--- a/packages/judge-eval/src/renderMarkdown.ts
++++ b/packages/judge-eval/src/renderMarkdown.ts
+@@ -15,7 +15,7 @@ export interface ReportMeta {
+   sharedFamilyLimitation: string;
+ }
+ 
+-/** Render the full honest benchmark report (roadmap S5-T2/T3). PR-AUC leads; the base-rate box is
++/** Render the full honest benchmark report. PR-AUC leads; the base-rate box is
+  *  unmistakable; controls and CIs are always shown. */
+ export function renderMarkdown(reports: ConcernReport[], meta: ReportMeta): string {
+   const L: string[] = [];
+@@ -28,7 +28,7 @@ export function renderMarkdown(reports: ConcernReport[], meta: ReportMeta): stri
+   // Headline — lead with the ugly truth: adversarial recall and hard-negative behavior.
+   L.push("## Headline\n");
+   L.push(
+-    "Today's Tier-3 judges are linear bag-of-words classifiers. They hold up on clean text but **collapse under trivial obfuscation** — the gap Sprint 6 must close.\n",
++    "Today's Tier-3 judges are linear bag-of-words classifiers. They hold up on clean text but **collapse under trivial obfuscation** — the gap the transformer judges exist to close.\n",
+   );
+   L.push("| Concern | PR-AUC (lead) | Clean recall | Hard-neg FPR | Worst adversarial recall |");
+   L.push("|---|---|---|---|---|");
+diff --git a/packages/judge-eval/src/scorer.ts b/packages/judge-eval/src/scorer.ts
+index a3a29af..c8cc45e 100644
+--- a/packages/judge-eval/src/scorer.ts
++++ b/packages/judge-eval/src/scorer.ts
+@@ -2,9 +2,9 @@ import { type JudgeModelArtifact, score as scoreLogistic } from "@pharos/judge";
+ import { mulberry32 } from "./prng.js";
+ 
+ /**
+- * Async, batchable scorer contract (roadmap S5-T2 / §7-10(f)).
++ * Async, batchable scorer contract.
+  *
+- * Sprint 6's served ONNX judge is async; today's logistic judge is synchronous. The harness only
++ * The served ONNX judge is async; today's logistic judge is synchronous. The harness only
+  * ever calls `scoreBatch`, so a served transformer can plug in with no harness rewrite. Batch size
+  * is configurable. Output order MUST match input order.
+  */
+diff --git a/packages/judge-eval/src/transforms.ts b/packages/judge-eval/src/transforms.ts
+index 7516c16..ac205d0 100644
+--- a/packages/judge-eval/src/transforms.ts
++++ b/packages/judge-eval/src/transforms.ts
+@@ -86,7 +86,7 @@ export function paraphrase(text: string): string {
+ }
+ 
+ /**
+- * HARDENED encoding wrappers (tech-lead ruling, Sprint 6): plausible, VARIED carriers with no
++ * Hardened encoding wrappers: plausible, VARIED carriers with no
+  * "base64"/"ROT13" keyword, so the suite tests actual DECODING, not carrier-phrase anomaly. A bare
+  * judge (no normalizer) should score ~0 on these; the cascade normalizer decodes and then catches
+  * them. Carrier choice is deterministic from the payload so suites stay reproducible.
+diff --git a/packages/judge/src/artifactStore.ts b/packages/judge/src/artifactStore.ts
+index 621dc07..3e7e012 100644
+--- a/packages/judge/src/artifactStore.ts
++++ b/packages/judge/src/artifactStore.ts
+@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
+ import { homedir } from "node:os";
+ 
+ /**
+- * External artifact store for transformer-judge blobs (Sprint 6, tech-lead ruling).
++ * External artifact store for transformer-judge blobs.
+  *
+  * The ONNX + tokenizer blobs are GitHub Release assets (too large for git; LFS bandwidth is worse
+  * on a public repo). Only the tiny manifest is committed. At load time we fetch each asset from the
+diff --git a/packages/judge/src/onnxModel.ts b/packages/judge/src/onnxModel.ts
+index e7fd165..68444d0 100644
+--- a/packages/judge/src/onnxModel.ts
++++ b/packages/judge/src/onnxModel.ts
+@@ -5,7 +5,7 @@ import { ensureArtifact, type EnsureOptions } from "./artifactStore.js";
+ import { onnxRuntimeIdentity } from "./runtime.js";
+ 
+ /**
+- * Served transformer judge (Sprint 6, S6-T2): an ONNX distilbert classifier run on CPU via
++ * Served transformer judge: an ONNX distilbert classifier run on CPU via
+  * onnxruntime-node, behind the EXACT same JudgeResult contract as the logistic judge, so the
+  * cascade and registry are polymorphic on artifact kind without any change to their callers. The
+  * ONNX + tokenizer blobs are fetched hash-verified from the artifact store; the tokenizer is the
+diff --git a/packages/sdk-ts/src/client.ts b/packages/sdk-ts/src/client.ts
+index 3833e1f..e378306 100644
+--- a/packages/sdk-ts/src/client.ts
++++ b/packages/sdk-ts/src/client.ts
+@@ -207,7 +207,7 @@ export class PharosClient {
+ 
+   /** Submit an action for a verdict + sealed record. Falls back to a local default if unreachable. */
+   async submit(input: SubmitInput): Promise<SubmitResult> {
+-    // Validate BEFORE transmit and before any fail-mode path (#80). This throws rather
++    // Validate BEFORE transmit and before any fail-mode path. This throws rather
+     // than falling back: an unvalidated `liability` would otherwise pick the local
+     // fail-mode, so a typo could allow an irreversible action the server never saw.
+     validateSubmitInput(input);
+diff --git a/packages/sdk-ts/src/validate.ts b/packages/sdk-ts/src/validate.ts
+index 655db07..3a0e2b6 100644
+--- a/packages/sdk-ts/src/validate.ts
++++ b/packages/sdk-ts/src/validate.ts
+@@ -1,7 +1,7 @@
+ import { PharosError, type SubmitInput } from "./types.js";
+ 
+ /**
+- * Runtime validation at the SDK trust boundary (#80).
++ * Runtime validation at the SDK trust boundary.
+  *
+  * The SDK is a thin client and the server does validate, so for a *reachable* platform
+  * this is only faster feedback. The reason it is a safety control rather than a
+diff --git a/packages/storage/src/cache.ts b/packages/storage/src/cache.ts
+index f0033c7..1da385c 100644
+--- a/packages/storage/src/cache.ts
++++ b/packages/storage/src/cache.ts
+@@ -4,7 +4,7 @@ import { Redis } from "ioredis";
+  * Deadline-bound verdict cache.
+  *
+  * Repeated action shapes can reuse a recent verdict within a short TTL to stay inside
+- * the latency budget. Sprint 0 provides the cache primitive; Sprint 2 (Lantern) wires
++ * the latency budget. This module provides the cache primitive; the cascade wires
+  * semantic/plan-level cache keys into the cascade.
+  */
+ export class VerdictCache {
+diff --git a/packages/storage/src/escalationStore.ts b/packages/storage/src/escalationStore.ts
+index 5ea495c..5e894a5 100644
+--- a/packages/storage/src/escalationStore.ts
++++ b/packages/storage/src/escalationStore.ts
+@@ -166,7 +166,7 @@ export class EscalationStore {
+ 
+   /**
+    * Look up the escalation parked under a client idempotency key. Used by the ingest
+-   * replay path (#74) so a redelivered submission reports the escalation it already
++   * replay path so a redelivered submission reports the escalation it already
+    * created, instead of appearing to have created none.
+    */
+   async getByIdempotencyKey(tenantId: string, idempotencyKey: string): Promise<Escalation | null> {
+diff --git a/packages/storage/src/evidenceStore.ts b/packages/storage/src/evidenceStore.ts
+index e2bbe55..935ee3e 100644
+--- a/packages/storage/src/evidenceStore.ts
++++ b/packages/storage/src/evidenceStore.ts
+@@ -20,7 +20,7 @@ export interface AppendInput {
+   verdict: VerdictContext;
+   liability: LiabilityContext;
+   /**
+-   * Optional replay guard (#74). When present, the append and the claim on the key
++   * Optional replay guard. When present, the append and the claim on the key
+    * commit together, so a redelivery of the same request cannot seal a second record.
+    */
+   idempotency?: IdempotencyClaim;
+@@ -60,7 +60,7 @@ export interface EvidenceStoreDeps {
+   pool: Pool;
+   worm: WormStore;
+   signer: SigningProvider;
+-  /** Resolve the KMS key name for a tenant. Sprint 0: per-environment; Sprint 1: per-tenant. */
++  /** Resolve the KMS key name for a tenant (one key per tenant). */
+   resolveKeyName: (tenantId: string) => string;
+   now?: () => Date;
+ }
+@@ -258,7 +258,7 @@ export class EvidenceStore {
+   }
+ 
+   /**
+-   * Resolve a previously-claimed idempotency key (#74).
++   * Resolve a previously-claimed idempotency key.
+    *
+    * Returns the sealed record the key produced, or null if the key is unused. Throws
+    * IdempotencyConflictError when the key was claimed by a materially different
+@@ -292,7 +292,7 @@ export class EvidenceStore {
+   }
+ 
+   /**
+-   * Reconcile this tenant's committed records against the WORM objects that exist (#77).
++   * Reconcile this tenant's committed records against the WORM objects that exist.
+    *
+    * The claim that a post-PUT commit failure is "harmless because it is detected by
+    * reconcile()" is only true if reconcile() exists and is run. This supplies the
+diff --git a/packages/storage/src/migrations.ts b/packages/storage/src/migrations.ts
+index 05e3ca5..06bb97f 100644
+--- a/packages/storage/src/migrations.ts
++++ b/packages/storage/src/migrations.ts
+@@ -320,7 +320,7 @@ export const MIGRATIONS: Migration[] = [
+   {
+     version: "0010_rfc3161_anchors",
+     sql: /* sql */ `
+-      -- Sprint 4: real RFC 3161 anchoring alongside the simulated 'local' TSA.
++      -- Real RFC 3161 anchoring alongside the simulated 'local' TSA.
+       -- tsa_provider distinguishes them; rfc3161 anchors carry a full DER token instead of a
+       -- keyset-verified signature, so tsa_signature/tsa_key_id become nullable.
+       ALTER TABLE chain_anchors ADD COLUMN IF NOT EXISTS tsa_provider TEXT NOT NULL DEFAULT 'local';
+@@ -384,7 +384,7 @@ export const MIGRATIONS: Migration[] = [
+   {
+     version: "0013_ingest_idempotency",
+     sql: /* sql */ `
+-      -- Replay guard for POST /v1/actions (#74). One row per (tenant, client key);
++      -- Replay guard for POST /v1/actions. One row per (tenant, client key);
+       -- the primary key IS the guard, so concurrent deliveries of the same key
+       -- serialize on it and exactly one can win.
+       --
+diff --git a/runtime/python/keel/adapters/crewai.py b/runtime/python/keel/adapters/crewai.py
+index 713bf8b..ed938d7 100644
+--- a/runtime/python/keel/adapters/crewai.py
++++ b/runtime/python/keel/adapters/crewai.py
+@@ -1,6 +1,6 @@
+ """CrewAI adapter — execute a crew *live* under KEEL (M4).
+ 
+-Phase 4 shipped a CrewAI *importer* (YAML -> KIR). This adapter takes the next step:
++A CrewAI *importer* (YAML -> KIR) already exists. This adapter takes the next step:
+ it executes a crew live on KEEL's durable executor, so a CrewAI agent gains resume,
+ replay, budgets, and tracing. Each task becomes an ``AgentNode`` whose ``run`` builds
+ the role/goal prompt and calls the KEEL-backed ``TracedModel``; dependencies become the
+diff --git a/runtime/python/keel/executor/replay.py b/runtime/python/keel/executor/replay.py
+index 8980367..3b699ca 100644
+--- a/runtime/python/keel/executor/replay.py
++++ b/runtime/python/keel/executor/replay.py
+@@ -1,7 +1,7 @@
+ """Replay & diff over recorded event logs.
+ 
+ Because every nondeterministic value (clock, ids, model/tool output) was recorded
+-through an L1 port, a run's log is self-describing. Phase 1 ships two log-level
++through an L1 port, a run's log is self-describing. Two log-level
+ operations that this enables; full *re-execution* replay with ReplayClock/ReplayIdGen
+ driving live downstream steps is P2-6.
+ 
+diff --git a/runtime/python/keel/executor/state.py b/runtime/python/keel/executor/state.py
+index 5ac365e..3695755 100644
+--- a/runtime/python/keel/executor/state.py
++++ b/runtime/python/keel/executor/state.py
+@@ -125,9 +125,9 @@ class RunState:
+ 
+     def edge_taken(self, edge: "Edge") -> bool:
+         """An edge is taken iff its source completed (a skipped source is not taken)
+-        and its guard passes. Guard dialect in Phase 1: ``None`` (unconditional) or
++        and its guard passes. Guard dialect today: ``None`` (unconditional) or
+         ``branch:<label>`` matched against the source router's decision. Richer CEL
+-        guards arrive with the policy engine in Phase 4 and default to permissive."""
++        guards arrive with the policy engine and default to permissive."""
+         src = self.steps.get(edge.from_)
+         if not (src and src.status == "completed"):
+             return False
+diff --git a/runtime/python/keel/services/model/providers/base.py b/runtime/python/keel/services/model/providers/base.py
+index db89371..b9c466d 100644
+--- a/runtime/python/keel/services/model/providers/base.py
++++ b/runtime/python/keel/services/model/providers/base.py
+@@ -28,7 +28,7 @@ def _retry_after(headers: httpx.Headers) -> Optional[float]:
+ def map_status_to_error(status: int, body: str, retry_after: Optional[float]) -> ModelError:
+     """Normalize an HTTP status + body into the taxonomy. Order matters: a 400 that
+     mentions context length is a distinct, non-retryable signal that should trigger
+-    the context compiler (Phase 3), not a blind retry."""
++    the context compiler, not a blind retry."""
+     low = body.lower()
+     if status == 429:
+         return ModelError("rate_limit", body, retry_after=retry_after)
+diff --git a/runtime/python/keel/services/replay.py b/runtime/python/keel/services/replay.py
+index 0fa5b68..3917dee 100644
+--- a/runtime/python/keel/services/replay.py
++++ b/runtime/python/keel/services/replay.py
+@@ -9,7 +9,7 @@ re-driven exactly. Two modes:
+   * ``replay_patched`` — seed the run up to ``from_step`` from the recorded log
+     (optionally overwriting that step's output), then execute everything downstream
+     LIVE. Upstream is unchanged; divergence is confined to the patched point and its
+-    descendants — the substrate for "what-if" debugging and for eval cases (Phase 4).
++    descendants — the substrate for "what-if" debugging and for eval cases.
+ 
+ This driver lives in L3 because it assembles handlers; the pure log-level helpers
+ (``verify_recorded_replay``, ``diff_runs``) stay in ``executor.replay`` (L2).
+diff --git a/runtime/python/keel/services/tools/contract.py b/runtime/python/keel/services/tools/contract.py
+index cd1f4f0..180fd42 100644
+--- a/runtime/python/keel/services/tools/contract.py
++++ b/runtime/python/keel/services/tools/contract.py
+@@ -1,7 +1,7 @@
+ """Typed tool contracts. A tool declares its input/output schema (as registry
+ refs), side-effect class, and resource limits up front. The gateway validates
+ inputs before execution and outputs *before* they can reach an agent prompt
+-(invariant: typed in, typed out). Phase 1 runs tools in-process; the out-of-process
++(invariant: typed in, typed out). Tools run in-process today; the out-of-process
+ seccomp sandbox is P4-3 — the contract is identical either way.
+ """
+ from __future__ import annotations
+diff --git a/runtime/python/keel/services/tools/gateway.py b/runtime/python/keel/services/tools/gateway.py
+index dc0c492..23a59e4 100644
+--- a/runtime/python/keel/services/tools/gateway.py
++++ b/runtime/python/keel/services/tools/gateway.py
+@@ -1,4 +1,4 @@
+-"""In-process tool gateway (Phase 1).
++"""In-process tool gateway.
+ 
+ The gateway is the single chokepoint every tool call flows through. It validates
+ the input against the contract, enforces allowed-agent and rate limits, runs the
+diff --git a/scripts/bench-latency.ts b/scripts/bench-latency.ts
+index ec0b7d8..bd9fc1a 100644
+--- a/scripts/bench-latency.ts
++++ b/scripts/bench-latency.ts
+@@ -1,5 +1,5 @@
+ /**
+- * Verdict-latency benchmark (Sprint 2 — Lantern).
++ * Verdict-latency benchmark.
+  *
+  *   pnpm bench:latency [totalRequests] [concurrency]
+  *
+diff --git a/scripts/eval-gate.ts b/scripts/eval-gate.ts
+index 3b9d3fe..a3c029f 100644
+--- a/scripts/eval-gate.ts
++++ b/scripts/eval-gate.ts
+@@ -1,5 +1,5 @@
+ /**
+- * CI eval gate (roadmap S5-T4). Compares the CANDIDATE judge artifacts (packages/judge/models)
++ * CI eval gate. Compares the CANDIDATE judge artifacts (packages/judge/models)
+  * against the FROZEN baseline (packages/judge-eval/data/baseline-models) at the frozen thresholds,
+  * failing only when a sliced metric's entire 95% paired-bootstrap delta interval is worse than its
+  * committed tolerance.
+diff --git a/scripts/eval-judges.ts b/scripts/eval-judges.ts
+index 03b0a2e..b750902 100644
+--- a/scripts/eval-judges.ts
++++ b/scripts/eval-judges.ts
+@@ -3,7 +3,7 @@
+  *
+  *   pnpm judges:eval
+  *
+- * Produces docs/benchmarks/judge-evals.json (machine-readable baseline for the S5-T4 gate) and
++ * Produces docs/benchmarks/judge-evals.json (machine-readable baseline for the eval gate) and
+  * docs/benchmarks/judge-evals.md from REAL runs. Deterministic (seeded bootstrap + deterministic
+  * scoring), so the committed baseline is stable.
+  */
+diff --git a/scripts/system-eval.ts b/scripts/system-eval.ts
+index 9164c94..6e7c683 100644
+--- a/scripts/system-eval.ts
++++ b/scripts/system-eval.ts
+@@ -126,7 +126,7 @@ async function main(): Promise<void> {
+     "",
+     "- **The model over-flags ALL encoded input** (out-of-distribution anomaly, not decoding — ADR 0004): recall **and** FPR are ~100% at the threshold, i.e. the bare model is indiscriminate on encoded text. So base64/rot13/homoglyph are **not** a model win, exactly as the split AC states.",
+     "- **The SYSTEM win is in RANKING (PR-AUC), not threshold recall:** decoding/canonicalizing lets the judge score the recovered plaintext, which separates promissory-encoded from benign-encoded far better — PR-AUC rises on every encoding (base64 43%→86%, rot13 79%→96%, homoglyph 58%→90%). The decode mechanism is proven hermetically (`test/judge-eval.encoding-system.test.ts`).",
+-    "- **Known limitation (→ S7 OOD calibration):** because the model over-flags OOD gibberish and the cascade takes the *more-severe* variant (which includes the still-anomalous raw/canonical forms), the SYSTEM also flags all encoded input at 0.5 (FPR 100%). For a compliance judge this is a conservative *escalate-on-obfuscation* posture, not silent failure — but tightening encoded-input FPR needs OOD calibration of the model (staged in S7-T1), not a normalizer change.",
++    "- **Known limitation (open: OOD calibration):** because the model over-flags OOD gibberish and the cascade takes the *more-severe* variant (which includes the still-anomalous raw/canonical forms), the SYSTEM also flags all encoded input at 0.5 (FPR 100%). For a compliance judge this is a conservative *escalate-on-obfuscation* posture, not silent failure — but tightening encoded-input FPR needs OOD calibration of the model (tracked in docs/LIMITATIONS.md), not a normalizer change.",
+     "- Encoding-suite plaintext has **zero** train/eval n-gram leakage (proven; the gate fires on a seeded dup).",
+     "",
+   ].join("\n");
+diff --git a/sdks/python/pharos_sdk/client.py b/sdks/python/pharos_sdk/client.py
+index dff819e..84a1e7c 100644
+--- a/sdks/python/pharos_sdk/client.py
++++ b/sdks/python/pharos_sdk/client.py
+@@ -197,7 +197,7 @@ class PharosClient:
+         ``sealed`` — a ``threading.Thread`` whose ``result`` attribute holds the server's reply
+         (or ``error``) once it joins. Call ``result["sealed"].join()`` to wait for the record.
+         """
+-        # Validate BEFORE transmit and before any fail-mode path (#80). This raises rather
++        # Validate BEFORE transmit and before any fail-mode path. This raises rather
+         # than falling back: an unvalidated liability would otherwise pick the local
+         # fail-mode, so a typo could allow an irreversible action the server never saw.
+         validate_submit_input(kwargs)
+diff --git a/sdks/python/pharos_sdk/validation.py b/sdks/python/pharos_sdk/validation.py
+index 9d86519..6bec8c8 100644
+--- a/sdks/python/pharos_sdk/validation.py
++++ b/sdks/python/pharos_sdk/validation.py
+@@ -1,4 +1,4 @@
+-"""Runtime validation at the SDK trust boundary (#80).
++"""Runtime validation at the SDK trust boundary.
+ 
+ The SDK is a thin client and the server does validate, so for a *reachable* platform this
+ is only faster feedback. It is a safety control rather than a convenience because of the
+diff --git a/sdks/python/tests/test_failmode.py b/sdks/python/tests/test_failmode.py
+index 1811cc8..684b5ad 100644
+--- a/sdks/python/tests/test_failmode.py
++++ b/sdks/python/tests/test_failmode.py
+@@ -1,6 +1,6 @@
+ """SDK local fail-mode conformance (Python).
+ 
+-When the platform is unreachable — which includes a 503 kms_unavailable from S3-T2 — the SDK
++When the platform is unreachable — which includes a 503 kms_unavailable — the SDK
+ applies a local fail-mode mirroring the server cascade: reversible -> fail_open (allow),
+ irreversible -> fail_closed (escalate). The TypeScript SDK conformance for the same contract
+ lives in test/sdk.failmode.test.ts.
+diff --git a/services/api/src/auth.ts b/services/api/src/auth.ts
+index 5cd861b..1c86a53 100644
+--- a/services/api/src/auth.ts
++++ b/services/api/src/auth.ts
+@@ -176,7 +176,7 @@ function secretsMatch(presented: string, expected: string): boolean {
+  * Platform-operator bootstrap guard for tenant provisioning.
+  *
+  * The admin token is the highest-privilege credential in the system, so the comparison
+- * is constant-time (#75). A `!==` on two strings short-circuits at the first differing
++ * is constant-time. A `!==` on two strings short-circuits at the first differing
+  * byte, and that timing difference is the signal an attacker uses to recover a secret
+  * one byte at a time.
+  */
+diff --git a/services/api/src/platform.ts b/services/api/src/platform.ts
+index 3c24063..daaff96 100644
+--- a/services/api/src/platform.ts
++++ b/services/api/src/platform.ts
+@@ -242,7 +242,7 @@ export async function buildPlatform(
+ 
+   const cache = new VerdictCache(config.redis.url);
+ 
+-  // Sprint 1: per-tenant signing keys (matches TenantStore.kmsKeyName).
++  // Per-tenant signing keys (matches TenantStore.kmsKeyName).
+   const resolveKeyName = (tenantId: string) => `tenant:${tenantId}`;
+ 
+   const store = new EvidenceStore({ pool, worm, signer, resolveKeyName });
+@@ -314,7 +314,7 @@ export async function buildPlatform(
+     listAnchors: (tenantId) => evidenceOps.listAnchors(tenantId),
+     anchorMaxAgeMs: config.tsa.intervalMs > 0 ? config.tsa.intervalMs * 2 : undefined,
+     onBreak: (report) => {
+-      // Structured alert; Sprint 8 wires this into the observability/alerting stack.
++      // Structured alert, consumed by the observability/alerting stack.
+       console.error("[chain-integrity] BREAK detected", JSON.stringify(report.errors));
+     },
+   });
+diff --git a/services/api/src/routes/actions.ts b/services/api/src/routes/actions.ts
+index 7dd6eee..e77f00f 100644
+--- a/services/api/src/routes/actions.ts
++++ b/services/api/src/routes/actions.ts
+@@ -41,7 +41,7 @@ const SubmitBodySchema = z.object({
+    */
+   mandateToken: z.record(z.string(), z.unknown()).optional(),
+   /**
+-   * Optional client replay guard (#74). Supplying it makes ingest exactly-once for
++   * Optional client replay guard. Supplying it makes ingest exactly-once for
+    * this request: a redelivery returns the record the first delivery sealed instead of
+    * sealing another. Also keys the escalation parked on an `escalate` verdict.
+    */
+@@ -126,7 +126,7 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform):
+     );
+     if (!principal) return reply;
+ 
+-    // Replay guard (#74). Resolved after authorization — an unauthenticated caller must
++    // Replay guard. Resolved after authorization — an unauthenticated caller must
+     // not be able to probe which idempotency keys a tenant has used.
+     const fingerprint = body.idempotencyKey ? requestFingerprint(body) : null;
+ 
+@@ -178,7 +178,7 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform):
+     };
+ 
+     // Resolve a stored mandate, if referenced, and seal it into the record.
+-    // Mandate authority is derived server-side, never asserted by the caller (#81).
++    // Mandate authority is derived server-side, never asserted by the caller.
+     //
+     // The rest of `liability` is a caller *declaration* about the action — blast radius,
+     // oversight mode — which Pharos seals as evidence of what was asserted. `mandate` is
+diff --git a/services/api/src/routes/seal.ts b/services/api/src/routes/seal.ts
+index c07a616..aafcd2e 100644
+--- a/services/api/src/routes/seal.ts
++++ b/services/api/src/routes/seal.ts
+@@ -12,7 +12,7 @@ import type { Platform } from "../platform.js";
+ import { requireAuth } from "../auth.js";
+ 
+ /**
+- * Ledger evidence operations (Sprint 5 — Seal): litigation holds, trusted-time anchoring,
++ * Ledger evidence operations: litigation holds, trusted-time anchoring,
+  * claims-pack assembly (draft → sealed → released), regulatory exports, and the scoped
+  * exchange-portal read path (consent-gated, fully access-audited).
+  */
+diff --git a/test/cascade.no-fault-hooks.test.ts b/test/cascade.no-fault-hooks.test.ts
+index c7f31fc..24f1d55 100644
+--- a/test/cascade.no-fault-hooks.test.ts
++++ b/test/cascade.no-fault-hooks.test.ts
+@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
+ import * as cascadePackage from "@pharos/cascade";
+ 
+ /**
+- * The production cascade carries no fault-injection path (#82).
++ * The production cascade carries no fault-injection path.
+  *
+  * Previously `CascadeDeps` accepted a `faults` field, so the shipped `VerdictCascade`
+  * contained a branch straight into injected failure. That was only reachable via a
+diff --git a/test/cascade.test.ts b/test/cascade.test.ts
+index c0e8967..e9f3d9c 100644
+--- a/test/cascade.test.ts
++++ b/test/cascade.test.ts
+@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
+ import { VerdictEngine, type VerdictRequest, type LiabilityContext } from "@pharos/core";
+ import { loadDefaultRegistry, ModelRegistry, type AsyncJudge } from "@pharos/judge";
+ import { VerdictCascade, DEFAULT_PACK_BINDINGS, fingerprintVerdict } from "@pharos/cascade";
+-// Fault injection lives outside the shipped class (#82) and is reached only by this
++// Fault injection lives outside the shipped class and is reached only by this
+ // explicit deep import, never from the package index.
+ import { FaultInjectingCascade, type CascadeFaults } from "@pharos/cascade/testing";
+ 
+diff --git a/test/config.production.test.ts b/test/config.production.test.ts
+index 99771c7..236e082 100644
+--- a/test/config.production.test.ts
++++ b/test/config.production.test.ts
+@@ -34,7 +34,7 @@ describe("production configuration posture", () => {
+     expect(config.kms.provider).toBe("aws-kms");
+     expect(config.tsa.provider).toBe("rfc3161");
+     expect(config.judge.provider).toBe("onnx");
+-    // Admission control must not silently degrade to unmetered ingest (#73).
++    // Admission control must not silently degrade to unmetered ingest.
+     expect(config.api.rateLimitFailMode).toBe("closed");
+   });
+ 
+diff --git a/test/console.security-headers.test.ts b/test/console.security-headers.test.ts
+index 617909e..9c0a52b 100644
+--- a/test/console.security-headers.test.ts
++++ b/test/console.security-headers.test.ts
+@@ -25,7 +25,7 @@ const header = (name: string): string | undefined =>
+ 
+ describe("console static security headers", () => {
+   // The Content-Security-Policy is deliberately NOT here any more: it carries a
+-  // per-request nonce and is set in middleware (#79). Emitting it from static config too
++  // per-request nonce and is set in middleware. Emitting it from static config too
+   // would send two CSP headers. That it is ABSENT here is itself part of the contract.
+   it("does not emit a Content-Security-Policy from static config", () => {
+     expect(header("Content-Security-Policy")).toBeUndefined();
+diff --git a/test/core.offline-bundle-fixtures.test.ts b/test/core.offline-bundle-fixtures.test.ts
+index 24235d8..083e5e0 100644
+--- a/test/core.offline-bundle-fixtures.test.ts
++++ b/test/core.offline-bundle-fixtures.test.ts
+@@ -11,7 +11,7 @@ import { verifyChain, type ActionRecord, type PublicKeyEntry } from "@pharos/cor
+  * time). This is the proof that offline verification handles Ed25519 and ECDSA P-256.
+  *
+  * Regenerate after a deliberate seal/format change by re-sealing chains under LocalKms and
+- * AwsKms (emulator) and re-running verifyChain — see the S3-T1 PR for the generator.
++ * AwsKms (emulator) and re-running verifyChain — see scripts/ for the generator.
+  */
+ type Bundle = {
+   tenantId: string;
+diff --git a/test/integration.anchoring.test.ts b/test/integration.anchoring.test.ts
+index 832bd0e..f52b03e 100644
+--- a/test/integration.anchoring.test.ts
++++ b/test/integration.anchoring.test.ts
+@@ -7,7 +7,7 @@ import type { FastifyInstance } from "fastify";
+ import { verifyClaimsPack, type ClaimsPackBundle } from "@pharos/evidence";
+ 
+ /**
+- * S4-T2 acceptance: scheduled per-tenant anchoring.
++ * Acceptance: scheduled per-tenant anchoring.
+  *
+  * Drives the real platform: seal records, observe that the chain view flags a missing anchor,
+  * run the anchor job (the same sweep the scheduler runs hourly), observe the warning clears and
+@@ -44,7 +44,7 @@ beforeAll(async () => {
+     platform = await buildPlatform();
+     app = await buildApp(platform);
+     await platform.tenants.createTenant({ tenantId: TENANT, displayName: "Anchor" });
+-    // Mandate authority is server-resolved (#81): store the grant once, then reference
++    // Mandate authority is server-resolved: store the grant once, then reference
+     // it by id on every submit below.
+     await platform.mandates.create({
+       tenantId: TENANT,
+@@ -82,7 +82,7 @@ async function submit(amount: number) {
+     payload: {
+       tenantId: TENANT,
+       action: { type: "payment.transfer", agentId: "treasury", payload: { amount, to: "vendor" } },
+-      // Mandate authority is server-resolved (#81); the grant is stored in beforeAll
++      // Mandate authority is server-resolved; the grant is stored in beforeAll
+       // and referenced by id here.
+       mandateId: "m",
+       liability: {
+diff --git a/test/integration.aws-kms.test.ts b/test/integration.aws-kms.test.ts
+index fad6458..d65c33a 100644
+--- a/test/integration.aws-kms.test.ts
++++ b/test/integration.aws-kms.test.ts
+@@ -12,7 +12,7 @@ import {
+ } from "@pharos/core";
+ import { runSigningConformance } from "./signingConformance.js";
+ 
+-// AwsKms integration against a KMS emulator (nsmithuk/local-kms; see S3-T0 spike). CI provides
++// AwsKms integration against a KMS emulator (nsmithuk/local-kms). CI provides
+ // the emulator on this endpoint; locally: `docker run -d -p 8088:8080 nsmithuk/local-kms`.
+ // Self-provided default mirrors the other integration tests (Postgres/Redis/MinIO).
+ process.env.PHAROS_KMS_AWS_ENDPOINT ??= "http://localhost:8088";
+diff --git a/test/integration.causeway.test.ts b/test/integration.causeway.test.ts
+index 7afa46f..b852696 100644
+--- a/test/integration.causeway.test.ts
++++ b/test/integration.causeway.test.ts
+@@ -259,7 +259,7 @@ describe("Causeway — escalation round trip (atomic claim)", () => {
+       maxRetries: 0,
+       localFailMode: "fail_closed",
+     });
+-    // S3-T2: the SDK local fail-mode is reversibility-aware. An irreversible action fails
++    // The SDK local fail-mode is reversibility-aware. An irreversible action fails
+     // CLOSED (escalate) — the safe default. (Reversible→fail-open is covered in
+     // test/sdk.failmode.test.ts.)
+     const res = await offline.submit({
+diff --git a/test/integration.codex.test.ts b/test/integration.codex.test.ts
+index a0c73ae..c3811cd 100644
+--- a/test/integration.codex.test.ts
++++ b/test/integration.codex.test.ts
+@@ -40,7 +40,7 @@ async function pay(amount: number) {
+     payload: {
+       tenantId: TENANT,
+       action: { type: "payment.transfer", agentId: "treasury", payload: { amount, to: "vendor" } },
+-      // Mandate authority is server-resolved (#81); the grant is stored in beforeAll
++      // Mandate authority is server-resolved; the grant is stored in beforeAll
+       // and referenced by id here.
+       mandateId: "m",
+       liability: {
+@@ -60,7 +60,7 @@ beforeAll(async () => {
+     platform = await buildPlatform();
+     app = await buildApp(platform);
+     await platform.tenants.createTenant({ tenantId: TENANT, displayName: "Codex" });
+-    // Mandate authority is server-resolved (#81): store the grant once, then reference
++    // Mandate authority is server-resolved: store the grant once, then reference
+     // it by id on every submit below.
+     await platform.mandates.create({
+       tenantId: TENANT,
+diff --git a/test/integration.durability.test.ts b/test/integration.durability.test.ts
+index 7bd2bad..0a18809 100644
+--- a/test/integration.durability.test.ts
++++ b/test/integration.durability.test.ts
+@@ -74,7 +74,7 @@ describe("durable round trip + restart + chain verification", () => {
+     const { buildApp } = await import("../services/api/src/app.js");
+     const app = await buildApp(firstPlatform);
+ 
+-    // Mandate authority is server-resolved (#81): store the grant, then reference it by
++    // Mandate authority is server-resolved: store the grant, then reference it by
+     // id. Exercising the real path also proves the Tier-1 mandate-limit block still
+     // fires on a server-resolved mandate, not just a caller-declared one.
+     await firstPlatform.mandates.create({
+diff --git a/test/integration.gateway-duplicate-resume.test.ts b/test/integration.gateway-duplicate-resume.test.ts
+index 0371701..2fb38f7 100644
+--- a/test/integration.gateway-duplicate-resume.test.ts
++++ b/test/integration.gateway-duplicate-resume.test.ts
+@@ -9,7 +9,7 @@ import { createGatewayApp } from "@pharos/gateway";
+ import { PostgresHeldRequestStore, heldRequestKeyProviderFromMaster } from "@pharos/storage";
+ 
+ /**
+- * Duplicate resume must never double-deliver (S8-T1 AC, issue #38).
++ * Duplicate resume must never double-deliver.
+  *
+  * The AC clause "duplicate resume rejected" was the last one without a test of its own.
+  * A held continuation carries a real side effect — the request the agent was blocked
+@@ -166,7 +166,7 @@ async function approve(escalationId: string): Promise<void> {
+ 
+ const resume = (url: string, id: string) => fetch(`${url}/__resume/${id}`, { method: "POST" });
+ 
+-describe("duplicate resume is rejected (#38)", () => {
++describe("duplicate resume is rejected", () => {
+   it("refuses a sequential second resume of a delivered continuation", async (ctx) => {
+     if (!available) return ctx.skip();
+     const id = await escalate(replicaA.url);
+diff --git a/test/integration.key-migration.test.ts b/test/integration.key-migration.test.ts
+index 41a3aad..f3e43d8 100644
+--- a/test/integration.key-migration.test.ts
++++ b/test/integration.key-migration.test.ts
+@@ -19,7 +19,7 @@ import {
+   type SigningProvider,
+ } from "@pharos/core";
+ 
+-// S3-T3: migrate a live tenant chain from local-kms (Ed25519) to aws-kms (ECDSA P-256) with
++// Migrate a live tenant chain from local-kms (Ed25519) to aws-kms (ECDSA P-256) with
+ // ZERO data migration. Each record embeds its own keyId and the published keyset is additive,
+ // so old records keep verifying under their old keys while new records sign under KMS — the
+ // merged keyset verifies the whole chain genesis-to-head. AwsKms uses the emulator (:8088).
+@@ -101,11 +101,11 @@ describe("key migration: local-kms (Ed25519) → aws-kms (ECDSA P-256), no data
+       allowKeyCreation: true,
+     });
+ 
+-    // Phase 1: seal N records under local-kms.
++    // Step 1: seal N records under local-kms.
+     localKeyId = await local.ensureKey(`tenant:${tenantId}`);
+     firstHalf = await seal(local, localKeyId, tenantId, 0, N, GENESIS_HASH);
+ 
+-    // Phase 2: SWITCH the provider. The aws-kms key CONTINUES the version sequence (local v1 →
++    // Step 2: SWITCH the provider. The aws-kms key CONTINUES the version sequence (local v1 →
+     // aws v2) so keyIds stay globally unique — this is what makes the merged keyset additive and
+     // needs no data migration. Seal N more, continuing the same chain (prevHash links), WITHOUT
+     // touching or re-sealing the existing records.
+diff --git a/test/integration.kms-failmode.test.ts b/test/integration.kms-failmode.test.ts
+index e339c43..43ca063 100644
+--- a/test/integration.kms-failmode.test.ts
++++ b/test/integration.kms-failmode.test.ts
+@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
+ import { execSync } from "node:child_process";
+ import { randomUUID } from "node:crypto";
+ 
+-// S3-T2: KMS-unavailable failure mode. Uses a DEDICATED KMS emulator on its own port so the
++// KMS-unavailable failure mode. Uses a DEDICATED KMS emulator on its own port so the
+ // test can kill it mid-run without disturbing the shared aws-kms emulator (:8088). Real
+ // Postgres + WORM via buildPlatform. Proves: KMS down at seal time ⇒ 503 kms_unavailable, the
+ // pharos_kms_unavailable_total metric increments, and NO partial record is written.
+diff --git a/test/integration.lantern.test.ts b/test/integration.lantern.test.ts
+index 4c2e8e0..d57194e 100644
+--- a/test/integration.lantern.test.ts
++++ b/test/integration.lantern.test.ts
+@@ -148,7 +148,7 @@ describe("Lantern — served cascade over the API", () => {
+     const { FaultInjectingCascade } = await import("../packages/cascade/src/testing.js");
+     const { VerdictEngine } = await import("../packages/core/src/index.js");
+     // Swap in a cascade whose Tier-3 judge always faults. The fault seam lives in the
+-    // test-only subclass (#82); the production class has no such branch.
++    // test-only subclass; the production class has no such branch.
+     platform.cascade = new FaultInjectingCascade(
+       {
+         engine: new VerdictEngine({ deadlineMs: 800 }),
+diff --git a/test/integration.seal.test.ts b/test/integration.seal.test.ts
+index 08e8bba..eb8ce72 100644
+--- a/test/integration.seal.test.ts
++++ b/test/integration.seal.test.ts
+@@ -43,7 +43,7 @@ beforeAll(async () => {
+     platform = await buildPlatform();
+     app = await buildApp(platform);
+     await platform.tenants.createTenant({ tenantId: TENANT, displayName: "Seal" });
+-    // Mandate authority is server-resolved (#81): store the grant once, then reference
++    // Mandate authority is server-resolved: store the grant once, then reference
+     // it by id on every submit below.
+     await platform.mandates.create({
+       tenantId: TENANT,
+@@ -82,7 +82,7 @@ async function submit(payload: Record<string, unknown>) {
+     payload: {
+       tenantId: TENANT,
+       action: { type: "payment.transfer", agentId: "treasury", payload },
+-      // Mandate authority is server-resolved (#81); the grant is stored in beforeAll
++      // Mandate authority is server-resolved; the grant is stored in beforeAll
+       // and referenced by id here.
+       mandateId: "m",
+       liability: {
+diff --git a/test/judge-eval.datasets.test.ts b/test/judge-eval.datasets.test.ts
+index bf9f584..a5d0d50 100644
+--- a/test/judge-eval.datasets.test.ts
++++ b/test/judge-eval.datasets.test.ts
+@@ -9,7 +9,7 @@ import {
+ } from "@pharos/judge-eval";
+ 
+ /**
+- * Validity of the committed eval datasets (roadmap S5-T1 + §7-10(a)). These assert the dataset
++ * Validity of the committed eval datasets (see docs/benchmarks/judge-evals.md). These assert the dataset
+  * SHAPE and VALIDITY contract that the harness and the honesty of the baseline depend on. The
+  * separate leakage gate lives in judge-eval.leakage.test.ts.
+  */
+diff --git a/test/judge-eval.gate.test.ts b/test/judge-eval.gate.test.ts
+index ba7fa10..4c9d886 100644
+--- a/test/judge-eval.gate.test.ts
++++ b/test/judge-eval.gate.test.ts
+@@ -31,7 +31,7 @@ const tol = loadTolerances();
+ // Small resample count keeps the test fast; the CLI uses the default 1000.
+ const RS = 200;
+ 
+-describe("CI eval gate (S5-T4)", () => {
++describe("CI eval gate", () => {
+   it("passes on the live served artifacts vs the frozen baseline (the real CI gate)", async () => {
+     // Candidate = the ACTUAL packages/judge/models. A PR that weakens a served judge makes this
+     // fail in CI (the `test` job runs on every PR). Today served == frozen, so Δ=0.
+diff --git a/test/judge-eval.leakage.test.ts b/test/judge-eval.leakage.test.ts
+index 158a64c..7594731 100644
+--- a/test/judge-eval.leakage.test.ts
++++ b/test/judge-eval.leakage.test.ts
+@@ -5,7 +5,7 @@ import { PHI_IN_CONTEXT } from "../packages/judge/data/phi-in-context.js";
+ import { FUNDS_MOVEMENT_INTENT } from "../packages/judge/data/funds-movement-intent.js";
+ 
+ /**
+- * The leakage gate (roadmap S5-T1 + §7-10(d)): the committed eval data must not overlap the
++ * The leakage gate: the committed eval data must not overlap the
+  * training data by normalized-exact match OR feature-aligned n-gram similarity, AND the gate must
+  * be proven to FIRE on a seeded near-duplicate (otherwise "0 hits" is meaningless).
+  */
+diff --git a/test/sdk.failmode.test.ts b/test/sdk.failmode.test.ts
+index 34f6220..319d998 100644
+--- a/test/sdk.failmode.test.ts
++++ b/test/sdk.failmode.test.ts
+@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
+ import { PharosClient } from "@getpharos/sdk";
+ 
+ // SDK local fail-mode conformance (TS). When the platform is unreachable — which includes a
+-// 503 kms_unavailable from S3-T2 — the SDK applies a local fail-mode that mirrors the server
++// 503 kms_unavailable — the SDK applies a local fail-mode that mirrors the server
+ // cascade: reversible → fail_open (allow), irreversible → fail_closed (escalate). The Python
+ // SDK conformance for the same contract lives in sdks/python/tests/test_failmode.py.
+ const unreachable = () => Promise.reject(new Error("connect ECONNREFUSED"));
+-- 
+2.43.0
+
