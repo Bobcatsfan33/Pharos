@@ -1,7 +1,7 @@
 # ADR 0007 — `liability.mandateToken` (schema v1.1.1): sealing a presented MandateToken
 
 - **Status:** Accepted with Workstream A of the
-  [judgement family and primitives handoff](../handoff/2026-10-29-judgement-family-and-primitives.md).
+  [judgement family and primitives handoff](../internal/handoff/2026-10-29-judgement-family-and-primitives.md).
 - **Context:** ADR numbering skips 0006, reserved by the open adoption-program PR (#290).
 - **Changes:** `ACTION_RECORD_SCHEMA_VERSION` 1.1.0 → **1.1.1**; one optional field.
 

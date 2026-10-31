@@ -2,7 +2,7 @@
 
 Generated from packages/pdp-spec/schema/pdp-v1.schema.json by
 sdks/python/scripts/gen_types.py. Do not edit; regenerate.
-Contract version 1.0.0, schema sha256 891c5fd96eae1152a1b522dbbac8476657900858d260f47247fee0fbee7ec151.
+Contract version 1.0.0, schema sha256 17675fa8b0c608af30611c749add9badac881050a1297c33f084ead5a6b604fe.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any, Literal, TypedDict, Union
 
 PDP_SPEC_VERSION = '1.0.0'
-SCHEMA_SHA256 = '891c5fd96eae1152a1b522dbbac8476657900858d260f47247fee0fbee7ec151'
+SCHEMA_SHA256 = '17675fa8b0c608af30611c749add9badac881050a1297c33f084ead5a6b604fe'
 
 Decision = Literal['allow', 'block', 'modify', 'escalate']
 

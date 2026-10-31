@@ -116,7 +116,7 @@ judge, or alters the 800 ms objective. Sealing is still outside the measured win
 
 ## Tier-1 mandate-token path (Workstream A)
 
-Workstream A of the [judgement-family handoff](../handoff/2026-10-29-judgement-family-and-primitives.md)
+Workstream A of the [judgement-family handoff](../internal/handoff/2026-10-29-judgement-family-and-primitives.md)
 added portable, attenuable MandateTokens. On the request path a presented token costs one root
 signature verification, one Ed25519 verification per attenuation block, the proof check, and the
 Tier-1 rules. This row measures exactly that and nothing else: no Tier 2/3, no sealing.

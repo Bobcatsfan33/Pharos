@@ -85,7 +85,7 @@ offline; an invalid token is a local Tier-1 block that is still submitted for se
 Conformance vectors (18, shared by core, the TypeScript SDK, and the stdlib-only Python
 verifier), a 200-chain narrowing property, and a 1,500-mutation fuzz that no edit widens
 `effective()`. Exit gate in
-[benchmarks/latency.md](benchmarks/latency.md#tier-1-mandate-token-path-workstream-a) and
+[benchmarks/latency.md](../benchmarks/latency.md#tier-1-mandate-token-path-workstream-a) and
 enforced by a CI job. Honest limits in
-[LIMITATIONS.md §9](LIMITATIONS.md#9-mandatetoken-offline-verifiers-cannot-see-revocation-local-allow-is-optimistic-resources-are-carried-not-enforced).
+[LIMITATIONS.md §9](../LIMITATIONS.md#9-mandatetoken-offline-verifiers-cannot-see-revocation-local-allow-is-optimistic-resources-are-carried-not-enforced).
 Plan: [handoff/2026-10-30-a-plan.md](handoff/2026-10-30-a-plan.md).

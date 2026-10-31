@@ -406,7 +406,7 @@
       },
       {
         "path": "docs/benchmarks/latency.md",
-        "sha256": "afc450f51946acdfa8f2d966d7a839b6ba9a44f8d240451d8b2e09fabbf4091c"
+        "sha256": "88220c4a918483f6b1cbac2f032d72402357dcb0a5b164547ea2768e3f8abcb6"
       },
       {
         "path": "docs/benchmarks/onnx-local-reference.json",

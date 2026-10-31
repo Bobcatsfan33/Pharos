@@ -70,7 +70,7 @@ back: [`packages/core/src/migration/`](../packages/core/src/migration/).
 ### v1.1.1 — `liability.mandateToken` seals a presented MandateToken
 
 See [ADR 0007](adr/0007-mandate-token-schema-v1-1-1.md) and Workstream A of the
-[judgement-family handoff](handoff/2026-10-29-judgement-family-and-primitives.md). PATCH, per
+[judgement-family handoff](internal/handoff/2026-10-29-judgement-family-and-primitives.md). PATCH, per
 the rule above: one optional field, no migration. When an agent presents a signed, attenuable
 MandateToken, the record seals the token's content-hashed blocks, the verifier's answer, and
 the authority that was in force — never the token itself, which carries the holder's ephemeral
