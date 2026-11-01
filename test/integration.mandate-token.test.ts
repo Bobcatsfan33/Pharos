@@ -82,6 +82,19 @@ const liability = (
   modelMetadata: null,
 });
 
+/**
+ * Flip one bit of a base64 signature. Deterministic on purpose: an earlier version replaced the
+ * letter "A", which roughly one signature in five does not contain, so the "corrupted" token was
+ * sometimes byte-identical to the original and verified fine. Decoding and re-encoding also keeps
+ * the result canonical base64, so the verifier reaches the signature check rather than rejecting
+ * the token's shape.
+ */
+function corrupt(signature: string): string {
+  const raw = Buffer.from(signature, "base64");
+  raw[0] ^= 0xff;
+  return raw.toString("base64");
+}
+
 async function submit(body: Record<string, unknown>) {
   const res = await app!.inject({
     method: "POST",
@@ -320,7 +333,7 @@ describe("Workstream A — MandateToken over the served API", () => {
       liability: liability(0),
       mandateToken: {
         ...token,
-        signatures: [...token.signatures.slice(0, -1), token.signatures.at(-1)!.replace(/A/g, "B")],
+        signatures: [...token.signatures.slice(0, -1), corrupt(token.signatures.at(-1)!)],
       },
     });
     expect(local.localVerdict).toBe("mandate-token-invalid");
