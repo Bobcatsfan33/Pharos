@@ -316,6 +316,10 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The bench runs under tsx, which resolves @getpharos/pdp-spec to its built dist (vitest
+      # aliases it to src, so the test job does not need this). packages/core now imports the
+      # spec, so the publishable packages must be built before the bench can load core.
+      - run: pnpm build:publishable
       - name: Tier-1 mandate-token path ≥ 1,000 verdicts/s (blocking)
         run: pnpm bench:mandate-token 20000
 
