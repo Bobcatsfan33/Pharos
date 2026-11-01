@@ -21,6 +21,6 @@
     "generate": "tsx scripts/generate-json-schema.ts"
   },
   "dependencies": {
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   }
 }
