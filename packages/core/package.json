@@ -19,6 +19,6 @@
   "dependencies": {
     "@aws-sdk/client-kms": "^3.1144.0",
     "@getpharos/pdp-spec": "workspace:*",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   }
 }
