@@ -13,6 +13,15 @@ dependencies = [
 
 [tool.uv]
 package = false
+# Transitive-only packages pinned forward off the torch/triton graph to clear advisories the
+# locked-graph audit flags: filelock (CVE-2026-112907..112940, fixed in 4.2.1) and setuptools
+# (GHSA-xmj3-9gf7-h52w, fixed in 84.1.0). Constraints rather than dependencies: nothing here
+# imports them directly, so they stay transitive and only their floor moves.
+constraint-dependencies = [
+  "filelock>=4.2.1; python_version >= '3.11'",
+  "filelock>=4.1.0; python_version < '3.11'",
+  "setuptools>=84.1.0",
+]
 
 [dependency-groups]
 audit = ["pip-audit==2.10.1"]
