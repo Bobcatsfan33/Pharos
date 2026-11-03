@@ -51,7 +51,7 @@ jobs:
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 10.32.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           registry-url: "https://registry.npmjs.org"
@@ -79,7 +79,7 @@ jobs:
       id-token: write # required for PyPI trusted publishing
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.11"
       - name: hermetic SDK tests
@@ -93,7 +93,7 @@ jobs:
           pip install build
           python -m build
       - name: publish getpharos to PyPI (trusted publishing)
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: sdks/python/dist
           # A release must be re-runnable. Without this, re-running a failed release --
@@ -112,7 +112,7 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.11"
       - name: test and build Pharos Runtime
@@ -129,7 +129,7 @@ jobs:
           /tmp/pharos-runtime-release-smoke/bin/pharos --help | grep -q "usage: pharos"
           /tmp/pharos-runtime-release-smoke/bin/keel --help | grep -q "usage: keel"
       - name: retain the verified runtime distribution
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v4
         with:
           name: pharos-runtime-${{ github.ref_name }}
           path: runtime/python/dist/*
@@ -137,7 +137,7 @@ jobs:
           retention-days: 90
       - name: publish pharos-runtime to PyPI after trusted-publisher activation
         if: vars.PHAROS_RUNTIME_PYPI_ENABLED == 'true'
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: runtime/python/dist
           skip-existing: true
