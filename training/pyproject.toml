@@ -1,8 +1,10 @@
 [project]
 name = "pharos-judge-training"
 version = "0.0.0"
-description = "Transformer judge training pipeline (Sprint 6). Out of the Node dependency tree."
-requires-python = ">=3.10"
+description = "Transformer judge training pipeline. Out of the Node dependency tree."
+# 3.11 is the floor: filelock 4.2.1, the first release clear of its advisories, requires it,
+# and the Pharos Runtime already requires 3.11. Python 3.10 reached end of life in Oct 2026.
+requires-python = ">=3.11"
 dependencies = [
   "torch==2.14.1",
   "transformers==5.17.0",
@@ -18,8 +20,7 @@ package = false
 # (GHSA-xmj3-9gf7-h52w, fixed in 84.1.0). Constraints rather than dependencies: nothing here
 # imports them directly, so they stay transitive and only their floor moves.
 constraint-dependencies = [
-  "filelock>=4.2.1; python_version >= '3.11'",
-  "filelock>=4.1.0; python_version < '3.11'",
+  "filelock>=4.2.1",
   "setuptools>=84.1.0",
 ]
 
