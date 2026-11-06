@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "license": "Apache-2.0",
   "private": true,
-  "description": "Pharos — real-time policy verdicts for AI agents with signed, hash-chained evidence of every decision. Pharos decides. Pharos proves.",
+  "description": "Pharos \u2014 real-time policy verdicts for AI agents with signed, hash-chained evidence of every decision. Pharos decides. Pharos proves.",
   "keywords": [
     "ai-agents",
     "agent-governance",
@@ -83,8 +83,9 @@
   },
   "pnpm": {
     "overrides": {
-      "fast-uri@3": "^3.1.5",
-      "fast-uri@4": "^4.1.2",
+      "fast-uri@3": "^3.1.9",
+      "fast-uri@4": "^4.2.3",
+      "minimatch": ">=11.0.1",
       "brace-expansion@4": "^5.0.11",
       "brace-expansion@5": "^5.0.11",
       "js-yaml@3": "^3.15.1",
