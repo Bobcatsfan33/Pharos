@@ -40,6 +40,10 @@ planning material, and one product rather than two.
   `scripts/internal/`). `docs/` holds user and contributor documentation; a short public
   `docs/roadmap.md` lists what is next. The CI job that gated the build on the self-assessment
   manifest is retired; the manifest's verifier is run by a maintainer on demand.
+- **The judge training pipeline requires Python 3.11+** (was 3.10+). filelock 4.2.1, the
+  first release clear of its advisories, requires 3.11, and Python 3.10 reached end of life in
+  October 2026. The lock audit runs on 3.11 and 3.12. Nothing a deployment installs is
+  affected: the SDK still supports 3.9+ and the runtime already required 3.11+.
 - README, CONTRIBUTING, architecture doc and PR template rewritten around how the system is
   shaped and where a change goes. Sprint and task identifiers removed from source comments
   and doc titles. `AGENTS.md` added.
