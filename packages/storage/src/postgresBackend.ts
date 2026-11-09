@@ -57,7 +57,7 @@ export async function buildPostgresStorage(
   config: PostgresStorageConfig,
   deps: PostgresStorageDeps,
 ): Promise<PostgresStorageBackend> {
-  const pool = createPool(config.pgUrl);
+  const pool = await createPool(config.pgUrl);
   await runMigrations(pool);
 
   const worm = new WormStore(config.s3);

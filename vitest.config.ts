@@ -6,6 +6,7 @@ const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 export default defineConfig({
   resolve: {
     alias: {
+      "@pharos/core/signing/awsKms": r("./packages/core/src/signing/awsKms.ts"),
       "@pharos/core": r("./packages/core/src/index.ts"),
       "@pharos/config": r("./packages/config/src/index.ts"),
       "@pharos/identity": r("./packages/identity/src/index.ts"),
@@ -27,6 +28,8 @@ export default defineConfig({
       "@getpharos/middleware": r("./packages/middleware/src/index.ts"),
       "@pharos/gateway": r("./services/gateway/src/index.ts"),
       "@pharos/review": r("./packages/review/src/index.ts"),
+      "@pharos/storage/postgres": r("./packages/storage/src/postgresBackend.ts"),
+      "@pharos/storage/embedded": r("./packages/storage/src/embedded/backend.ts"),
       "@pharos/storage": r("./packages/storage/src/index.ts"),
       // The console middleware (auth gate + nonce CSP, #79) imports next/server. Next is
       // a dependency of apps/console, not the root, so point the alias at the installed
