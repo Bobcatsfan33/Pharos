@@ -68,6 +68,20 @@ grep -q '"decision":"block"' submit.json
 grep -q 'cas-secret-read' submit.json
 kill "$SERVE_PID"; wait "$SERVE_PID" 2>/dev/null || true
 
+echo "== pharos hook claude-code: the PreToolUse protocol over stdin"
+npx --no-install pharos init --claude-code | grep -q "Claude Code hook"
+grep -q '"PreToolUse"' .claude/settings.json
+echo '{"session_id":"s","cwd":"'"$PWD"'","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}' \
+  | npx --no-install pharos hook claude-code | tee hook.out
+grep -q '"permissionDecision":"deny"' hook.out
+grep -q 'cas-git-force-push-protected' hook.out
+echo '{"cwd":"'"$PWD"'","tool_name":"Read","tool_input":{"file_path":"'"$PWD"'/.env"}}' | npx --no-install pharos hook claude-code | grep -q '"deny"'
+echo '{"cwd":"'"$PWD"'","tool_name":"Bash","tool_input":{"command":"rm -rf build"}}' | npx --no-install pharos hook claude-code | grep -q '"ask"'
+set +e
+echo 'not json' | npx --no-install pharos hook claude-code; code=$?
+set -e
+test "$code" -eq 2 || { echo "expected exit 2 for malformed hook input, got $code"; exit 1; }
+
 echo "== a tampered bundle must FAIL (exit 1)"
 sed -i.bak 's/"amount": 30000/"amount": 99999/' evidence-bundle.json
 if npx --no-install pharos verify evidence-bundle.json; then
