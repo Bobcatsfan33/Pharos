@@ -41,7 +41,7 @@ where the harbor was.
 
 **Sprint 9 (Signal) — complete.** GA, standards, and the channel: the **open PDP specification v1.0** is public with a conformance suite and an **independent reference implementation that conforms** (alongside the Pharos cascade), a public `POST /v1/pdp` endpoint returning a signed **evidence binding**, AIUC-1 accountability-pillar + NAIC mappings, identity-rail integration (Okta for AI Agents / Entra Agent ID via OIDC), published GA pricing, and the insurer channel. See [docs/spec/pdp-v1.md](../spec/pdp-v1.md) and [docs/standards-and-channel.md](../standards-and-channel.md).
 
-157 TS tests + 10 Python tests green (adds PDP conformance + Signal integration against real Postgres / S3 WORM / Redis).
+644 control-plane tests (vitest), 159 Pharos Runtime tests and 38 Python SDK tests, measured 2026-11-09 against real Postgres / Redis / MinIO / KMS emulator; counts are floors.
 
 ---
 
