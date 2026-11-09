@@ -27,8 +27,30 @@ Change one character inside any record and run it again.
 | `pharos log` | the sealed chain: sequence, verdict, tier, action, cited rule, hash |
 | `pharos verify [bundle]` | every hash, signature, chain link and trusted-time anchor; fully offline with a bundle, or the local chain without one |
 | `pharos export` | write the evidence bundle (records, public keyset, TSA keyset, anchors — never secrets) |
+| `pharos run -- <cmd>` | govern a shell command: verdict, sealed record, then execute — or block (exit 2) / hold (exit 3) |
+| `pharos serve` | the Pharos API over embedded storage on 127.0.0.1:4000, with an API key for the project tenant |
 
 `pharos <command> --help` lists options.
+
+### Policy packs
+
+`pharos.yaml` lists the shipped packs a project is governed by. `pharos init` selects only
+**`coding-agent-safety`** — destructive filesystem operations, force-pushes to protected
+branches, reads of `.env`/SSH/cloud credentials, outbound transfer of local files, registry
+publishes, and destructive cloud operations, each with a cited rule. The regulation packs
+(`finra`, `hipaa`) are opt-in: their Tier-3 judges are bag-of-words models tuned for
+communications and payments and will escalate ordinary shell commands. `pharos demo` adds
+`finra` for its payments story.
+
+```bash
+pharos run -- git push --force origin main   # BLOCK   cited cas-git-force-push-protected, exit 2
+pharos run -- rm -rf build                   # ESCALATE held, cited cas-rm-recursive, exit 3
+pharos run -- pnpm test                      # ALLOW   runs; exit code is pnpm's
+```
+
+Every `run` seals its record **before** anything executes. `pharos serve` starts the same API
+the production deployment runs (`POST /v1/actions`, `/healthz` reports the storage posture)
+over the project's embedded storage and prints an API key for SDKs and middlewares.
 
 ## What embedded storage guarantees — and does not
 

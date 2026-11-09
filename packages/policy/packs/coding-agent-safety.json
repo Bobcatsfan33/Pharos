@@ -1,0 +1,703 @@
+{
+  "$schema": "../pack.schema.json",
+  "packId": "coding-agent-safety",
+  "version": "1.0.0",
+  "title": "Coding-agent safety: shell, git, secrets, egress, publish, cloud",
+  "changelog": "v1: destructive filesystem, force-push to protected branches, secret reads, exfiltration, package publishes, cloud destructive ops, history rewrites.",
+  "rules": [
+    {
+      "ruleId": "cas-rm-root",
+      "pack": "coding-agent-safety",
+      "clause": "CAS-1 destructive filesystem (outside the working tree)",
+      "description": "Recursive force-delete of the filesystem root, the home directory, or a parent directory is never something a coding agent should do unattended. Blocked.",
+      "when": {
+        "all": [
+          {
+            "field": "action.type",
+            "op": "eq",
+            "value": "shell.exec"
+          },
+          {
+            "any": [
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "rm -rf /"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "rm -rf ~"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "rm -rf .."
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "rm -rf $HOME"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "rm -fr /"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "rm -fr ~"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "rm -rf *"
+              }
+            ]
+          }
+        ]
+      },
+      "decision": "block"
+    },
+    {
+      "ruleId": "cas-rm-recursive",
+      "pack": "coding-agent-safety",
+      "clause": "CAS-1 destructive filesystem",
+      "description": "A recursive force-delete inside the working tree may be legitimate (build output) or may erase work that is not committed. Held for a human to confirm.",
+      "when": {
+        "all": [
+          {
+            "field": "action.type",
+            "op": "eq",
+            "value": "shell.exec"
+          },
+          {
+            "any": [
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "rm -rf"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "rm -fr"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "rm -r -f"
+              }
+            ]
+          }
+        ]
+      },
+      "decision": "escalate"
+    },
+    {
+      "ruleId": "cas-git-force-push-protected",
+      "pack": "coding-agent-safety",
+      "clause": "CAS-2 protected branches",
+      "description": "A force-push to main or master rewrites shared history that other people and CI depend on. Blocked; open a pull request instead.",
+      "when": {
+        "all": [
+          {
+            "any": [
+              {
+                "field": "action.type",
+                "op": "eq",
+                "value": "shell.exec"
+              },
+              {
+                "field": "action.type",
+                "op": "eq",
+                "value": "git.push"
+              }
+            ]
+          },
+          {
+            "field": "action.payload.command",
+            "op": "contains",
+            "value": "git push"
+          },
+          {
+            "any": [
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "--force"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": " -f "
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "--force-with-lease"
+              }
+            ]
+          },
+          {
+            "any": [
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": " main"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": " master"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "refs/heads/main"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "refs/heads/master"
+              }
+            ]
+          }
+        ]
+      },
+      "decision": "block"
+    },
+    {
+      "ruleId": "cas-git-force-push",
+      "pack": "coding-agent-safety",
+      "clause": "CAS-2 force push",
+      "description": "A force-push to any branch discards commits that may exist only on the remote. Held for a human to confirm.",
+      "when": {
+        "all": [
+          {
+            "any": [
+              {
+                "field": "action.type",
+                "op": "eq",
+                "value": "shell.exec"
+              },
+              {
+                "field": "action.type",
+                "op": "eq",
+                "value": "git.push"
+              }
+            ]
+          },
+          {
+            "field": "action.payload.command",
+            "op": "contains",
+            "value": "git push"
+          },
+          {
+            "any": [
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "--force"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": " -f "
+              }
+            ]
+          }
+        ]
+      },
+      "decision": "escalate"
+    },
+    {
+      "ruleId": "cas-git-history-rewrite",
+      "pack": "coding-agent-safety",
+      "clause": "CAS-2 history rewrite",
+      "description": "Hard resets, untracked-file cleans, and branch force-deletes destroy local work that is not elsewhere. Held for a human to confirm.",
+      "when": {
+        "all": [
+          {
+            "field": "action.type",
+            "op": "eq",
+            "value": "shell.exec"
+          },
+          {
+            "any": [
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "git reset --hard"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "git clean -f"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "git clean -xdf"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "git branch -D"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "git checkout -- ."
+              }
+            ]
+          }
+        ]
+      },
+      "decision": "escalate"
+    },
+    {
+      "ruleId": "cas-secret-read",
+      "pack": "coding-agent-safety",
+      "clause": "CAS-3 secret material (OWASP LLM02)",
+      "description": "Reading .env files, SSH private keys, cloud credential files, or the OS keychain exposes secrets to the model context and to any tool that sees the transcript. Blocked.",
+      "when": {
+        "any": [
+          {
+            "all": [
+              {
+                "field": "action.type",
+                "op": "eq",
+                "value": "shell.exec"
+              },
+              {
+                "any": [
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": ".env"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "id_rsa"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "id_ed25519"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": ".ssh/"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": ".aws/credentials"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": ".netrc"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "security find-generic-password"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "security find-internet-password"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": ".kube/config"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": ".npmrc"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": ".pypirc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "all": [
+              {
+                "any": [
+                  {
+                    "field": "action.type",
+                    "op": "eq",
+                    "value": "file.read"
+                  },
+                  {
+                    "field": "action.type",
+                    "op": "eq",
+                    "value": "file.write"
+                  }
+                ]
+              },
+              {
+                "any": [
+                  {
+                    "field": "action.payload.path",
+                    "op": "contains",
+                    "value": ".env"
+                  },
+                  {
+                    "field": "action.payload.path",
+                    "op": "contains",
+                    "value": "id_rsa"
+                  },
+                  {
+                    "field": "action.payload.path",
+                    "op": "contains",
+                    "value": "id_ed25519"
+                  },
+                  {
+                    "field": "action.payload.path",
+                    "op": "contains",
+                    "value": ".ssh/"
+                  },
+                  {
+                    "field": "action.payload.path",
+                    "op": "contains",
+                    "value": ".aws/credentials"
+                  },
+                  {
+                    "field": "action.payload.path",
+                    "op": "contains",
+                    "value": ".netrc"
+                  },
+                  {
+                    "field": "action.payload.path",
+                    "op": "contains",
+                    "value": ".kube/config"
+                  },
+                  {
+                    "field": "action.payload.path",
+                    "op": "contains",
+                    "value": ".npmrc"
+                  },
+                  {
+                    "field": "action.payload.path",
+                    "op": "contains",
+                    "value": ".pypirc"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "decision": "block"
+    },
+    {
+      "ruleId": "cas-exfiltration",
+      "pack": "coding-agent-safety",
+      "clause": "CAS-4 outbound transfer of local files",
+      "description": "Uploading local files with curl or wget sends data off the machine. Held for a human to confirm the destination.",
+      "when": {
+        "all": [
+          {
+            "field": "action.type",
+            "op": "eq",
+            "value": "shell.exec"
+          },
+          {
+            "any": [
+              {
+                "all": [
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "curl"
+                  },
+                  {
+                    "any": [
+                      {
+                        "field": "action.payload.command",
+                        "op": "contains",
+                        "value": " -F "
+                      },
+                      {
+                        "field": "action.payload.command",
+                        "op": "contains",
+                        "value": " -T "
+                      },
+                      {
+                        "field": "action.payload.command",
+                        "op": "contains",
+                        "value": "--upload-file"
+                      },
+                      {
+                        "field": "action.payload.command",
+                        "op": "contains",
+                        "value": "--data-binary @"
+                      },
+                      {
+                        "field": "action.payload.command",
+                        "op": "contains",
+                        "value": " -d @"
+                      },
+                      {
+                        "field": "action.payload.command",
+                        "op": "contains",
+                        "value": "--data @"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "all": [
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "wget"
+                  },
+                  {
+                    "any": [
+                      {
+                        "field": "action.payload.command",
+                        "op": "contains",
+                        "value": "--post-file"
+                      },
+                      {
+                        "field": "action.payload.command",
+                        "op": "contains",
+                        "value": "--body-file"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "any": [
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "scp "
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "rsync "
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "rclone "
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "decision": "escalate"
+    },
+    {
+      "ruleId": "cas-package-publish",
+      "pack": "coding-agent-safety",
+      "clause": "CAS-5 registry publish",
+      "description": "Publishing a package is irreversible on every public registry. Held for a human to confirm.",
+      "when": {
+        "all": [
+          {
+            "field": "action.type",
+            "op": "eq",
+            "value": "shell.exec"
+          },
+          {
+            "any": [
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "npm publish"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "pnpm publish"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "yarn publish"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "twine upload"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "cargo publish"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "gem push"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "docker push"
+              },
+              {
+                "field": "action.payload.command",
+                "op": "contains",
+                "value": "gh release create"
+              }
+            ]
+          }
+        ]
+      },
+      "decision": "escalate"
+    },
+    {
+      "ruleId": "cas-cloud-destructive",
+      "pack": "coding-agent-safety",
+      "clause": "CAS-6 destructive infrastructure operations",
+      "description": "Destroying or deleting cloud resources, clusters, databases, or images from an agent session is held for a human to confirm.",
+      "when": {
+        "all": [
+          {
+            "field": "action.type",
+            "op": "eq",
+            "value": "shell.exec"
+          },
+          {
+            "any": [
+              {
+                "any": [
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "terraform destroy"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "tofu destroy"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "pulumi destroy"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "kubectl delete"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "helm uninstall"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "docker system prune"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "dropdb"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "DROP TABLE"
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "DROP DATABASE"
+                  }
+                ]
+              },
+              {
+                "all": [
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "aws "
+                  },
+                  {
+                    "any": [
+                      {
+                        "field": "action.payload.command",
+                        "op": "contains",
+                        "value": " delete"
+                      },
+                      {
+                        "field": "action.payload.command",
+                        "op": "contains",
+                        "value": " terminate-instances"
+                      },
+                      {
+                        "field": "action.payload.command",
+                        "op": "contains",
+                        "value": " rm "
+                      },
+                      {
+                        "field": "action.payload.command",
+                        "op": "contains",
+                        "value": "s3 rb"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "all": [
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "gcloud "
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": " delete"
+                  }
+                ]
+              },
+              {
+                "all": [
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": "az "
+                  },
+                  {
+                    "field": "action.payload.command",
+                    "op": "contains",
+                    "value": " delete"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "decision": "escalate"
+    }
+  ],
+  "judgeBindings": []
+}
