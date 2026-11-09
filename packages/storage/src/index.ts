@@ -1,4 +1,38 @@
 export { createPool, type Pool } from "./pg.js";
+export type {
+  AccessAuditLogPort,
+  ApiKeyStorePort,
+  AssuranceStorePort,
+  CounterStorePort,
+  EscalationStorePort,
+  EvidenceOpsStorePort,
+  EvidencePosture,
+  EvidenceReconciliation,
+  EvidenceStorePort,
+  MandateStorePort,
+  PolicyStorePort,
+  ReviewNotifierPort,
+  StorageBackend,
+  TenantStorePort,
+} from "./ports.js";
+export {
+  buildEmbeddedStorage,
+  EMBEDDED_EVIDENCE_POSTURE,
+  type EmbeddedStorageBackend,
+  type EmbeddedStorageConfig,
+  type EmbeddedStorageDeps,
+} from "./embedded/backend.js";
+export { EmbeddedDb, runEmbeddedMigrations, EMBEDDED_SCHEMA_VERSION } from "./embedded/sqlite.js";
+export { EvidenceFileStore } from "./embedded/recordFiles.js";
+export { EmbeddedEvidenceStore } from "./embedded/evidenceStore.js";
+export { InMemoryCounterStore } from "./embedded/counters.js";
+export {
+  buildPostgresStorage,
+  POSTGRES_EVIDENCE_POSTURE,
+  type PostgresStorageBackend,
+  type PostgresStorageConfig,
+  type PostgresStorageDeps,
+} from "./postgresBackend.js";
 export { runMigrations, MIGRATIONS, type Migration } from "./migrations.js";
 export {
   WormStore,
@@ -70,3 +104,15 @@ export {
   type HeldRequestKeyUsage,
   type HeldRequestStore,
 } from "./heldRequestStore.js";
+
+// Storage-backend registry (the shipped backends register themselves on import).
+export {
+  registerStorageBackend,
+  createStorageBackend,
+  hasStorageBackend,
+  listStorageBackends,
+  type StorageBackendSettings,
+  type StorageBackendContext,
+  type StorageBackendFactory,
+} from "./registry.js";
+import "./providers.js";

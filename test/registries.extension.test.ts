@@ -21,6 +21,13 @@ import {
   servedConcerns,
   ModelRegistry,
 } from "@pharos/judge";
+import {
+  createStorageBackend,
+  hasStorageBackend,
+  listStorageBackends,
+  registerStorageBackend,
+  type StorageBackend,
+} from "@pharos/storage";
 import { DEFAULT_PACK_BINDINGS } from "@pharos/cascade";
 import { SHIPPED_PACKS, judgeBindingsOf, loadShippedPacks } from "@pharos/policy";
 import {
@@ -78,6 +85,70 @@ class NullSigner implements SigningProvider {
     return [];
   }
 }
+
+describe("storage-backend registry", () => {
+  it("ships postgres and embedded and resolves them by configuration", () => {
+    expect(listStorageBackends()).toEqual(expect.arrayContaining(["embedded", "postgres"]));
+    expect(config({ PHAROS_STORAGE_BACKEND: "embedded" }).storage.backend).toBe("embedded");
+    // postgres is the default, and the only backend production accepts.
+    expect(config().storage.backend).toBe("postgres");
+  });
+
+  it("a new backend is one register call away from the composition root", async () => {
+    expect(hasStorageBackend("null-store")).toBe(false);
+    const posture = {
+      backend: "embedded" as const,
+      immutability: "tamper-evident-local-files" as const,
+      worm: false,
+      rowLevelSecurity: false,
+      multiInstanceRateLimits: false,
+      description: "test double; stores nothing",
+    };
+    registerStorageBackend("null-store", async () => ({ posture }) as unknown as StorageBackend);
+
+    const cfg = config({ PHAROS_STORAGE_BACKEND: "null-store" });
+    expect(cfg.storage.backend).toBe("null-store");
+    const built = await createStorageBackend("null-store", {
+      settings: { dataDir: "/tmp/pharos-null-store" },
+      signer: new NullSigner("signing"),
+      resolveKeyName: (t) => `tenant:${t}`,
+      notifier: {},
+    });
+    expect(built.posture.worm).toBe(false);
+  });
+
+  it("names the registered backends when the configured one does not exist", async () => {
+    await expect(
+      createStorageBackend("no-such-store", {
+        settings: {},
+        signer: new NullSigner("signing"),
+        resolveKeyName: (t) => `tenant:${t}`,
+        notifier: {},
+      }),
+    ).rejects.toThrow(/unknown storage backend "no-such-store"; registered: .*embedded.*postgres/);
+  });
+
+  it("rejects backend names that could not be selected from the environment", () => {
+    expect(() => registerStorageBackend("Not Kebab", async () => ({}) as StorageBackend)).toThrow(
+      /kebab-case/,
+    );
+    expect(() => config({ PHAROS_STORAGE_BACKEND: "Not Kebab" })).toThrow(/kebab-case/);
+  });
+
+  it("the shipped backends refuse to build without the settings they need", async () => {
+    const ctx = {
+      signer: new NullSigner("signing"),
+      resolveKeyName: (t: string) => `tenant:${t}`,
+      notifier: {},
+    };
+    await expect(createStorageBackend("postgres", { settings: {}, ...ctx })).rejects.toThrow(
+      /requires PHAROS_PG_URL/,
+    );
+    await expect(createStorageBackend("embedded", { settings: {}, ...ctx })).rejects.toThrow(
+      /requires a data directory/,
+    );
+  });
+});
 
 describe("signing-provider registry", () => {
   it("ships local-kms and aws-kms and resolves them by configuration", () => {

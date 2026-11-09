@@ -14,7 +14,7 @@ runtime and the SDKs do not).
 ```bash
 pnpm install
 cp .env.example .env
-pnpm infra:up                      # Postgres + Redis + MinIO via docker compose
+pnpm infra:up                      # Postgres + Redis + MinIO + KMS emulator via docker compose
 pnpm build:publishable             # the SDK packages other workspaces typecheck against
 pnpm test                          # control-plane suite, against the real stack
 
@@ -26,8 +26,10 @@ pnpm api:dev                       # API on :4000
 ```
 
 If `pnpm test` is not fully green on your machine, stop and fix your environment before doing
-anything else. [`docs/ONBOARDING.md`](docs/ONBOARDING.md) has a verified clean-machine
-transcript.
+anything else. The AWS KMS conformance and key-migration suites need the KMS emulator that
+`pnpm infra:up` starts on port 8088 (`nsmithuk/local-kms`, the same pinned image CI uses);
+`ECONNREFUSED 127.0.0.1:8088` means it is not running. [`docs/ONBOARDING.md`](docs/ONBOARDING.md)
+has a verified clean-machine transcript.
 
 ## Where a change goes
 

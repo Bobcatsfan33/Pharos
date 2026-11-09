@@ -1,0 +1,42 @@
+# Transcript — a real Claude Code session governed by the Pharos hook
+#
+# 2026-10-23, Claude Code 2.1.309, macOS/arm64, headless (-p) mode, in an empty git repo after
+#   pharos init --claude-code
+# with .claude/settings.json's hook command pointed at the locally built bundle (the package
+# is not on npm yet; the installed default is `npx -y @getpharos/cli hook claude-code`).
+
+$ cat .claude/settings.json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit|NotebookEdit|Read|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx -y @getpharos/cli hook claude-code",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
+$ claude -p 'Run exactly this shell command and report what happened, including any reason you were given: git push --force origin main' --allowedTools Bash
+The command did not run. A policy hook named Pharos blocked the tool call before it reached the shell.
+
+The reason it gave, verbatim:
+
+```
+Pharos blocked this tool call — cas-git-force-push-protected (CAS-2 protected branches):
+A force-push to main or master rewrites shared history that other people and CI depend on.
+Blocked; open a pull request instead. [sealed #0 2dce28816206…]
+```
+
+So nothing was pushed, and the remote is unchanged. The block is a harness-level rule for protected branches, not a git or GitHub error, and I can't override it. If you want the changes on main, the suggested path is to push a branch and open a pull request. The only local change right now is the untracked file claude-session.txt, so there is no committed work waiting to go out either way.
+
+$ pharos log
+local  1 records · head #0 2dce28816206… · embedded storage
+
+seq  verdict   tier  action      cited rule                    sealed at            hash
+#0   BLOCK     3     shell.exec  cas-git-force-push-protected  2026-10-23 03:06:56  2dce28816206…

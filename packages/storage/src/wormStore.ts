@@ -1,33 +1,8 @@
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-  CreateBucketCommand,
-  HeadBucketCommand,
-  ListObjectsV2Command,
-  GetObjectLockConfigurationCommand,
-} from "@aws-sdk/client-s3";
+import type { S3Client } from "@aws-sdk/client-s3";
 import { ActionRecordSchema, sha256Hex, type ActionRecord } from "@pharos/core";
 
-/**
- * The WORM copy failed an integrity check.
- *
- * Always thrown, never returned as a flag: a caller that receives a record has a
- * record whose body still hashes to its seal, and one that does not receives nothing.
- * Handing back evidence known to be inconsistent — even annotated — invites a caller
- * to use it anyway.
- */
-export class WormIntegrityError extends Error {
-  constructor(
-    readonly reason: string,
-    readonly key?: string,
-  ) {
-    super(
-      key ? `WORM integrity failure for ${key}: ${reason}` : `WORM integrity failure: ${reason}`,
-    );
-    this.name = "WormIntegrityError";
-  }
-}
+import { WormIntegrityError } from "./evidenceErrors.js";
+export { WormIntegrityError };
 
 /** A record Postgres claims to have committed, and the WORM object it should have. */
 export interface CommittedRecordRef {
@@ -73,18 +48,32 @@ export interface WormPutResult {
  * detect orphaned objects (written to WORM but never committed to Postgres).
  */
 export class WormStore {
-  private readonly client: S3Client;
-  constructor(private readonly cfg: WormStoreConfig) {
-    const credentials =
-      cfg.accessKey && cfg.secretKey
-        ? { credentials: { accessKeyId: cfg.accessKey, secretAccessKey: cfg.secretKey } }
-        : {};
-    this.client = new S3Client({
-      endpoint: cfg.endpoint,
-      region: cfg.region,
-      forcePathStyle: cfg.forcePathStyle,
-      ...credentials,
+  // The AWS SDK is imported lazily on first use so a bundle that only runs the embedded
+  // backend (the CLI) never loads it. The construction is otherwise unchanged.
+  private sdkModule: Promise<typeof import("@aws-sdk/client-s3")> | null = null;
+  private clientInstance: Promise<S3Client> | null = null;
+  constructor(private readonly cfg: WormStoreConfig) {}
+
+  private sdk(): Promise<typeof import("@aws-sdk/client-s3")> {
+    this.sdkModule ??= import("@aws-sdk/client-s3");
+    return this.sdkModule;
+  }
+
+  private client(): Promise<S3Client> {
+    this.clientInstance ??= this.sdk().then(({ S3Client }) => {
+      const { cfg } = this;
+      const credentials =
+        cfg.accessKey && cfg.secretKey
+          ? { credentials: { accessKeyId: cfg.accessKey, secretAccessKey: cfg.secretKey } }
+          : {};
+      return new S3Client({
+        endpoint: cfg.endpoint,
+        region: cfg.region,
+        forcePathStyle: cfg.forcePathStyle,
+        ...credentials,
+      });
     });
+    return this.clientInstance;
   }
 
   keyFor(tenantId: string, sequence: number, contentHash: string): string {
@@ -106,14 +95,21 @@ export class WormStore {
   async ensureBucket(): Promise<void> {
     let exists = true;
     try {
-      await this.client.send(new HeadBucketCommand({ Bucket: this.cfg.bucket }));
+      await (
+        await this.client()
+      ).send(new (await this.sdk()).HeadBucketCommand({ Bucket: this.cfg.bucket }));
     } catch {
       exists = false;
     }
 
     if (!exists) {
-      await this.client.send(
-        new CreateBucketCommand({ Bucket: this.cfg.bucket, ObjectLockEnabledForBucket: true }),
+      await (
+        await this.client()
+      ).send(
+        new (await this.sdk()).CreateBucketCommand({
+          Bucket: this.cfg.bucket,
+          ObjectLockEnabledForBucket: true,
+        }),
       );
     }
 
@@ -124,9 +120,9 @@ export class WormStore {
   private async assertObjectLockEnabled(): Promise<void> {
     let enabled: string | undefined;
     try {
-      const res = await this.client.send(
-        new GetObjectLockConfigurationCommand({ Bucket: this.cfg.bucket }),
-      );
+      const res = await (
+        await this.client()
+      ).send(new (await this.sdk()).GetObjectLockConfigurationCommand({ Bucket: this.cfg.bucket }));
       enabled = res.ObjectLockConfiguration?.ObjectLockEnabled;
     } catch (err) {
       // ObjectLockConfigurationNotFoundError is the ordinary "not enabled" answer;
@@ -152,8 +148,10 @@ export class WormStore {
       record.seal.contentHash,
     );
     const body = JSON.stringify(record);
-    const res = await this.client.send(
-      new PutObjectCommand({
+    const res = await (
+      await this.client()
+    ).send(
+      new (await this.sdk()).PutObjectCommand({
         Bucket: this.cfg.bucket,
         Key: key,
         Body: body,
@@ -190,9 +188,9 @@ export class WormStore {
   async getRecord(key: string): Promise<ActionRecord | null> {
     let text: string | undefined;
     try {
-      const res = await this.client.send(
-        new GetObjectCommand({ Bucket: this.cfg.bucket, Key: key }),
-      );
+      const res = await (
+        await this.client()
+      ).send(new (await this.sdk()).GetObjectCommand({ Bucket: this.cfg.bucket, Key: key }));
       text = await res.Body?.transformToString();
     } catch (err) {
       if ((err as { name?: string }).name === "NoSuchKey") return null;
@@ -272,8 +270,10 @@ export class WormStore {
     const keys: string[] = [];
     let token: string | undefined;
     do {
-      const res = await this.client.send(
-        new ListObjectsV2Command({
+      const res = await (
+        await this.client()
+      ).send(
+        new (await this.sdk()).ListObjectsV2Command({
           Bucket: this.cfg.bucket,
           Prefix: prefix,
           ContinuationToken: token,

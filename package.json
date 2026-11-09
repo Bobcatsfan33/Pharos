@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "license": "Apache-2.0",
   "private": true,
-  "description": "Pharos — real-time policy verdicts for AI agents with signed, hash-chained evidence of every decision. Pharos decides. Pharos proves.",
+  "description": "Pharos \u2014 real-time policy verdicts for AI agents with signed, hash-chained evidence of every decision. Pharos decides. Pharos proves.",
   "keywords": [
     "ai-agents",
     "agent-governance",
@@ -32,6 +32,7 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm runtime:check",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
+    "test:embedded": "vitest run --config vitest.embedded.config.ts",
     "test:watch": "vitest",
     "test:live": "vitest run --config vitest.live.config.ts",
     "test:judge-parity": "vitest run test/onnx-serving.spec.ts --config vitest.live.config.ts",
@@ -54,6 +55,7 @@
     "verify:external": "tsx --env-file=.env scripts/external-verify.ts",
     "verify:bundle": "tsx scripts/external-verify.ts --bundle",
     "api:dev": "tsx --env-file=.env services/api/src/server.ts",
+    "pharos": "node packages/cli/dist/bin/pharos.mjs",
     "gateway:rotate-held-keys": "tsx scripts/rotate-gateway-held-keys.ts",
     "judges:train": "tsx scripts/train-judges.ts",
     "judges:eval": "tsx scripts/eval-judges.ts",
@@ -69,6 +71,7 @@
     "@changesets/cli": "^3.0.3",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.3",
+    "esbuild": "0.28.2",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "fastify": "^5.12.1",
@@ -83,8 +86,8 @@
   },
   "pnpm": {
     "overrides": {
-      "fast-uri@3": "^3.1.5",
-      "fast-uri@4": "^4.1.2",
+      "fast-uri@3": "^3.1.9",
+      "fast-uri@4": "^4.2.3",
       "brace-expansion@4": "^5.0.11",
       "brace-expansion@5": "^5.0.11",
       "js-yaml@3": "^3.15.1",

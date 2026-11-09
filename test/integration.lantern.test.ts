@@ -199,7 +199,7 @@ describe("Lantern — served cascade over the API", () => {
       await victim.apiKeys.create(TENANT + "-x", "x", ["actions:write", "liability:assert"])
     ).plaintext;
     const app = await buildApp(victim);
-    await victim.pool.end(); // kill Postgres connectivity mid-flight
+    await victim.pool!.end(); // kill Postgres connectivity mid-flight
 
     const res = await app.inject({
       method: "POST",
