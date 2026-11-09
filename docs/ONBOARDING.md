@@ -44,7 +44,7 @@ Done in ~2s using pnpm v10.32.1
 ## 2. Start the infrastructure
 
 ```bash
-pnpm infra:up          # control-plane stores + Pharos Runtime viewer
+pnpm infra:up          # control-plane stores + KMS emulator + Pharos Runtime viewer
 ```
 
 Wait until all three report `healthy`:
@@ -55,10 +55,11 @@ docker compose ps
 # pharos-redis      Up (healthy)
 # pharos-minio      Up (healthy)
 # pharos-runtime    Up (healthy)
+# pharos-local-kms  Up            (no healthcheck; the AWS KMS emulator the test suite needs)
 ```
 
-The containers use fixed host ports **5433** (Postgres), **6380** (Redis), and **9010**
-(MinIO). If any port is already taken, stop the conflicting service or edit
+The containers use fixed host ports **5433** (Postgres), **6380** (Redis), **9010**
+(MinIO), and **8088** (KMS emulator). If any port is already taken, stop the conflicting service or edit
 `docker-compose.yml`.
 
 ## 3. Configure the environment
