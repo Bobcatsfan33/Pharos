@@ -19,8 +19,9 @@ import {
  *   structural.blast-radius      declared blast radius is consistent with the payload
  *
  * A check whose facts are absent ABSTAINS (score 0, abstain true) rather than inventing a pass
- * or a fail: no declared scope, no schema for the type, no plan, no amount in the payload. The
- * verdict therefore only changes when a tenant has stated the fact the check relies on.
+ * or a fail: no declared scope, no schema for the type, no plan, no declared amount or currency
+ * in the payload. The verdict therefore only changes when a tenant has stated the fact the check
+ * relies on.
  */
 export const STRUCTURAL_CHECKS = [
   "structural.mandate-scope",
@@ -31,14 +32,19 @@ export const STRUCTURAL_CHECKS = [
 export type StructuralCheck = (typeof STRUCTURAL_CHECKS)[number];
 
 /** Bumped whenever a check's semantics change; the content hash makes the version self-describing. */
-const STRUCTURAL_SEMANTICS_VERSION = "2";
+const STRUCTURAL_SEMANTICS_VERSION = "3";
 export const STRUCTURAL_JUDGE_VERSION = `structural@${sha256Hex({
   semantics: STRUCTURAL_SEMANTICS_VERSION,
   checks: STRUCTURAL_CHECKS,
 }).slice(0, 12)}`;
 
-/** Payload keys that declare money, in order of preference. */
-const AMOUNT_KEYS = ["financialAmount", "amount", "total", "value"];
+/**
+ * Payload keys that DECLARE money, in order of preference. Deliberately narrow: generic keys such
+ * as `value` or `total` carry scores, counts and years in ordinary CRM/file payloads, and reading
+ * them as currency made the check fire on actions that said nothing about money. A key not in this
+ * list is not a fact the check may rely on, so the check abstains.
+ */
+const AMOUNT_KEYS = ["financialAmount", "amount"];
 const CURRENCY_KEYS = ["currency", "ccy"];
 
 export class StructuralJudge implements Judge {
@@ -192,6 +198,7 @@ export function checkBlastRadius(input: JudgeInput): Finding {
 
 function firstNumber(payload: Record<string, unknown>, keys: string[]): number | null {
   for (const k of keys) {
+    if (!Object.hasOwn(payload, k)) continue;
     const v = payload[k];
     if (typeof v === "number" && Number.isFinite(v)) return v;
     if (typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v.trim())) return Number(v);
@@ -200,6 +207,7 @@ function firstNumber(payload: Record<string, unknown>, keys: string[]): number |
 }
 function firstString(payload: Record<string, unknown>, keys: string[]): string | null {
   for (const k of keys) {
+    if (!Object.hasOwn(payload, k)) continue;
     const v = payload[k];
     if (typeof v === "string" && v.trim()) return v.trim();
   }
@@ -212,16 +220,18 @@ export function validateObject(value: unknown, schema: ActionSchema): string[] {
   if (!value || typeof value !== "object" || Array.isArray(value))
     return ["payload is not an object"];
   const obj = value as Record<string, unknown>;
+  const properties = schema.properties ?? {};
   for (const key of schema.required ?? []) {
-    if (!(key in obj) || obj[key] === undefined) errors.push(`missing required "${key}"`);
+    if (!Object.hasOwn(obj, key) || obj[key] === undefined)
+      errors.push(`missing required "${key}"`);
   }
-  for (const [key, prop] of Object.entries(schema.properties ?? {})) {
-    if (!(key in obj) || obj[key] === undefined) continue;
+  for (const [key, prop] of Object.entries(properties)) {
+    if (!Object.hasOwn(obj, key) || obj[key] === undefined) continue;
     errors.push(...validateProperty(key, obj[key], prop));
   }
   if (schema.additionalProperties === false) {
     for (const key of Object.keys(obj)) {
-      if (!(key in (schema.properties ?? {}))) errors.push(`unexpected "${key}"`);
+      if (!Object.hasOwn(properties, key)) errors.push(`unexpected "${key}"`);
     }
   }
   return errors;
