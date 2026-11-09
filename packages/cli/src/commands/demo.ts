@@ -2,8 +2,9 @@ import { writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import type { ActionIntent, LiabilityContext } from "@pharos/core";
 import { verifyEvidenceBundle, type EvidenceBundle } from "@pharos/evidence";
+import { SHIPPED_PACKS, artifactsOf, type PolicyArtifact } from "@pharos/policy";
 import type { Platform } from "@pharos/api";
-import { requireProject } from "../project.js";
+import { projectPolicies, requireProject } from "../project.js";
 import { openPlatform } from "../platform.js";
 import { bold, cyan, decisionBadge, dim, fail, heading, kv, ok, print, shortHash } from "../ui.js";
 
@@ -86,7 +87,12 @@ export async function demo(argv: string[]): Promise<number> {
   const project = requireProject();
   const platform = await openPlatform(project);
   try {
-    return await run(platform, project.config.tenant, values.bundle ? values.out! : null);
+    // The story is about payments, so the FINRA pack joins whatever the project selected.
+    // Packs are discovered, so this names the pack id and takes whatever version shipped.
+    const packs = projectPolicies(project);
+    const finra = artifactsOf(SHIPPED_PACKS).find((p) => p.packId === "finra");
+    if (finra && !packs.some((p) => p.packId === "finra")) packs.push(finra);
+    return await run(platform, project.config.tenant, values.bundle ? values.out! : null, packs);
   } finally {
     await platform.close();
   }
@@ -96,6 +102,7 @@ async function run(
   platform: Platform,
   tenantId: string,
   bundlePath: string | null,
+  policies: PolicyArtifact[],
 ): Promise<number> {
   const started = Date.now();
   await platform.tenants.createTenant({ tenantId, displayName: tenantId });
@@ -112,9 +119,8 @@ async function run(
     limits: { maxAmount: 25_000, currency: "USD" },
     grantor: "treasury-controller",
   });
-  const policies = await platform.activePolicyArtifacts(tenantId);
   print(
-    `${bold("Pharos demo")} — ${dim(`tenant ${tenantId} · embedded storage · local Ed25519 signing · nothing leaves this machine`)}`,
+    `${bold("Pharos demo")} — ${dim(`tenant ${tenantId} · packs ${policies.map((p) => p.packId).join(", ")} · embedded storage · local Ed25519 signing · nothing leaves this machine`)}`,
   );
 
   for (const [i, act] of ACTS.entries()) {

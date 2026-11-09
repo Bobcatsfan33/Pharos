@@ -58,6 +58,22 @@ accepted it.
 mTLS, and the network path between terminator and pod. Pharos cannot verify at runtime
 that a terminator is in front of it — see `docs/LIMITATIONS.md` §7.
 
+## Try the demo from the image (no install)
+
+The API image also carries the `@getpharos/cli` bundle. Its entrypoint runs `pharos init &&
+pharos demo` over **embedded** storage inside the container — three verdicts sealed, the chain
+verified, an evidence bundle written — with nothing installed but Docker:
+
+```bash
+docker run --rm ghcr.io/bobcatsfan33/pharos-api:<tag> demo
+```
+
+The image exists on GHCR **only for release tags** (`v*`, built and signed by `image.yml`
+above); there is no `latest`. The demo's storage is ephemeral and lives in `/tmp` of the
+container; it is tamper-evident and offline-verifiable, not WORM, and shares nothing with the
+production path below. Every other CLI command is reachable as
+`docker run --rm ghcr.io/bobcatsfan33/pharos-api:<tag> pharos <command>`.
+
 ## Option A — Docker Compose (single host / pilot)
 
 ```bash
