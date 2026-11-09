@@ -25,7 +25,7 @@ const header = (name: string): string | undefined =>
 
 describe("console static security headers", () => {
   // The Content-Security-Policy is deliberately NOT here any more: it carries a
-  // per-request nonce and is set in middleware (#79). Emitting it from static config too
+  // per-request nonce and is set in middleware. Emitting it from static config too
   // would send two CSP headers. That it is ABSENT here is itself part of the contract.
   it("does not emit a Content-Security-Policy from static config", () => {
     expect(header("Content-Security-Policy")).toBeUndefined();

@@ -9,7 +9,7 @@ re-driven exactly. Two modes:
   * ``replay_patched`` — seed the run up to ``from_step`` from the recorded log
     (optionally overwriting that step's output), then execute everything downstream
     LIVE. Upstream is unchanged; divergence is confined to the patched point and its
-    descendants — the substrate for "what-if" debugging and for eval cases (Phase 4).
+    descendants — the substrate for "what-if" debugging and for eval cases.
 
 This driver lives in L3 because it assembles handlers; the pure log-level helpers
 (``verify_recorded_replay``, ``diff_runs``) stay in ``executor.replay`` (L2).

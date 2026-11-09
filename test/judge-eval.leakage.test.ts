@@ -5,7 +5,7 @@ import { PHI_IN_CONTEXT } from "../packages/judge/data/phi-in-context.js";
 import { FUNDS_MOVEMENT_INTENT } from "../packages/judge/data/funds-movement-intent.js";
 
 /**
- * The leakage gate (roadmap S5-T1 + §7-10(d)): the committed eval data must not overlap the
+ * The leakage gate: the committed eval data must not overlap the
  * training data by normalized-exact match OR feature-aligned n-gram similarity, AND the gate must
  * be proven to FIRE on a seeded near-duplicate (otherwise "0 hits" is meaningless).
  */

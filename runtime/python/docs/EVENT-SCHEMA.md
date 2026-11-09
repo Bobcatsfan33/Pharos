@@ -1,6 +1,6 @@
 # Event envelope & schema evolution
 
-KEEL's durability rests on an append-only event log. That log outlives the software
+Pharos Runtime's durability rests on an append-only event log. That log outlives the software
 that wrote it, so the envelope is **versioned** and old logs are migrated forward at
 read time — never rewritten in place.
 
@@ -60,7 +60,7 @@ than the reader) raises `UnreadableEvent` — surfaced loudly, never silently dr
 ## Compatibility policy
 
 The envelope `schema_version` follows the project's compatibility commitment: a log
-written by any released KEEL version remains readable by every later version through the
+written by any released Pharos Runtime version remains readable by every later version through the
 upcaster chain. New `EventType` values and new `data` keys are additive and need no
 upcaster. Renames, removals, or meaning changes require a version bump + upcaster + a
 golden-corpus entry in the same PR.

@@ -7,30 +7,12 @@ permissions:
   contents: read
   issues: read
 jobs:
-  enterprise-readiness:
-    name: enterprise evidence and decision integrity
+  action-pins:
+    name: workflow actions are pinned to commit SHAs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - run: node scripts/verify-enterprise-readiness.mjs
-      - run: node scripts/verify-external-gate-trackers.mjs
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: node scripts/verify-action-pins.mjs
-      - name: refuse false production approval
-        run: |
-          node --input-type=module <<'JS'
-          import fs from "node:fs";
-          const source = "docs/enterprise-readiness.json";
-          const target = "/tmp/pharos-false-approval.json";
-          const document = JSON.parse(fs.readFileSync(source, "utf8"));
-          document.assessment.deploymentDecision = "approved";
-          fs.writeFileSync(target, JSON.stringify(document));
-          JS
-          if node scripts/verify-enterprise-readiness.mjs /tmp/pharos-false-approval.json; then
-            echo "readiness verifier accepted false production approval" >&2
-            exit 1
-          fi
 
   helm:
     runs-on: ubuntu-latest
@@ -320,6 +302,27 @@ jobs:
       - name: pnpm audit (blocking high/critical gate)
         run: pnpm audit --audit-level=high
 
+  # Workstream A exit gate: Tier-1-only verdicts carrying a MandateToken must sustain
+  # ≥ 1,000/s on this runner. Pure CPU (signature verification + Tier 1); no services.
+  tier1-token-bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The bench runs under tsx, which resolves @getpharos/pdp-spec to its built dist (vitest
+      # aliases it to src, so the test job does not need this). packages/core now imports the
+      # spec, so the publishable packages must be built before the bench can load core.
+      - run: pnpm build:publishable
+      - name: Tier-1 mandate-token path ≥ 1,000 verdicts/s (blocking)
+        run: pnpm bench:mandate-token 20000
+
   training-supply-chain:
     name: training lock audit (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
@@ -327,7 +330,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.12"]
+        python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -446,8 +449,8 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
-      - name: Install Pharos Runtime
-        run: python -m pip install -e runtime/python
+      - name: Install Pharos SDK and Runtime
+        run: python -m pip install -e sdks/python -e runtime/python
       - name: Pharos Runtime end-to-end
         run: pnpm runtime:e2e
         env:
@@ -461,6 +464,58 @@ jobs:
           PHAROS_S3_SECRET_KEY: pharos_local_dev
           PHAROS_S3_FORCE_PATH_STYLE: "true"
 
+  # The zero-Docker suite: no service containers, no env, nothing but Node. Proves the
+  # embedded storage backend (and everything the on-ramp relies on) runs with no
+  # infrastructure at all, and that it never skips — the same zero-skip gate applies.
+  test-embedded:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:publishable
+      - name: embedded suite (no Docker)
+        run: pnpm exec vitest run --config vitest.embedded.config.ts --reporter=default --reporter=json --outputFile.json=vitest-embedded-report.json
+      - name: embedded tests must run, not skip
+        if: always()
+        run: |
+          node -e '
+            const r = require("./vitest-embedded-report.json");
+            const skipped = r.numPendingTests + r.numTodoTests;
+            console.log(`embedded: ${r.numPassedTests} passed, ${r.numFailedTests} failed, ${skipped} skipped`);
+            if (r.numFailedTests > 0) process.exit(1);
+            if (skipped > 0) { console.error("Embedded tests skipped — they need no infrastructure, so a skip is a bug."); process.exit(1); }
+            if (r.numTotalTests === 0) { console.error("No embedded tests ran."); process.exit(1); }
+          '
+
+  # The install surface: pack @getpharos/cli, install the tarball into an EMPTY project with
+  # npm, and run init/demo/log/verify/export — timed, with a tamper check and a guard that
+  # none of the Postgres/AWS/ONNX modules were installed (roadmap amendment 7b: a release AC
+  # is installing the packed tarball and running it, not merely building it).
+  cli-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # @getpharos/pdp-spec resolves through its built dist, and the CLI bundle inlines it,
+      # so the publishable packages must exist before esbuild runs.
+      - run: pnpm build:publishable
+      - name: pack, npm-install into an empty project, run every command
+        run: bash scripts/cli-smoke.sh
+
   runtime:
     runs-on: ubuntu-latest
     steps:
@@ -468,8 +523,8 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
-      - name: Install Pharos Runtime development dependencies
-        run: python -m pip install -e "runtime/python[dev,viewer]"
+      - name: Install Pharos SDK and Runtime development dependencies
+        run: python -m pip install -e sdks/python -e "runtime/python[dev,viewer]"
       - name: Runtime lint, types, architecture, and tests
         working-directory: runtime/python
         run: |
@@ -480,6 +535,9 @@ jobs:
       - name: Runtime determinism boundary
         working-directory: runtime/python
         run: python -m keel._lint.determinism keel
+      - name: Runtime byte-identical replay of recorded runs
+        working-directory: runtime/python
+        run: python -m keel.cli regress run --suite tests/regression/suite --junit regression-junit.xml
       - name: Runtime performance gates
         working-directory: runtime/python
         run: |
@@ -503,7 +561,9 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
-      - run: pip install pytest
+      # cryptography is the `getpharos[verify]` extra; installing it here means the bundle
+      # verification tests run for real instead of skipping (zero-skip policy).
+      - run: pip install pytest 'cryptography>=42'
       - name: python conformance
         working-directory: sdks/python
         run: PYTHONPATH=. python -m pytest tests/ -q

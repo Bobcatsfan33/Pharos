@@ -1,4 +1,4 @@
-# Regulation packs & the policy lifecycle (Sprint 6 — Codex)
+# Regulation packs & the policy lifecycle
 
 Packs are the recurring-revenue content moat and the thing security platforms are
 structurally bad at. Depth in two verticals beats breadth in six.
@@ -14,13 +14,27 @@ deterministic and served-model tiers behind one rule model, so a regulation pack
 ### FINRA pack v2
 
 Citation-level 2210 promissory/exaggerated-claim rules (judge-driven), 3110 supervision and
-2150 funds-handling hooks for funds movement. [`finra-v2.ts`](../packages/policy/src/packs/finra-v2.ts).
+2150 funds-handling hooks for funds movement. [`packs/finra.json`](../packages/policy/packs/finra.json).
 
 ### HIPAA pack v2
 
 Minimum-necessary (164.502(b)), PHI-in-context via the Tier-3 judge, authorization-state
 (164.508) external-disclosure block, and breach-notification triggers (164.400-414).
-[`hipaa-v2.ts`](../packages/policy/src/packs/hipaa-v2.ts).
+[`packs/hipaa.json`](../packages/policy/packs/hipaa.json).
+
+### Core pack
+
+The funds-movement judge binding and the mandate-limit citations Tier 1 emits
+([`packs/core.json`](../packages/policy/packs/core.json)).
+
+### Adding a pack
+
+A pack is a JSON file in [`packages/policy/packs/`](../packages/policy/packs) that validates
+against [`pack.schema.json`](../packages/policy/pack.schema.json): a `packId`, a version, the
+citation-level `rules`, and optionally the `judgeBindings` that route Tier-3 concerns to the
+action types they are about. Packs are discovered from the directory at load; nothing in code
+lists them. `test/policy.test.ts` checks every shipped rule carries a clause and an
+examiner-readable description.
 
 Every shipped rule carries its clause and renders an examiner-readable explanation into the
 verdict (verified in `test/policy.test.ts`).

@@ -1,5 +1,5 @@
 /**
- * Verdict-latency benchmark (Sprint 2 — Lantern).
+ * Verdict-latency benchmark.
  *
  *   pnpm bench:latency [totalRequests] [concurrency]
  *

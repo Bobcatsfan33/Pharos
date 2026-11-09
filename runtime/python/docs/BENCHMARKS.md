@@ -1,10 +1,10 @@
-# KEEL benchmarks
+# Pharos Runtime benchmarks
 
 Reproduce: `python -m bench.run_benchmarks` (from the repo root, with `.[dev,viewer]`).
-All KEEL numbers below are measured on this machine; competitor columns are TODO
+All Pharos Runtime numbers below are measured on this machine; competitor columns are TODO
 (they need the frameworks installed and an identical workload — not fabricated here).
 
-| Metric | KEEL | CrewAI | LangGraph |
+| Metric | Pharos Runtime | CrewAI | LangGraph |
 |--------|------|--------|-----------|
 | Run latency p50 / p95 / p99 (8-node graph, 300 runs) | 1.24 / 1.46 / 1.52 ms | TODO | TODO |
 | Trace overhead (p50, best-of-3, median) | 0.23% / 3µs per run | n/a (no native tracing) | TODO |

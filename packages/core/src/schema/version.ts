@@ -1,17 +1,18 @@
 /**
  * The unified ActionRecord schema version.
  *
- * Sprint 0 freezes v1.0.0. The schema is versioned explicitly from day one: every
+ * Version 1.0.0 is frozen. The schema is versioned explicitly from day one: every
  * persisted record carries this string, and migration adapters translate legacy
  * shapes (Flightline liability records, AI Lighthouse verdict records) into it.
  *
  * Bumping rules:
  *   - PATCH: additive optional field, no migration required.
+ *            (1.1.1: `liability.mandateToken`, ADR 0007 — Workstream A.)
  *   - MINOR: additive required field with a default migration.
  *   - MAJOR: breaking change; requires a forward migration adapter and a documented
  *            re-verification procedure for the evidence chain.
  */
-export const ACTION_RECORD_SCHEMA_VERSION = "1.1.0" as const;
+export const ACTION_RECORD_SCHEMA_VERSION = "1.1.1" as const;
 
 export type SchemaVersion = typeof ACTION_RECORD_SCHEMA_VERSION;
 
@@ -19,7 +20,7 @@ export type SchemaVersion = typeof ACTION_RECORD_SCHEMA_VERSION;
  * Versions this codebase can read. Records sealed under any of these verify; only the
  * CURRENT version is written. v1.0.0 records are never rewritten (ADR 0005 D2).
  */
-export const SUPPORTED_SCHEMA_VERSIONS = ["1.0.0", "1.1.0"] as const;
+export const SUPPORTED_SCHEMA_VERSIONS = ["1.0.0", "1.1.0", "1.1.1"] as const;
 
 /**
  * First version in which `seal.algorithm` is required to state the real signing

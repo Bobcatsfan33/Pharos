@@ -320,7 +320,7 @@ export const MIGRATIONS: Migration[] = [
   {
     version: "0010_rfc3161_anchors",
     sql: /* sql */ `
-      -- Sprint 4: real RFC 3161 anchoring alongside the simulated 'local' TSA.
+      -- Real RFC 3161 anchoring alongside the simulated 'local' TSA.
       -- tsa_provider distinguishes them; rfc3161 anchors carry a full DER token instead of a
       -- keyset-verified signature, so tsa_signature/tsa_key_id become nullable.
       ALTER TABLE chain_anchors ADD COLUMN IF NOT EXISTS tsa_provider TEXT NOT NULL DEFAULT 'local';
@@ -384,7 +384,7 @@ export const MIGRATIONS: Migration[] = [
   {
     version: "0013_ingest_idempotency",
     sql: /* sql */ `
-      -- Replay guard for POST /v1/actions (#74). One row per (tenant, client key);
+      -- Replay guard for POST /v1/actions. One row per (tenant, client key);
       -- the primary key IS the guard, so concurrent deliveries of the same key
       -- serialize on it and exactly one can win.
       --

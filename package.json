@@ -3,7 +3,24 @@
   "version": "0.1.0",
   "license": "Apache-2.0",
   "private": true,
-  "description": "Pharos \u2014 the trust control plane for enterprise AI agents. Pharos decides. Pharos proves.",
+  "description": "Pharos \u2014 real-time policy verdicts for AI agents with signed, hash-chained evidence of every decision. Pharos decides. Pharos proves.",
+  "keywords": [
+    "ai-agents",
+    "agent-governance",
+    "policy-engine",
+    "guardrails",
+    "audit-log",
+    "evidence",
+    "mcp",
+    "llm",
+    "compliance",
+    "authorization"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bobcatsfan33/Pharos.git"
+  },
+  "homepage": "https://github.com/Bobcatsfan33/Pharos#readme",
   "type": "module",
   "packageManager": "pnpm@10.32.1+sha512.a706938f0e89ac1456b6563eab4edf1d1faf3368d1191fc5c59790e96dc918e4456ab2e67d613de1043d2e8c81f87303e6b40d4ffeca9df15ef1ad567348f2be",
   "engines": {
@@ -15,6 +32,7 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm runtime:check",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
+    "test:embedded": "vitest run --config vitest.embedded.config.ts",
     "test:watch": "vitest",
     "test:live": "vitest run --config vitest.live.config.ts",
     "test:judge-parity": "vitest run test/onnx-serving.spec.ts --config vitest.live.config.ts",
@@ -24,7 +42,7 @@
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down -v",
     "infra:logs": "docker compose logs -f",
-    "runtime:install": "python3 -m pip install -e 'runtime/python[dev,viewer,pg,otel]'",
+    "runtime:install": "python3 -m pip install -e sdks/python -e 'runtime/python[dev,viewer,pg,otel]'",
     "runtime:lint": "python3 -m ruff check runtime/python",
     "runtime:typecheck": "cd runtime/python && python3 -m mypy keel pharos_runtime",
     "runtime:test": "cd runtime/python && python3 -m pytest -q",
@@ -37,6 +55,7 @@
     "verify:external": "tsx --env-file=.env scripts/external-verify.ts",
     "verify:bundle": "tsx scripts/external-verify.ts --bundle",
     "api:dev": "tsx --env-file=.env services/api/src/server.ts",
+    "pharos": "node packages/cli/dist/bin/pharos.mjs",
     "gateway:rotate-held-keys": "tsx scripts/rotate-gateway-held-keys.ts",
     "judges:train": "tsx scripts/train-judges.ts",
     "judges:eval": "tsx scripts/eval-judges.ts",
@@ -44,13 +63,15 @@
     "judges:system-eval": "tsx scripts/system-eval.ts",
     "judges:drift-profile": "tsx scripts/build-judge-drift-profile.ts",
     "bench:latency": "tsx scripts/bench-latency.ts",
-    "bench:judge-path": "tsx scripts/bench-judge-path.ts"
+    "bench:judge-path": "tsx scripts/bench-judge-path.ts",
+    "bench:mandate-token": "tsx scripts/bench-mandate-token.ts"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1144.0",
     "@changesets/cli": "^3.0.3",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.3",
+    "esbuild": "0.28.2",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "fastify": "^5.12.1",
@@ -65,8 +86,8 @@
   },
   "pnpm": {
     "overrides": {
-      "fast-uri@3": "^3.1.5",
-      "fast-uri@4": "^4.1.2",
+      "fast-uri@3": "^3.1.9",
+      "fast-uri@4": "^4.2.3",
       "brace-expansion@4": "^5.0.11",
       "brace-expansion@5": "^5.0.11",
       "js-yaml@3": "^3.15.1",

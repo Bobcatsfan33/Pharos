@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
+import type { AccessAuditLogPort } from "./ports.js";
 import { GENESIS_HASH, sha256Hex } from "@pharos/core";
 
-export type AccessAction = "view" | "export" | "share" | "verify";
+export type AccessAction = "view" | "export" | "share" | "verify" | "mint";
 
 export interface AccessAuditEntry {
   id: string;
@@ -48,7 +49,7 @@ interface AuditRow {
  * answer "who saw this, and when" with the same integrity guarantees as the evidence
  * itself.
  */
-export class AccessAuditLog {
+export class AccessAuditLog implements AccessAuditLogPort {
   constructor(
     private readonly pool: Pool,
     private readonly now: () => Date = () => new Date(),

@@ -43,7 +43,7 @@ beforeAll(async () => {
     platform = await buildPlatform();
     app = await buildApp(platform);
     await platform.tenants.createTenant({ tenantId: TENANT, displayName: "Seal" });
-    // Mandate authority is server-resolved (#81): store the grant once, then reference
+    // Mandate authority is server-resolved: store the grant once, then reference
     // it by id on every submit below.
     await platform.mandates.create({
       tenantId: TENANT,
@@ -82,7 +82,7 @@ async function submit(payload: Record<string, unknown>) {
     payload: {
       tenantId: TENANT,
       action: { type: "payment.transfer", agentId: "treasury", payload },
-      // Mandate authority is server-resolved (#81); the grant is stored in beforeAll
+      // Mandate authority is server-resolved; the grant is stored in beforeAll
       // and referenced by id here.
       mandateId: "m",
       liability: {

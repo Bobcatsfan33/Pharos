@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional
 
 from .validation import validate_submit_input
+from .mandate_token import scope_allows_action_type, verify_mandate_token
 
 
 class PharosError(Exception):
@@ -40,14 +41,31 @@ class PharosClient:
     max_retries: int = 2
     local_fail_mode: str = "fail_closed"  # "fail_open" | "fail_closed"
     on_event: Optional[Callable[[Dict[str, Any]], None]] = None
+    # MandateToken (Workstream A). The tenant's published mandate root keys (GET /v1/keyset,
+    # entries named ``mandate:<tenantId>#vN``) let the SDK refuse a structurally invalid token
+    # without a network call. ``mandate_token_local_allow`` (default False) additionally allows a
+    # verified token on a reversible, zero-amount, in-scope action locally while the sealed record
+    # is submitted; the server verdict is authoritative.
+    mandate_token_root_keys: Optional[list] = None
+    mandate_token_local_allow: bool = False
     _session: Any = field(default=None, repr=False)
 
     def _emit(self, event: Dict[str, Any]) -> None:
         if self.on_event:
             self.on_event(event)
 
-    def _request(self, method: str, path: str, body: Optional[dict] = None) -> dict:
-        url = f"{self.base_url}{path}"
+    def request(self, method: str, path: str, body: Optional[dict] = None) -> dict:
+        """Send one request to the Pharos API and return the ``data`` of its envelope.
+
+        This is the raw protocol call that ``submit`` and ``claim`` are built on. It never
+        applies the local fail-mode: a 4xx raises ``PharosError`` with the server's error
+        code (not retryable), a 5xx or network failure is retried ``max_retries`` times and
+        then raised as ``PharosError(code="unavailable")``, and a response that is not a
+        well-formed ``{success, data, error}`` envelope raises ``code="invalid_response"``.
+        Callers that need to decide fail-open / fail-closed themselves (the Pharos Runtime
+        does) use this and handle ``unavailable``; everyone else should use ``submit``.
+        """
+        url = f"{self.base_url.rstrip('/')}{path}"
         timeout = self.deadline_ms / 1000.0
         last_err: Optional[Exception] = None
         for attempt in range(self.max_retries + 1):
@@ -58,19 +76,34 @@ class PharosClient:
             req = urllib.request.Request(url, data=data, headers=headers, method=method)
             try:
                 with urllib.request.urlopen(req, timeout=timeout) as resp:
-                    payload = json.loads(resp.read().decode() or "{}")
-                    return payload.get("data", {})
+                    raw = resp.read().decode() or "{}"
+                try:
+                    payload = json.loads(raw)
+                except json.JSONDecodeError:
+                    last_err = PharosError("response was not JSON", "invalid_response")
+                    payload = None
+                if payload is not None:
+                    if not isinstance(payload, dict) or payload.get("success") is not True:
+                        raise PharosError("invalid response envelope", "invalid_response")
+                    data_out = payload.get("data")
+                    if not isinstance(data_out, dict):
+                        raise PharosError("response envelope has no data", "invalid_response")
+                    return data_out
+            except PharosError as e:
+                if e.code != "invalid_response":
+                    raise
+                last_err = e
             except urllib.error.HTTPError as e:
-                detail = {}
+                detail: Dict[str, Any] = {}
                 try:
                     detail = json.loads(e.read().decode() or "{}")
-                except Exception:
+                except Exception:  # noqa: BLE001 - a non-JSON error body is still an error
                     pass
+                error = detail.get("error") if isinstance(detail, dict) else None
+                code = error.get("code") if isinstance(error, dict) else None
                 if 400 <= e.code < 500:
                     raise PharosError(
-                        f"request failed: {detail.get('error', {}).get('code', e.reason)}",
-                        detail.get("error", {}).get("code", "client_error"),
-                        e.code,
+                        f"request failed: {code or e.reason}", code or "client_error", e.code
                     )
                 last_err = PharosError(f"server error {e.code}", "server_error", e.code)
             except Exception as e:  # noqa: BLE001 - network/timeout
@@ -78,15 +111,124 @@ class PharosClient:
             if attempt < self.max_retries:
                 self._emit({"type": "retry", "attempt": attempt, "error": str(last_err)})
                 time.sleep((2 ** attempt) * 0.025)
-        raise last_err if last_err else PharosError("request failed")
+        if isinstance(last_err, PharosError) and last_err.code == "invalid_response":
+            raise last_err
+        if isinstance(last_err, PharosError) and last_err.code == "server_error":
+            raise PharosError(str(last_err), "unavailable", last_err.status)
+        raise PharosError(
+            f"Pharos is unavailable: {type(last_err).__name__ if last_err else 'unknown'}",
+            "unavailable",
+        )
+
+    # Kept for callers that reached for the private name; ``request`` is the public API.
+    _request = request
+
+    def _root_key_for(self, key_id: Any) -> Optional[dict]:
+        if not self.mandate_token_root_keys or not isinstance(key_id, str):
+            return None
+        for entry in self.mandate_token_root_keys:
+            if isinstance(entry, dict) and entry.get("keyId") == key_id:
+                return entry
+        return None
+
+    def _local_token_verdict(self, request: dict, start: float) -> Optional[dict]:
+        """Decide locally from the token when root keys are configured; None = server decides."""
+        token = request.get("mandateToken")
+        if token is None or self.mandate_token_root_keys is None:
+            return None
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc)
+        key_id = (token.get("authority") or {}).get("keyId") if isinstance(token, dict) else None
+        root = self._root_key_for(key_id)
+        if root is None:
+            ok, code, effective = False, "root-key-unknown", None
+        else:
+            result = verify_mandate_token(
+                token, root, now,
+                {"tenantId": request["tenantId"], "agentId": request["action"]["agentId"]},
+            )
+            ok, code, effective = result.ok, result.code, result.effective
+        latency = {"totalMs": (time.time() - start) * 1000, "perTier": {}, "deadlineMs": self.deadline_ms, "deadlineBreached": False}
+        if not ok:
+            self._emit({"type": "local-verdict", "verdict": "mandate-token-invalid", "code": code})
+            return {
+                "verdict": {
+                    "decision": "block", "tierReached": 1, "riskScore": 1,
+                    "ruleCitations": [{
+                        "ruleId": "mandate-token-invalid", "pack": "core",
+                        "clause": "liability.mandateToken.verification",
+                        "description": f"Presented mandate token was refused: {code}.",
+                    }],
+                    "failMode": None, "judgeVersion": None, "latency": latency,
+                },
+                "localVerdict": "mandate-token-invalid",
+            }
+        if not self.mandate_token_local_allow or effective is None:
+            return None
+        blast = (request.get("liability") or {}).get("blastRadius") or {}
+        eligible = (
+            blast.get("reversibility") == "reversible"
+            and (blast.get("financialAmount") or 0) == 0
+            and scope_allows_action_type(effective["scope"], request["action"]["type"])
+        )
+        if not eligible:
+            return None
+        self._emit({"type": "local-verdict", "verdict": "mandate-token-allow"})
+        return {
+            "verdict": {
+                "decision": "allow", "tierReached": 1, "riskScore": 0,
+                "ruleCitations": [{
+                    "ruleId": "mandate-token-local-allow", "pack": "sdk",
+                    "clause": "mandateToken.localAllow",
+                    "description": "Verified mandate token admitted a reversible, zero-amount, in-scope action locally; the sealed server verdict is authoritative.",
+                }],
+                "failMode": None, "judgeVersion": None, "latency": latency,
+            },
+            "localVerdict": "mandate-token-allow",
+        }
 
     def submit(self, **kwargs: Any) -> dict:
-        """Submit an action. kwargs: tenantId, action, liability, mandateId?, idempotencyKey?."""
-        # Validate BEFORE transmit and before any fail-mode path (#80). This raises rather
+        """Submit an action. kwargs: tenantId, action, liability, mandateId?, mandateToken?, idempotencyKey?.
+
+        With a ``mandateToken`` and configured root keys, a structurally invalid token is a
+        Tier-1 block returned without a network call; the same request is still submitted so the
+        decision has a sealed record. The returned dict then carries ``localVerdict`` and
+        ``sealed`` — a ``threading.Thread`` whose ``result`` attribute holds the server's reply
+        (or ``error``) once it joins. Call ``result["sealed"].join()`` to wait for the record.
+        """
+        # Validate BEFORE transmit and before any fail-mode path. This raises rather
         # than falling back: an unvalidated liability would otherwise pick the local
         # fail-mode, so a typo could allow an irreversible action the server never saw.
         validate_submit_input(kwargs)
         start = time.time()
+        local = self._local_token_verdict(kwargs, start)
+        if local is not None:
+            import threading
+
+            def seal() -> None:
+                try:
+                    thread.result = self._submit_remote(start, kwargs)  # type: ignore[attr-defined]
+                    if thread.result["verdict"]["decision"] != local["verdict"]["decision"]:  # type: ignore[attr-defined]
+                        self._emit({"type": "local-verdict-diverged", "local": local["verdict"]["decision"], "sealed": thread.result["verdict"]["decision"]})  # type: ignore[attr-defined]
+                except Exception as err:  # noqa: BLE001 - surfaced on the thread, never raised here
+                    thread.error = err  # type: ignore[attr-defined]
+                    self._emit({"type": "local-verdict-diverged", "local": local["verdict"]["decision"], "sealed": None, "error": str(err)})
+
+            thread = threading.Thread(target=seal, name="pharos-seal", daemon=True)
+            thread.result = None  # type: ignore[attr-defined]
+            thread.error = None  # type: ignore[attr-defined]
+            thread.start()
+            return {
+                "verdict": local["verdict"],
+                "record": {"content": {"id": "local", "sequence": -1}},
+                "escalation": None,
+                "localVerdict": local["localVerdict"],
+                "sealed": thread,
+            }
+        return self._submit_remote(start, kwargs)
+
+    def _submit_remote(self, start: float, kwargs: dict) -> dict:
         try:
             result = self._request("POST", "/v1/actions", kwargs)
             self._emit({"type": "submit", "decision": result["verdict"]["decision"]})
@@ -95,7 +237,7 @@ class PharosClient:
             if e.status and 400 <= e.status < 500:
                 raise
             return self._local_fallback(start, kwargs)
-        except Exception:
+        except Exception:  # noqa: BLE001 - any transport failure takes the local fail-mode
             return self._local_fallback(start, kwargs)
 
     def _local_fallback(self, start: float, request: Optional[dict] = None) -> dict:

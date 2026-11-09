@@ -4,6 +4,10 @@ import {
   type VerdictContext,
   type RuleCitation,
 } from "../schema/actionRecord.js";
+import type { PublicKeyEntry } from "../signing/provider.js";
+import { applyMandateToken } from "../mandate-token/bind.js";
+import { scopeAllowsActionType } from "../mandate-token/codec.js";
+import type { MandateToken } from "../mandate-token/types.js";
 
 /**
  * The verdict request: an agent action plus the liability context that governs it.
@@ -14,6 +18,38 @@ export interface VerdictRequest {
   tenantId: string;
   action: ActionIntent;
   liability: LiabilityContext;
+  /**
+   * A presented MandateToken (Workstream A) and the published root key it names (`null` when
+   * the key is unknown). Resolved into `liability` by {@link resolveVerdictRequest} before any
+   * rule runs: a verified token supersedes the server-side mandate; a refused one is sealed with
+   * its reason and blocked at Tier 1.
+   */
+  mandateToken?: {
+    token: MandateToken;
+    rootKey: PublicKeyEntry | null;
+    /** Server-side knowledge an offline verifier lacks. */
+    revoked?: boolean;
+  };
+}
+
+/**
+ * Fold a presented token into the liability the cascade sees and seals. Idempotent: a request
+ * whose liability already carries `mandateToken` (a replay) is returned as is.
+ */
+export function resolveVerdictRequest(req: VerdictRequest, now: Date): VerdictRequest {
+  if (!req.mandateToken || req.liability.mandateToken) {
+    if (!req.mandateToken) return req;
+    const { mandateToken: _raw, ...rest } = req;
+    return rest;
+  }
+  const { mandateToken, ...rest } = req;
+  return {
+    ...rest,
+    liability: applyMandateToken(req.liability, mandateToken.token, mandateToken.rootKey, now, {
+      expect: { tenantId: req.tenantId, agentId: req.action.agentId },
+      revoked: mandateToken.revoked,
+    }),
+  };
 }
 
 export interface VerdictEngineOptions {
@@ -23,23 +59,53 @@ export interface VerdictEngineOptions {
 }
 
 /**
- * Sprint 0 decision engine — Tier 1 only (deterministic rules).
+ * Tier-1 decision engine (deterministic rules).
  *
  * This is deliberately honest about its scope: it implements the deterministic tier
  * of the cascade (mandate-limit enforcement, expiry, and an explicit deny list). The
- * statistical Tier 2 and the served-model Tier 3 are introduced in Sprint 2 (Lantern)
+ * the statistical Tier 2 and the served-model Tier 3 live in the cascade package
  * behind this same interface, with short-circuiting so a Tier-1 hit skips later tiers.
  */
 export class VerdictEngine {
   constructor(private readonly opts: VerdictEngineOptions) {}
 
-  evaluate(req: VerdictRequest, now: Date): VerdictContext {
+  evaluate(rawReq: VerdictRequest, now: Date): VerdictContext {
     const start = process.hrtime.bigint();
     const citations: RuleCitation[] = [];
     let decision: VerdictContext["decision"] = "allow";
     let riskScore = 0;
 
-    const { mandate, blastRadius } = req.liability;
+    const req = resolveVerdictRequest(rawReq, now);
+    const { mandate, blastRadius, mandateToken } = req.liability;
+
+    // Rule: a presented MandateToken that did not verify -> block. Structural, not policy: the
+    // reason is sealed in liability.mandateToken.verification, so replay blocks identically.
+    if (mandateToken && mandateToken.verification !== "verified") {
+      decision = "block";
+      riskScore = 1;
+      citations.push({
+        ruleId: "mandate-token-invalid",
+        pack: "core",
+        clause: "liability.mandateToken.verification",
+        description: `Presented mandate token was refused: ${mandateToken.verification}.`,
+      });
+    }
+
+    // Rule: the action type is outside the token's effective scope -> block.
+    if (
+      mandateToken?.verification === "verified" &&
+      mandateToken.effective &&
+      !scopeAllowsActionType(mandateToken.effective.scope, req.action.type)
+    ) {
+      decision = "block";
+      riskScore = 1;
+      citations.push({
+        ruleId: "mandate-token-scope",
+        pack: "core",
+        clause: "liability.mandateToken.effective.scope.actionTypes",
+        description: `Action type "${req.action.type}" is outside the token's effective scope [${mandateToken.effective.scope.actionTypes.join(", ")}].`,
+      });
+    }
 
     // Rule: expired mandate -> escalate to human.
     if (mandate?.expiresAt) {

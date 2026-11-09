@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import type { MandateStorePort } from "./ports.js";
 import type { MandateBinding } from "@pharos/core";
 
 interface MandateRow {
@@ -18,7 +19,7 @@ interface MandateRow {
  * seal the exact binding into every record. New versions supersede old ones; the binding
  * embedded in a record names the version that governed that action.
  */
-export class MandateStore {
+export class MandateStore implements MandateStorePort {
   constructor(private readonly pool: Pool) {}
 
   private rowToBinding(row: MandateRow): MandateBinding {

@@ -74,7 +74,7 @@ describe("durable round trip + restart + chain verification", () => {
     const { buildApp } = await import("../services/api/src/app.js");
     const app = await buildApp(firstPlatform);
 
-    // Mandate authority is server-resolved (#81): store the grant, then reference it by
+    // Mandate authority is server-resolved: store the grant, then reference it by
     // id. Exercising the real path also proves the Tier-1 mandate-limit block still
     // fires on a server-resolved mandate, not just a caller-declared one.
     await firstPlatform.mandates.create({

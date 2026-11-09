@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="844" viewBox="0 0 920 844" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5">
+<rect width="920" height="844" rx="12" fill="#18181b"/>
+<rect width="920" height="36" rx="12" fill="#27272a"/><rect y="24" width="920" height="12" fill="#27272a"/>
+<circle cx="20" cy="18" r="6" fill="#ff5f57"/><circle cx="40" cy="18" r="6" fill="#febc2e"/><circle cx="60" cy="18" r="6" fill="#28c840"/>
+<text x="460.0" y="23" text-anchor="middle" fill="#a1a1aa" font-size="12">pharos — pnpm demo · pnpm verify:bundle</text>
+<text x="24" y="56" fill="#e4e4e7" font-weight="600" xml:space="preserve">$ pnpm demo</text>
+<text x="24" y="96" fill="#f4f4f5" font-weight="600" xml:space="preserve">=== Pharos demo — an agent tries to move money ===</text>
+<text x="24" y="116" fill="#a1a1aa" xml:space="preserve">Signing: local KMS.  Trusted time: local TSA.  Nothing leaves this machine.</text>
+<text x="24" y="156" fill="#93c5fd" font-weight="600" xml:space="preserve">-- Act 1 -- the agent acts without authority</text>
+<text x="24" y="196" fill="#d4d4d8" xml:space="preserve">  treasury-bot wants to wire $4,800 to new-vendor-8812.</text>
+<text x="24" y="216" fill="#d4d4d8" xml:space="preserve">  It holds no mandate for moving funds.</text>
+<text x="24" y="256" fill="#fbbf24" font-weight="600" xml:space="preserve">  Verdict:   ESCALATE   tier 3</text>
+<text x="24" y="276" fill="#f9a8d4" xml:space="preserve">  Cited:     finra-3110-funds-movement  FINRA Rule 3110 (supervision) / 2150</text>
+<text x="24" y="296" fill="#a1a1aa" xml:space="preserve">             Movement of customer funds requires supervisory review.</text>
+<text x="24" y="336" fill="#a1a1aa" xml:space="preserve">  Sealed as evidence anyway — a refusal is a fact worth proving.</text>
+<text x="24" y="356" fill="#d4d4d8" xml:space="preserve">  record #0  hash 9f34ad8b0e6293ca…</text>
+<text x="24" y="396" fill="#93c5fd" font-weight="600" xml:space="preserve">-- Act 2 -- treasury grants a mandate</text>
+<text x="24" y="436" fill="#d4d4d8" xml:space="preserve">  treasury-controller grants m-vendor-payments — vendor payments up to $25,000.</text>
+<text x="24" y="456" fill="#d4d4d8" xml:space="preserve">  Same transfer. Same agent. Same amount.</text>
+<text x="24" y="496" fill="#4ade80" font-weight="600" xml:space="preserve">  Verdict:   ALLOW   tier 3</text>
+<text x="24" y="516" fill="#d4d4d8" xml:space="preserve">  record #1  hash 8880a43f2d335e54…</text>
+<text x="24" y="556" fill="#93c5fd" font-weight="600" xml:space="preserve">-- Act 3 -- the evidence anchors in trusted time</text>
+<text x="24" y="576" fill="#d4d4d8" xml:space="preserve">  Chain head sequence 1 anchored by an independent authority.</text>
+<text x="24" y="616" fill="#93c5fd" font-weight="600" xml:space="preserve">-- Act 4 -- the bundle a third party can check without us</text>
+<text x="24" y="636" fill="#d4d4d8" xml:space="preserve">  Wrote evidence-bundle.json — 2 records, the public keyset, the anchor.</text>
+<text x="24" y="676" fill="#e4e4e7" font-weight="600" xml:space="preserve">$ pnpm verify:bundle evidence-bundle.json</text>
+<text x="24" y="716" fill="#d4d4d8" xml:space="preserve">  OK  seq   0  hash:ok sig:ok link:ok</text>
+<text x="24" y="736" fill="#d4d4d8" xml:space="preserve">  OK  seq   1  hash:ok sig:ok link:ok</text>
+<text x="24" y="776" fill="#4ade80" font-weight="600" xml:space="preserve">Chain verification: PASS - admissible</text>
+<text x="24" y="796" fill="#4ade80" font-weight="600" xml:space="preserve">Anchor verification: PASS - head existed before the stamped time</text>
+</svg>

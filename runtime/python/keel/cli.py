@@ -101,7 +101,7 @@ def _build_pharos(args: argparse.Namespace) -> PharosConfig | None:
         base_url=url,
         api_key=key,
         tenant_id=tenant,
-        agent_id=getattr(args, "pharos_agent_id", "keel-runtime"),
+        agent_id=getattr(args, "pharos_agent_id", "pharos-runtime"),
         deadline_ms=getattr(args, "pharos_deadline_ms", 800),
         max_retries=getattr(args, "pharos_max_retries", 2),
         failure_mode=getattr(args, "pharos_failure_mode", "fail_closed"),
@@ -444,8 +444,10 @@ def _print_summary(run_id: str, state: Any) -> None:
 
 
 def _program_name() -> str:
+    # The branded console script is `pharos-runtime` (ADR 0006 §3: bare `pharos` is the
+    # control-plane CLI). Anything invoked as pharos* reports the branded name.
     executable = Path(sys.argv[0]).name.lower()
-    return "pharos" if executable.startswith("pharos") else "keel"
+    return "pharos-runtime" if executable.startswith("pharos") else "keel"
 
 
 def _die(msg: str) -> NoReturn:
@@ -486,7 +488,7 @@ def _add_pharos_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--pharos-api-key", default=os.environ.get("PHAROS_API_KEY"))
     p.add_argument("--pharos-tenant", default=os.environ.get("PHAROS_TENANT_ID"))
     p.add_argument(
-        "--pharos-agent-id", default=os.environ.get("PHAROS_AGENT_ID", "keel-runtime")
+        "--pharos-agent-id", default=os.environ.get("PHAROS_AGENT_ID", "pharos-runtime")
     )
     p.add_argument(
         "--pharos-deadline-ms",

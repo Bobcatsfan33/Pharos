@@ -1,0 +1,30 @@
+{
+  "$schema": "../pack.schema.json",
+  "packId": "core",
+  "version": "1.0.0",
+  "title": "Core mandate and funds-movement controls",
+  "changelog": "v1: the funds-movement judge binding; Tier-1 mandate limits cite this pack from the verdict engine.",
+  "rules": [],
+  "judgeBindings": [
+    {
+      "packId": "funds-movement-intent",
+      "actionTypes": [
+        "payment.",
+        "wire.",
+        "funds.",
+        "transfer.",
+        "treasury.",
+        "invoice.",
+        "payout.",
+        "refund."
+      ],
+      "onFlag": "escalate",
+      "requireNoMandate": true,
+      "citation": {
+        "ruleId": "funds-movement-unmandated",
+        "pack": "core",
+        "clause": "mandate.required"
+      }
+    }
+  ]
+}

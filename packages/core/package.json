@@ -18,6 +18,10 @@
   },
   "dependencies": {
     "@aws-sdk/client-kms": "^3.1144.0",
-    "zod": "^4.6.5"
-  }
+    "@getpharos/pdp-spec": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "sideEffects": [
+    "./src/signing/providers.ts"
+  ]
 }

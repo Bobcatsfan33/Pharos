@@ -1,9 +1,9 @@
-# Writing a KEEL adapter
+# Writing a Pharos Runtime adapter
 
-An adapter runs an existing agent framework *under* KEEL, so an unmodified agent gets
+An adapter runs an existing agent framework *under* Pharos Runtime, so an unmodified agent gets
 durability, tracing, budgets, and byte-identical replay. This is the most welcome kind
 of contribution, and it touches only the stable adapter contract — never the substrate —
-so it's also the recommended path toward becoming a maintainer (`GOVERNANCE.md`).
+so it's also the best-scoped first contribution (see the root `CONTRIBUTING.md`).
 
 This guide walks the exact, mechanical steps. The `pydantic-ai` adapter
 (`keel/adapters/pydantic_ai.py`) is the worked example — read it alongside this.
@@ -11,9 +11,9 @@ This guide walks the exact, mechanical steps. The `pydantic-ai` adapter
 ## The model
 
 An adapter expresses a framework agent as a small graph of `AgentNode`s. The one rule:
-**every model call goes through the `TracedModel` KEEL hands your node.** That is the
+**every model call goes through the `TracedModel` Pharos Runtime hands your node.** That is the
 interception point that makes the turn recorded, budgeted, and replayable. Control flow
-the framework runs out of band is not intercepted unless you route it through KEEL.
+the framework runs out of band is not intercepted unless you route it through Pharos Runtime.
 
 ```python
 from keel.adapters.base import AgentNode, TracedModel
@@ -41,7 +41,7 @@ nodes = [AgentNode("step", step)]              # add deps=[...] to chain nodes
 
 ## Prove it conforms
 
-The shared conformance suite is the bar. It runs your reference agent under KEEL,
+The shared conformance suite is the bar. It runs your reference agent under Pharos Runtime,
 records it, and asserts it completes, makes recorded model calls, and **replays
 byte-identically**:
 
@@ -64,7 +64,7 @@ first-class, CI-gated citizen.
 - [ ] Optional extra in `pyproject.toml` (`<framework> = [...]`), and a mypy override if
       the SDK is untyped.
 - [ ] A line in `docs/ADAPTERS.md`.
-- [ ] All gates green (`CONTRIBUTING.md`).
+- [ ] All gates green (root `CONTRIBUTING.md`, "Runtime (Python)").
 
 That's the whole contribution. No substrate changes, no new guarantees to prove from
 scratch — you inherit determinism and durability by construction, and the conformance

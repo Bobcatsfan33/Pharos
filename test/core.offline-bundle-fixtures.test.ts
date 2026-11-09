@@ -11,7 +11,7 @@ import { verifyChain, type ActionRecord, type PublicKeyEntry } from "@pharos/cor
  * time). This is the proof that offline verification handles Ed25519 and ECDSA P-256.
  *
  * Regenerate after a deliberate seal/format change by re-sealing chains under LocalKms and
- * AwsKms (emulator) and re-running verifyChain — see the S3-T1 PR for the generator.
+ * AwsKms (emulator) and re-running verifyChain — see scripts/ for the generator.
  */
 type Bundle = {
   tenantId: string;

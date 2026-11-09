@@ -1,4 +1,4 @@
-"""In-process tool gateway (Phase 1).
+"""In-process tool gateway.
 
 The gateway is the single chokepoint every tool call flows through. It validates
 the input against the contract, enforces allowed-agent and rate limits, runs the

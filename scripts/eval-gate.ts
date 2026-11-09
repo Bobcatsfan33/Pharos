@@ -1,5 +1,5 @@
 /**
- * CI eval gate (roadmap S5-T4). Compares the CANDIDATE judge artifacts (packages/judge/models)
+ * CI eval gate. Compares the CANDIDATE judge artifacts (packages/judge/models)
  * against the FROZEN baseline (packages/judge-eval/data/baseline-models) at the frozen thresholds,
  * failing only when a sliced metric's entire 95% paired-bootstrap delta interval is worse than its
  * committed tolerance.

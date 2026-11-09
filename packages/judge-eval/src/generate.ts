@@ -17,7 +17,7 @@ import {
   type TransformName,
 } from "./transforms.js";
 
-const CLEAN_TARGET = 300; // ≥300 clean positives and ≥300 clean negatives (roadmap S5-T1)
+const CLEAN_TARGET = 300; // ≥300 clean positives and ≥300 clean negatives
 const ADVERSARIAL_TARGET = 80; // obfuscated positives per adversarial suite
 const NATIVE_TARGET = 60; // per native-language suite (mixed labels)
 

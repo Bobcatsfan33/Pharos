@@ -1,4 +1,4 @@
-"""Runtime validation at the SDK trust boundary (#80).
+"""Runtime validation at the SDK trust boundary.
 
 The SDK is a thin client and the server does validate, so for a *reachable* platform this
 is only faster feedback. It is a safety control rather than a convenience because of the
@@ -20,10 +20,14 @@ Two deliberate design choices, mirroring the TypeScript validator exactly:
 Kept stdlib-only on purpose: ``getpharos`` ships with no dependencies.
 """
 from numbers import Real
-from typing import Any
+from typing import Any, get_args
 
-OVERSIGHT_MODES = ("autonomous", "human_in_loop", "human_on_loop")
-REVERSIBILITY = ("reversible", "irreversible")
+from .types import OversightMode, Reversibility
+
+# The accepted values come from the generated wire types, so they cannot drift from the
+# contract in packages/pdp-spec; tests/test_types_generated.py pins both ends.
+OVERSIGHT_MODES = tuple(get_args(OversightMode))
+REVERSIBILITY = tuple(get_args(Reversibility))
 
 
 def _invalid(path: str, expected: str):
@@ -58,6 +62,11 @@ def validate_submit_input(payload: dict) -> None:
     _require_non_empty_string(payload.get("tenantId"), "tenantId")
     _optional_string(payload.get("mandateId"), "mandateId")
     _optional_string(payload.get("idempotencyKey"), "idempotencyKey")
+    if payload.get("mandateToken") is not None:
+        if not isinstance(payload["mandateToken"], dict):
+            _invalid("mandateToken", "must be an object when present")
+        if payload.get("mandateId") is not None:
+            _invalid("mandateToken", "cannot be combined with mandateId")
 
     # --- action ---
     action = payload.get("action")

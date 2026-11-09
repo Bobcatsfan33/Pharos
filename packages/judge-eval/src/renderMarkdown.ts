@@ -15,7 +15,7 @@ export interface ReportMeta {
   sharedFamilyLimitation: string;
 }
 
-/** Render the full honest benchmark report (roadmap S5-T2/T3). PR-AUC leads; the base-rate box is
+/** Render the full honest benchmark report. PR-AUC leads; the base-rate box is
  *  unmistakable; controls and CIs are always shown. */
 export function renderMarkdown(reports: ConcernReport[], meta: ReportMeta): string {
   const L: string[] = [];
@@ -28,7 +28,7 @@ export function renderMarkdown(reports: ConcernReport[], meta: ReportMeta): stri
   // Headline — lead with the ugly truth: adversarial recall and hard-negative behavior.
   L.push("## Headline\n");
   L.push(
-    "Today's Tier-3 judges are linear bag-of-words classifiers. They hold up on clean text but **collapse under trivial obfuscation** — the gap Sprint 6 must close.\n",
+    "Today's Tier-3 judges are linear bag-of-words classifiers. They hold up on clean text but **collapse under trivial obfuscation** — the gap the transformer judges exist to close.\n",
   );
   L.push("| Concern | PR-AUC (lead) | Clean recall | Hard-neg FPR | Worst adversarial recall |");
   L.push("|---|---|---|---|---|");

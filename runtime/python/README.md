@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Bobcatsfan33/Pharos/actions/workflows/ci.yml/badge.svg)](https://github.com/Bobcatsfan33/Pharos/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](../../LICENSE)
 [![Typed: mypy --strict](https://img.shields.io/badge/mypy-strict-blue.svg)](https://mypy-lang.org/)
 [![Lint: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Layers: import-linter](https://img.shields.io/badge/layers-import--linter-blueviolet.svg)](https://import-linter.readthedocs.io/)
@@ -45,7 +45,7 @@ A 4-step agent makes billed model calls, "crashes" mid-run, and resumes in a fre
 runtime — the completed call is replayed from the log (cost unchanged) and only the
 remaining work executes. The cost equality is a **checked assertion**, gated in CI
 (`tests/chaos/test_crash_resume_demo.py`), not a screenshot. Browse the same run in the
-viewer: `pharos view`.
+viewer: `pharos-runtime view`.
 
 ## The two capabilities
 
@@ -75,9 +75,9 @@ export PHAROS_URL=http://localhost:4000
 export PHAROS_API_KEY=pk_...
 export PHAROS_TENANT_ID=acme
 
-pharos run --mock examples/pharos_governed.py --run-id governed-demo
+pharos-runtime run --mock examples/pharos_governed.py --run-id governed-demo
 # The example's synthetic sensitive publication escalates. Approve it in Pharos, then:
-pharos resume governed-demo --mock
+pharos-runtime resume governed-demo --mock
 ```
 
 Pharos seals the authorization; the runtime appends its evidence binding directly before the
@@ -110,10 +110,17 @@ are the written contract in [`docs/DETERMINISM.md`](docs/DETERMINISM.md).
 pip install pharos-runtime             # SQLite + content-addressed blobs
 pip install 'pharos-runtime[viewer]'   # adds the local trace viewer
 
+<<<<<<< HEAD
 pharos run --mock examples/research_pipeline.py   # durable, traced, budgeted — no key
 pharos ls                                         # list runs
 pharos show <run_id>                              # full event timeline
+pharos view                                       # the dashboard: runs/steps/prompts/tokens/$
+=======
+pharos-runtime run --mock examples/research_pipeline.py   # durable, traced, budgeted — no key
+pharos-runtime ls                                         # list runs
+pharos-runtime show <run_id>                              # full event timeline
 keel view                                       # the dashboard: runs/steps/prompts/tokens/$
+>>>>>>> 40f16c3 (feat(ADOPT-A2d): getpharos CLI — pure-Python bundle verify, Node delegation, runtime script renamed to pharos-runtime)
 ```
 
 The dashboard is a single-file SPA (no build step) styled like macOS and laid out
@@ -167,9 +174,9 @@ run = await run_agent("agent",
 ## Durability you can see
 
 ```bash
-pharos run --mock examples/research_pipeline.py --run-id demo
-pharos replay demo                          # re-drive from the log: byte-identical
-pharos diff demo other                      # where two runs diverge
+pharos-runtime run --mock examples/research_pipeline.py --run-id demo
+pharos-runtime replay demo                          # re-drive from the log: byte-identical
+pharos-runtime diff demo other                      # where two runs diverge
 ```
 
 Resume and normal scheduling are the *same* fold over the log; completed model calls
@@ -177,9 +184,13 @@ are replayed and **never re-billed** (asserted in CI, not screenshotted).
 
 ## CLI
 
-`pharos run | ls | show | resume | approve | replay | diff | simulate | test | audit | migrate | import | view`
+`pharos-runtime run | ls | show | resume | approve | replay | diff | simulate | test | audit | migrate | import | view`
 
-`keel` remains an equivalent compatibility command during the migration window.
+The command is `pharos-runtime`, not `pharos`: the bare name is the Pharos control-plane CLI
+(`npx @getpharos/cli`, `pipx run getpharos`) — see
+[ADR 0006](../../docs/adr/0006-cli-package-and-bin-names.md).
+
+`keel` remains as a compatibility alias for one more release; new scripts should call `pharos`.
 
 ## Container
 
@@ -200,7 +211,7 @@ legacy alias).
 The product is the substrate (L1/L2): determinism and durability. Frameworks are
 distribution, not competition — Pharos Runtime runs underneath LangGraph, CrewAI, the
 OpenAI Agents SDK, and the Anthropic SDK. The strategy, milestones, and per-milestone
-proof are in [`docs/STRATEGY.md`](docs/STRATEGY.md); the determinism contract is
+proof are in [`docs/internal/runtime/STRATEGY.md`](../../docs/internal/runtime/STRATEGY.md); the determinism contract is
 [`docs/DETERMINISM.md`](docs/DETERMINISM.md); reproducible numbers are in
 [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
@@ -211,10 +222,10 @@ and latency-percentile (p50/p95/p99) benchmarks + a multi-worker crash soak (0 r
 
 ## Contributing & longevity
 
-Contributions are welcome — start with [`CONTRIBUTING.md`](CONTRIBUTING.md). Adding a
+Contributions are welcome — the house rules for the whole monorepo, including the
+runtime's own gates, are in the root [`CONTRIBUTING.md`](../../CONTRIBUTING.md). Adding a
 framework adapter is the most welcome and best-scoped contribution
-([`docs/ADAPTER-AUTHORS.md`](docs/ADAPTER-AUTHORS.md)). See
-[`GOVERNANCE.md`](GOVERNANCE.md) for how decisions are made and how to become a
-maintainer, [`SECURITY.md`](SECURITY.md) to report a vulnerability, and
-[`docs/STABILITY.md`](docs/STABILITY.md) for the stable-surface and schema-evolution
-guarantees (a run recorded on schema *n* replays on *n+1*, gated by the golden corpus).
+([`docs/ADAPTER-AUTHORS.md`](docs/ADAPTER-AUTHORS.md)). Report vulnerabilities through the
+root [`SECURITY.md`](../../SECURITY.md). [`docs/STABILITY.md`](docs/STABILITY.md) records
+the stable-surface and schema-evolution guarantees (a run recorded on schema *n* replays
+on *n+1*, gated by the golden corpus).

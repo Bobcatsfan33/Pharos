@@ -9,7 +9,7 @@ import { createGatewayApp } from "@pharos/gateway";
 import { PostgresHeldRequestStore, heldRequestKeyProviderFromMaster } from "@pharos/storage";
 
 /**
- * Duplicate resume must never double-deliver (S8-T1 AC, issue #38).
+ * Duplicate resume must never double-deliver.
  *
  * The AC clause "duplicate resume rejected" was the last one without a test of its own.
  * A held continuation carries a real side effect — the request the agent was blocked
@@ -70,7 +70,7 @@ async function startReplica(): Promise<{ app: FastifyInstance; url: string }> {
     agentId: "unmodified-agent",
     target: targetUrl,
     heldRequestStore: new PostgresHeldRequestStore(
-      platform!.pool,
+      platform!.pool!,
       heldRequestKeyProviderFromMaster(holdMasterKey),
       // Long lease: a stale lease is a different scenario (recovery), not duplicate resume.
       { leaseMs: 30_000 },
@@ -166,7 +166,7 @@ async function approve(escalationId: string): Promise<void> {
 
 const resume = (url: string, id: string) => fetch(`${url}/__resume/${id}`, { method: "POST" });
 
-describe("duplicate resume is rejected (#38)", () => {
+describe("duplicate resume is rejected", () => {
   it("refuses a sequential second resume of a delivered continuation", async (ctx) => {
     if (!available) return ctx.skip();
     const id = await escalate(replicaA.url);

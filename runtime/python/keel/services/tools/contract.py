@@ -1,7 +1,7 @@
 """Typed tool contracts. A tool declares its input/output schema (as registry
 refs), side-effect class, and resource limits up front. The gateway validates
 inputs before execution and outputs *before* they can reach an agent prompt
-(invariant: typed in, typed out). Phase 1 runs tools in-process; the out-of-process
+(invariant: typed in, typed out). Tools run in-process today; the out-of-process
 seccomp sandbox is P4-3 — the contract is identical either way.
 """
 from __future__ import annotations

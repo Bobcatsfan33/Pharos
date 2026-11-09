@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { randomBytes } from "node:crypto";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -21,6 +23,15 @@ export {
 const boolish = z
   .union([z.boolean(), z.string()])
   .transform((v) => (typeof v === "boolean" ? v : v.toLowerCase() === "true"));
+
+/**
+ * A provider selected by name from a registry (signing, trusted time, judge serving). The
+ * configuration validates only the shape; whether a name is registered is checked by the
+ * composition root, which names the registered backends in its error.
+ */
+const providerName = z
+  .string()
+  .regex(/^[a-z0-9][a-z0-9-]*$/, "provider names are lower-case kebab-case");
 
 const OidcIssuerSchema = z
   .object({
@@ -54,19 +65,35 @@ const OidcIssuerSchema = z
 const ConfigSchema = z
   .object({
     env: z.enum(["local", "dev", "staging", "prod"]).default("local"),
-    pg: z.object({ url: z.string().min(1) }),
-    redis: z.object({ url: z.string().min(1) }),
+    /**
+     * Which storage backend `buildPlatform` wires. `postgres` (Postgres + S3 Object Lock +
+     * Redis) is the default and the only backend production accepts. `embedded` (SQLite +
+     * local record files, no infrastructure) is the on-ramp: tamper-evident and
+     * offline-verifiable, NOT WORM — see docs/LIMITATIONS.md.
+     */
+    storage: z.object({
+      backend: providerName.default("postgres"),
+      /** Embedded mode's single data directory (database, record files, keystore). */
+      dataDir: z.string().min(1),
+    }),
+    pg: z.object({ url: z.string().min(1).optional() }),
+    redis: z.object({ url: z.string().min(1).optional() }),
     s3: z.object({
-      endpoint: z.string().min(1),
-      region: z.string().min(1),
-      bucket: z.string().min(1),
+      endpoint: z.string().min(1).optional(),
+      region: z.string().min(1).optional(),
+      bucket: z.string().min(1).optional(),
       accessKey: z.string().min(1).optional(),
       secretKey: z.string().min(1).optional(),
       forcePathStyle: boolish.default(true),
       wormRetentionDays: z.coerce.number().int().positive().default(3650),
     }),
     kms: z.object({
-      provider: z.enum(["local-kms", "aws-kms"]).default("local-kms"),
+      /**
+       * Signing backend, resolved by name from the signing-provider registry in `@pharos/core`
+       * (`local-kms` and `aws-kms` ship; a deployment may register more). Production requires
+       * `aws-kms` — see the production rules below.
+       */
+      provider: providerName.default("local-kms"),
       keystoreDir: z.string().min(1),
       /** Development-only secret used to encrypt the local Ed25519 keystore. */
       keystorePassphrase: z.string().min(16).optional(),
@@ -83,8 +110,11 @@ const ConfigSchema = z
       awsAllowKeyCreation: boolish.default(false),
     }),
     tsa: z.object({
-      /** Trusted-time authority: `local` (simulated, hermetic) or `rfc3161` (a real TSA). */
-      provider: z.enum(["local", "rfc3161"]).default("local"),
+      /**
+       * Trusted-time backend, resolved by name from the TSA-provider registry in
+       * `@pharos/evidence` (`local` is simulated and hermetic; `rfc3161` is a real TSA).
+       */
+      provider: providerName.default("local"),
       /** RFC 3161 TSA endpoint (rfc3161 only). Dev default FreeTSA; DigiCert/Sectigo in prod. */
       url: z.string().optional(),
       /**
@@ -98,8 +128,12 @@ const ConfigSchema = z
       intervalMs: z.coerce.number().int().min(0).default(3_600_000),
     }),
     judge: z.object({
-      /** Linear is a measured development baseline; production must preload the ONNX judges. */
-      provider: z.enum(["linear", "onnx"]).default("linear"),
+      /**
+       * Judge-serving backend, resolved by name from the judge-provider registry in
+       * `@pharos/judge`. `linear` is the measured development baseline; production must
+       * preload the `onnx` judges.
+       */
+      provider: providerName.default("linear"),
       /** Content-addressed ONNX/tokenizer cache. Pre-stage this path for restricted networks. */
       modelDir: z.string().min(1).optional(),
       /** Version-pinned reference distributions and approved PSI thresholds. */
@@ -150,6 +184,24 @@ const ConfigSchema = z
     }),
   })
   .superRefine((config, ctx) => {
+    if (config.storage.backend === "postgres") {
+      const required: Array<[string[], string | undefined, string]> = [
+        [["pg", "url"], config.pg.url, "PHAROS_PG_URL"],
+        [["redis", "url"], config.redis.url, "PHAROS_REDIS_URL"],
+        [["s3", "endpoint"], config.s3.endpoint, "PHAROS_S3_ENDPOINT"],
+        [["s3", "region"], config.s3.region, "PHAROS_S3_REGION"],
+        [["s3", "bucket"], config.s3.bucket, "PHAROS_S3_BUCKET"],
+      ];
+      for (const [path, value, name] of required) {
+        if (!value) {
+          ctx.addIssue({
+            code: "custom",
+            path,
+            message: `${name} is required for the postgres storage backend (set PHAROS_STORAGE_BACKEND=embedded to run with no infrastructure)`,
+          });
+        }
+      }
+    }
     if (Boolean(config.s3.accessKey) !== Boolean(config.s3.secretKey)) {
       ctx.addIssue({
         code: "custom",
@@ -173,6 +225,15 @@ const ConfigSchema = z
       });
     }
     if (config.env !== "prod") return;
+
+    if (config.storage.backend !== "postgres") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["storage", "backend"],
+        message:
+          "production requires the postgres storage backend (Postgres + S3 Object Lock + Redis); embedded mode is an on-ramp without WORM retention or row-level security",
+      });
+    }
 
     const seenIssuers = new Set<string>();
     for (const [index, issuer] of config.oidc.entries()) {
@@ -292,14 +353,14 @@ const ConfigSchema = z
         message: "production requires an approved judge drift profile",
       });
     }
-    if (!isHttpsUrl(config.s3.endpoint)) {
+    if (!isHttpsUrl(config.s3.endpoint ?? "")) {
       ctx.addIssue({
         code: "custom",
         path: ["s3", "endpoint"],
         message: "production object storage must use HTTPS",
       });
     }
-    if (isAwsS3Url(config.s3.endpoint) && (config.s3.accessKey || config.s3.secretKey)) {
+    if (isAwsS3Url(config.s3.endpoint ?? "") && (config.s3.accessKey || config.s3.secretKey)) {
       ctx.addIssue({
         code: "custom",
         path: ["s3", "accessKey"],
@@ -307,14 +368,14 @@ const ConfigSchema = z
           "production AWS S3 must use the workload-identity/default credential chain, not static keys",
       });
     }
-    if (!hasVerifiedPostgresTls(config.pg.url)) {
+    if (!hasVerifiedPostgresTls(config.pg.url ?? "")) {
       ctx.addIssue({
         code: "custom",
         path: ["pg", "url"],
         message: "production PostgreSQL must set sslmode=verify-ca or sslmode=verify-full",
       });
     }
-    if (!hasProtocol(config.redis.url, "rediss:")) {
+    if (!hasProtocol(config.redis.url ?? "", "rediss:")) {
       ctx.addIssue({
         code: "custom",
         path: ["redis", "url"],
@@ -413,14 +474,52 @@ function safeJsonArray(value: string): unknown[] {
   }
 }
 
+function dataHome(env: NodeJS.ProcessEnv): string {
+  return env.XDG_DATA_HOME?.trim() || join(homedir(), ".local", "share");
+}
+
 function defaultLocalKeystoreDir(env: NodeJS.ProcessEnv): string {
-  const dataHome = env.XDG_DATA_HOME?.trim() || join(homedir(), ".local", "share");
-  return join(dataHome, "pharos", "keystore");
+  return join(dataHome(env), "pharos", "keystore");
+}
+
+/** Embedded mode's default data directory: `$XDG_DATA_HOME/pharos/data` (or `~/.local/share/...`). */
+export function defaultEmbeddedDataDir(env: NodeJS.ProcessEnv = process.env): string {
+  return join(dataHome(env), "pharos", "data");
+}
+
+/**
+ * Embedded mode keeps the local keystore passphrase in a 0600 file beside the keystore so
+ * the on-ramp needs zero configuration. That is a DEVELOPMENT posture, stated as such in
+ * docs/LIMITATIONS.md: the passphrase protects the private key at rest only against a
+ * reader who can see the keystore but not this file. Set PHAROS_KMS_KEYSTORE_PASSPHRASE
+ * (from a keychain or secret manager) to opt out of the file.
+ */
+export function ensureEmbeddedKeystorePassphrase(dataDir: string): string {
+  const file = join(dataDir, "keystore.passphrase");
+  try {
+    const existing = readFileSync(file, "utf8").trim();
+    if (existing.length >= 16) return existing;
+  } catch (err) {
+    if ((err as { code?: string }).code !== "ENOENT") throw err;
+  }
+  mkdirSync(dataDir, { recursive: true, mode: 0o700 });
+  const passphrase = randomBytes(32).toString("base64url");
+  writeFileSync(file, `${passphrase}\n`, { mode: 0o600, flag: "wx" });
+  return passphrase;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
+  const backend = env.PHAROS_STORAGE_BACKEND?.trim() || "postgres";
+  const dataDir = env.PHAROS_DATA_DIR?.trim() || defaultEmbeddedDataDir(env);
+  const embedded = backend === "embedded";
+  const keystorePassphrase =
+    env.PHAROS_KMS_KEYSTORE_PASSPHRASE ??
+    (embedded && (env.PHAROS_KMS_PROVIDER ?? "local-kms") === "local-kms"
+      ? ensureEmbeddedKeystorePassphrase(dataDir)
+      : undefined);
   const parsed = ConfigSchema.safeParse({
     env: env.PHAROS_ENV,
+    storage: { backend, dataDir },
     pg: { url: env.PHAROS_PG_URL },
     redis: { url: env.PHAROS_REDIS_URL },
     s3: {
@@ -434,8 +533,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PharosConfig {
     },
     kms: {
       provider: env.PHAROS_KMS_PROVIDER,
-      keystoreDir: env.PHAROS_KMS_KEYSTORE_DIR ?? defaultLocalKeystoreDir(env),
-      keystorePassphrase: env.PHAROS_KMS_KEYSTORE_PASSPHRASE,
+      keystoreDir:
+        env.PHAROS_KMS_KEYSTORE_DIR ??
+        (embedded ? join(dataDir, "keystore") : defaultLocalKeystoreDir(env)),
+      keystorePassphrase,
       awsRegion: env.PHAROS_KMS_AWS_REGION,
       awsEndpoint: env.PHAROS_KMS_AWS_ENDPOINT,
       awsAllowKeyCreation: env.PHAROS_KMS_AWS_ALLOW_KEY_CREATION,

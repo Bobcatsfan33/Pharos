@@ -2,7 +2,7 @@
  * Similarity-based leakage detection (roadmap §7-10(d)): normalized exact matching is necessary
  * but insufficient. We block feature-aligned n-gram overlap between eval and training examples.
  *
- * Blocking defaults (from S5-T1): token-bigram containment ≥ 0.80 OR token-trigram Jaccard ≥ 0.50.
+ * Blocking defaults: token-bigram containment ≥ 0.80 OR token-trigram Jaccard ≥ 0.50.
  * Tokenization mirrors the judge's featurizer (lowercased alphanumeric tokens) so "feature-aligned"
  * is literal. An optional pinned-embedding review is a *secondary* defense; the n-gram gate is
  * mandatory and runs even without embeddings.

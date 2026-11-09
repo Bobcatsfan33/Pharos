@@ -3,7 +3,7 @@
  *
  *   pnpm judges:eval
  *
- * Produces docs/benchmarks/judge-evals.json (machine-readable baseline for the S5-T4 gate) and
+ * Produces docs/benchmarks/judge-evals.json (machine-readable baseline for the eval gate) and
  * docs/benchmarks/judge-evals.md from REAL runs. Deterministic (seeded bootstrap + deterministic
  * scoring), so the committed baseline is stable.
  */

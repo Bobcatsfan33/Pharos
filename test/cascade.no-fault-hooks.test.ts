@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import * as cascadePackage from "@pharos/cascade";
 
 /**
- * The production cascade carries no fault-injection path (#82).
+ * The production cascade carries no fault-injection path.
  *
  * Previously `CascadeDeps` accepted a `faults` field, so the shipped `VerdictCascade`
  * contained a branch straight into injected failure. That was only reachable via a

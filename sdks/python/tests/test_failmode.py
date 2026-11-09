@@ -1,6 +1,6 @@
 """SDK local fail-mode conformance (Python).
 
-When the platform is unreachable — which includes a 503 kms_unavailable from S3-T2 — the SDK
+When the platform is unreachable — which includes a 503 kms_unavailable — the SDK
 applies a local fail-mode mirroring the server cascade: reversible -> fail_open (allow),
 irreversible -> fail_closed (escalate). The TypeScript SDK conformance for the same contract
 lives in test/sdk.failmode.test.ts.

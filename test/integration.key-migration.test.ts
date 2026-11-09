@@ -19,7 +19,7 @@ import {
   type SigningProvider,
 } from "@pharos/core";
 
-// S3-T3: migrate a live tenant chain from local-kms (Ed25519) to aws-kms (ECDSA P-256) with
+// Migrate a live tenant chain from local-kms (Ed25519) to aws-kms (ECDSA P-256) with
 // ZERO data migration. Each record embeds its own keyId and the published keyset is additive,
 // so old records keep verifying under their old keys while new records sign under KMS — the
 // merged keyset verifies the whole chain genesis-to-head. AwsKms uses the emulator (:8088).
@@ -101,11 +101,11 @@ describe("key migration: local-kms (Ed25519) → aws-kms (ECDSA P-256), no data 
       allowKeyCreation: true,
     });
 
-    // Phase 1: seal N records under local-kms.
+    // Step 1: seal N records under local-kms.
     localKeyId = await local.ensureKey(`tenant:${tenantId}`);
     firstHalf = await seal(local, localKeyId, tenantId, 0, N, GENESIS_HASH);
 
-    // Phase 2: SWITCH the provider. The aws-kms key CONTINUES the version sequence (local v1 →
+    // Step 2: SWITCH the provider. The aws-kms key CONTINUES the version sequence (local v1 →
     // aws v2) so keyIds stay globally unique — this is what makes the merged keyset additive and
     // needs no data migration. Seal N more, continuing the same chain (prevHash links), WITHOUT
     // touching or re-sealing the existing records.

@@ -1,0 +1,15 @@
+# Applies when the runtime image is built from the repository root with
+# `-f runtime/python/Dockerfile`. Only the two Python packages enter the context.
+*
+!sdks/python
+!runtime/python/pyproject.toml
+!runtime/python/README.md
+!runtime/python/keel
+!runtime/python/pharos_runtime
+!runtime/python/examples
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+**/dist
+**/*.egg-info

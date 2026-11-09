@@ -13,6 +13,7 @@ import {
   disclosureBindingMessage,
 } from "@pharos/core";
 import type { WormStore, WormReconciliation } from "./wormStore.js";
+import type { EvidenceStorePort } from "./ports.js";
 
 export interface AppendInput {
   tenantId: string;
@@ -20,7 +21,7 @@ export interface AppendInput {
   verdict: VerdictContext;
   liability: LiabilityContext;
   /**
-   * Optional replay guard (#74). When present, the append and the claim on the key
+   * Optional replay guard. When present, the append and the claim on the key
    * commit together, so a redelivery of the same request cannot seal a second record.
    */
   idempotency?: IdempotencyClaim;
@@ -60,7 +61,7 @@ export interface EvidenceStoreDeps {
   pool: Pool;
   worm: WormStore;
   signer: SigningProvider;
-  /** Resolve the KMS key name for a tenant. Sprint 0: per-environment; Sprint 1: per-tenant. */
+  /** Resolve the KMS key name for a tenant (one key per tenant). */
   resolveKeyName: (tenantId: string) => string;
   now?: () => Date;
 }
@@ -75,7 +76,7 @@ export interface EvidenceStoreDeps {
  * evidence commit together or not at all. A WORM object orphaned by a post-PUT commit
  * failure is harmless: it is content-addressed and detected by reconcile().
  */
-export class EvidenceStore {
+export class EvidenceStore implements EvidenceStorePort {
   constructor(private readonly deps: EvidenceStoreDeps) {}
 
   private now(): Date {
@@ -258,7 +259,7 @@ export class EvidenceStore {
   }
 
   /**
-   * Resolve a previously-claimed idempotency key (#74).
+   * Resolve a previously-claimed idempotency key.
    *
    * Returns the sealed record the key produced, or null if the key is unused. Throws
    * IdempotencyConflictError when the key was claimed by a materially different
@@ -292,14 +293,14 @@ export class EvidenceStore {
   }
 
   /**
-   * Reconcile this tenant's committed records against the WORM objects that exist (#77).
+   * Reconcile this tenant's committed records against the WORM objects that exist.
    *
    * The claim that a post-PUT commit failure is "harmless because it is detected by
    * reconcile()" is only true if reconcile() exists and is run. This supplies the
    * authoritative Postgres side — every committed record and the object key it named —
    * and delegates the comparison to the object store.
    */
-  async reconcileWorm(tenantId: string): Promise<WormReconciliation> {
+  async reconcileEvidence(tenantId: string): Promise<WormReconciliation> {
     const committed = await this.withTenant(tenantId, async (client) => {
       const res = await client.query<{ sequence: string; worm_key: string }>(
         `SELECT sequence, worm_key FROM action_records WHERE tenant_id = $1 ORDER BY sequence ASC`,
@@ -308,6 +309,11 @@ export class EvidenceStore {
       return res.rows.map((r) => ({ sequence: Number(r.sequence), wormKey: r.worm_key }));
     });
     return this.deps.worm.reconcile(tenantId, committed);
+  }
+
+  /** @deprecated use reconcileEvidence (same behaviour; the port is backend-neutral). */
+  async reconcileWorm(tenantId: string): Promise<WormReconciliation> {
+    return this.reconcileEvidence(tenantId);
   }
 
   async getRecordById(tenantId: string, id: string): Promise<ActionRecord | null> {

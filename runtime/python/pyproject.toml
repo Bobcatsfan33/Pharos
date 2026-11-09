@@ -1,13 +1,23 @@
 [project]
 name = "pharos-runtime"
 version = "0.2.0"
-description = "Pharos Runtime: governed durable execution for AI agents with crash-safe resume, byte-identical replay, and sealed evidence."
+description = "Pharos Runtime: durable, governed execution for AI agents. Every step gets a Pharos verdict and sealed evidence; runs resume after a crash and replay byte-identically."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Pharos contributors" }]
-keywords = ["agents", "llm", "runtime", "governance", "evidence", "durable-execution", "ai"]
+keywords = ["ai-agents", "agent-governance", "durable-execution", "llm", "audit-log", "policy-engine", "pharos"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+]
 dependencies = [
+    "getpharos>=0.3.0",
     "pydantic>=2.6",
     "httpx>=0.27",
     "aiosqlite>=0.20",
@@ -20,7 +30,7 @@ nats = ["nats-py>=2.6"]
 viewer = ["fastapi>=0.110", "uvicorn>=0.29"]
 otel = ["opentelemetry-api>=1.20", "opentelemetry-sdk>=1.20"]
 crewai = ["pyyaml>=6"]
-# Framework adapters (run an unmodified agent under KEEL). The reference agents are
+# Framework adapters (run an unmodified agent under the runtime). The reference agents are
 # SDK-free; these extras enable the live SDK integration paths.
 langchain = ["langchain-core>=0.2"]
 openai = ["openai>=1.0"]
@@ -33,7 +43,8 @@ sandbox = []
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "hypothesis>=6", "mypy>=1.9", "ruff==0.16.9", "import-linter>=2"]
 
 [project.scripts]
-pharos = "pharos_runtime.cli:main"
+# `pharos` (bare) is the getpharos control-plane CLI (ADR 0006 §3); the runtime is `pharos-runtime`.
+pharos-runtime = "pharos_runtime.cli:main"
 keel = "keel.cli:main"
 
 [build-system]
@@ -46,7 +57,16 @@ packages = ["keel", "pharos_runtime"]
 [tool.mypy]
 strict = true
 python_version = "3.11"
+# The Pharos Python SDK is a sibling workspace in this monorepo; a setuptools editable
+# install exposes it through an import hook mypy cannot follow, so point at the source.
+mypy_path = "../../sdks/python"
 files = ["keel/substrate", "keel/executor", "keel/services", "keel/kir", "keel/authoring", "keel/adapters", "keel/cli.py", "keel/viewer"]
+
+[[tool.mypy.overrides]]
+# The SDK is typed for consumers but not held to --strict; check calls against its
+# annotations without re-linting its source from here.
+module = ["pharos_sdk", "pharos_sdk.*"]
+follow_imports = "silent"
 
 [[tool.mypy.overrides]]
 # Optional heavy deps (only present with the matching extra installed).
@@ -94,7 +114,7 @@ name = "Layers point downward only"
 type = "layers"
 # KIR is the intermediate-representation *contract* the executor runs, so it sits
 # as a leaf just above the substrate: executor / services / authoring all lower
-# onto it, and it imports nothing from KEEL itself. The DX->KIR *compiler*
+# onto it, and it imports nothing from the runtime above it. The DX->KIR *compiler*
 # (kir.compile) is authored against this same contract and reached from L5.
 layers = [
     "keel.adapters",
@@ -106,7 +126,7 @@ layers = [
 ]
 
 [[tool.importlinter.contracts]]
-name = "Substrate imports nothing from KEEL above it"
+name = "Substrate imports nothing from the runtime above it"
 type = "forbidden"
 source_modules = ["keel.substrate"]
 forbidden_modules = [

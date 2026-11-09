@@ -1,14 +1,30 @@
 [project]
 name = "getpharos"
-version = "0.2.0"
+version = "0.3.0"
 description = "Pharos SDK — submit agent actions for a real-time policy verdict and sealed evidence."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.9"
+keywords = ["ai-agents", "agent-governance", "policy-engine", "guardrails", "audit-log", "evidence", "mcp", "llm", "pharos"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+]
 dependencies = []
 
 [project.optional-dependencies]
+# `pharos verify` needs a signature library; everything else stays standard-library only.
+verify = ["cryptography>=42"]
 dev = ["pytest>=7"]
+
+[project.scripts]
+pharos = "pharos_sdk.cli:main"
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -16,3 +32,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["pharos_sdk"]
+
+[tool.setuptools.package-data]
+pharos_sdk = ["py.typed"]

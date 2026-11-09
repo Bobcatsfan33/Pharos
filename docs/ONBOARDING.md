@@ -11,7 +11,7 @@ asking anyone anything.
 
 | Tool | Version used to verify | Notes |
 |---|---|---|
-| Node.js | ≥ 20 (verified on 25.x) | `node -v` |
+| Node.js | ≥ 22 (verified on 25.x) | `node -v` |
 | pnpm | 10.32.1 | `corepack enable` or `npm i -g pnpm@10.32.1` |
 | Python | ≥ 3.11 | Pharos Runtime and its tests |
 | Docker | Desktop / Engine with `docker compose` | provides Postgres + Redis + MinIO |
@@ -44,7 +44,7 @@ Done in ~2s using pnpm v10.32.1
 ## 2. Start the infrastructure
 
 ```bash
-pnpm infra:up          # control-plane stores + Pharos Runtime viewer
+pnpm infra:up          # control-plane stores + KMS emulator + Pharos Runtime viewer
 ```
 
 Wait until all three report `healthy`:
@@ -55,10 +55,11 @@ docker compose ps
 # pharos-redis      Up (healthy)
 # pharos-minio      Up (healthy)
 # pharos-runtime    Up (healthy)
+# pharos-local-kms  Up            (no healthcheck; the AWS KMS emulator the test suite needs)
 ```
 
-The containers use fixed host ports **5433** (Postgres), **6380** (Redis), and **9010**
-(MinIO). If any port is already taken, stop the conflicting service or edit
+The containers use fixed host ports **5433** (Postgres), **6380** (Redis), **9010**
+(MinIO), and **8088** (KMS emulator). If any port is already taken, stop the conflicting service or edit
 `docker-compose.yml`.
 
 ## 3. Configure the environment
@@ -78,16 +79,16 @@ pnpm test
 PATH="$PWD/runtime/python/.venv/bin:$PATH" pnpm runtime:check
 ```
 
-Expected: 520 control-plane tests with **0 skipped** plus the complete runtime suite. CI fails
-if a control-plane integration test skips:
+Expected: 644 control-plane tests with **0 skipped**, plus 159 runtime tests and 38 Python SDK
+tests. CI fails if a control-plane integration test skips:
 
 ```
  ✓ test/core.migration.test.ts (5 tests)
  ✓ test/core.signing.test.ts (5 tests)
  ...
 
- Test Files  74 passed (74)
-      Tests  520 passed (520)
+ Test Files  250 passed (250)
+      Tests  644 passed (644)
 ```
 
 > Note: `test/integration.causeway.test.ts` is mildly timing-sensitive; on a busy machine it
@@ -190,19 +191,18 @@ keystore passphrase in an OS keychain or local secret manager, not in shell hist
 
 How a change reaches `main` depends on what it touches — pick the lightest path that works:
 
-- **Docs-only or a small single-file edit** (a roadmap amendment, a README/doc fix): edit the
+- **Docs-only or a small single-file edit** (a README or doc fix): edit the
   file on a fresh branch off `main` and commit it directly — `git checkout -b my-change origin/main`,
   edit, `git commit -s`, `git push`, open the PR. Do **not** route these through a
   patch/transfer round-trip; a dirty working tree or a leftover `git am` session turns a
-  one-line docs change into a multi-step recovery (learned the hard way — roadmap §7 amendment 9
-  neighbours). Label the PR `no-changeset` when no publishable package changed.
+  one-line docs change into a multi-step recovery. Label the PR `no-changeset` when no publishable package changed.
 - **Multi-file code changes**: normal branch → PR → review → CI-green → squash-merge, one task
-  per PR, no stacking (roadmap §7 amendment 9). Every commit is DCO-signed (`git commit -s`);
+  per PR, no stacking. Every commit is DCO-signed (`git commit -s`);
   add a changeset when a publishable package (`@getpharos/*`) changes.
 - **`.github/workflows/` files**: a GitHub App / automation token **cannot** push workflow
-  changes (roadmap §7 amendment 7(c)) — these must be committed by a maintainer with a
+  changes — these must be committed by a maintainer with a
   human-scoped token/PAT, as a separate commit if an automated PR needs them.
 
 Before merging any PR: confirm its **base ref is `main`** and, after landing a sprint, confirm
-`main` actually contains the changes (roadmap §7 amendment 9). "Automatically delete head
+`main` actually contains the changes. "Automatically delete head
 branches" is on, so merged branches clean themselves up.

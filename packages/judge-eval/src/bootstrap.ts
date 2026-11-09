@@ -59,7 +59,7 @@ export function bootstrapCI(
 
 /**
  * Paired stratified bootstrap of a delta between two scorers over the SAME records (roadmap
- * S5-T4). Both scorers' per-record scores are resampled with the SAME indices each round, so the
+ * the eval gate). Both scorers' per-record scores are resampled with the SAME indices each round, so the
  * pairing is preserved. Returns the delta CI (candidate − baseline).
  */
 export function pairedBootstrapDeltaCI(

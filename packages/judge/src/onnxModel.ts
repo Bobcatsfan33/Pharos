@@ -5,7 +5,7 @@ import { ensureArtifact, type EnsureOptions } from "./artifactStore.js";
 import { onnxRuntimeIdentity } from "./runtime.js";
 
 /**
- * Served transformer judge (Sprint 6, S6-T2): an ONNX distilbert classifier run on CPU via
+ * Served transformer judge: an ONNX distilbert classifier run on CPU via
  * onnxruntime-node, behind the EXACT same JudgeResult contract as the logistic judge, so the
  * cascade and registry are polymorphic on artifact kind without any change to their callers. The
  * ONNX + tokenizer blobs are fetched hash-verified from the artifact store; the tokenizer is the
