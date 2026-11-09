@@ -52,6 +52,21 @@ Every `run` seals its record **before** anything executes. `pharos serve` starts
 the production deployment runs (`POST /v1/actions`, `/healthz` reports the storage posture)
 over the project's embedded storage and prints an API key for SDKs and middlewares.
 
+### Claude Code hook
+
+```bash
+pharos init --claude-code     # adds a PreToolUse hook to .claude/settings.json (merged, idempotent)
+```
+
+Every Bash, Write/Edit, Read and MCP tool call Claude Code makes in the project is submitted as
+an action, sealed to `.pharos/`, and answered: **block → deny** (holds even with
+`--dangerously-skip-permissions`), **escalate → ask** with the cited rule, **allow → no
+decision** so Claude Code's own permission rules still apply (`--on-allow allow` to
+auto-approve). `pharos log` shows what the agent tried. What the hook can and cannot see is in
+[LIMITATIONS §9](https://github.com/Bobcatsfan33/Pharos/blob/main/docs/LIMITATIONS.md#9-the-claude-code-hook-governs-tool-calls-before-they-run--within-what-a-hook-can-see);
+a real session transcript is in
+[`examples/claude-code/`](https://github.com/Bobcatsfan33/Pharos/tree/main/examples/claude-code).
+
 ## What embedded storage guarantees — and does not
 
 The CLI runs Pharos's **embedded** backend: operational state and chain heads in one SQLite
