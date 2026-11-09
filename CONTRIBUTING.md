@@ -172,6 +172,11 @@ Dependabot opens dependency-update PRs weekly (config:
 Close-with-reason is a valid outcome. Deferring an update is a decision, not a failure —
 record why in the PR and, if it should not re-open, add an `ignore` entry.
 
+**DCO and bots.** The DCO is a statement by a person about code they have the right to
+submit; Dependabot cannot make it and cannot be configured to add the trailer. The `dco` job
+therefore exempts commits authored by `dependabot[bot]` and checks every other author. A
+human commit pushed onto a Dependabot branch is still checked.
+
 ## Getting help
 
 Thirty minutes stuck → write down what you tried → open an issue or a discussion. Two hours
