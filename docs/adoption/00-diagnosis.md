@@ -221,3 +221,48 @@ changed lines is split. Each PR quotes its acceptance criteria as checkboxes.
 
 Phase A ends with a re-measured §1, a committed demo transcript, and a cold self-review before
 Phase B starts.
+
+---
+
+## 8. Closed — §1 re-measured, 2026-11-09
+
+The whole stack has landed on `main` (#285, #283, #286, #284, #288, #289, #321, #291, #292,
+#293, #294, #295), so the baseline above is history. The target was **under 60 seconds with
+only Node installed**.
+
+| Path | Prerequisites | Measured | Was |
+|---|---|---|---|
+| `pharos init && pharos demo` from the packed tarball, installed with npm into an empty project | Node ≥ 22.13 | **0.96 s** (962 · 968 · 969 ms; re-measured 964 · 978 · 993 ms after the stack) | not possible — no CLI existed |
+| the same, plus the npm install of the tarball itself | Node ≥ 22.13 | ~1 s install + 0.96 s | — |
+| `pharos run -- git push --force origin main` | Node ≥ 22.13 | BLOCK, exit 2, cited `cas-git-force-push-protected` | not possible |
+| `pharos run -- rm -rf build` | Node ≥ 22.13 | ESCALATE, exit 3, cited `cas-rm-recursive` | not possible |
+| `pharos verify <bundle>` (pure Python, no Node) | Python ≥ 3.9 | exit 0 on a real bundle; exit 1 on a tampered one | not possible |
+| the production stack from a clone | Node, pnpm, Docker | unchanged — the Docker path is still the Docker path | ~12 s of commands plus image pulls |
+
+Measured by [`scripts/cli-smoke.sh`](../../scripts/cli-smoke.sh), which packs the tarball,
+installs it with **npm** (not pnpm, not the workspace) into an empty project, runs every
+command the README promises, and asserts that none of `pg`, `ioredis`, `@aws-sdk/*` or
+`onnxruntime-node` were installed. It runs in CI as the `cli-smoke` job.
+
+**So: 0.96 s against a 60 s target, with only Node.** The 12-second clone path and the
+unbounded first-run Docker pull are both off the critical path for a first verdict.
+
+### What from §1.2 and §4 is now fixed
+
+- `pnpm test` is green with **0 skips** (the KMS emulator is started by `pnpm infra:up`, #285).
+- The Python README quickstart runs as written (#286), and `docs/external-verification.md`
+  documents the v2 signing message rather than the retired v1 one.
+- The repo description and topics are set; the "under 800 ms" headline is gone from both.
+- `docs/status.md` and the README no longer disagree about test counts (#286), and the counts
+  are re-measured rather than asserted.
+
+### What is still open
+
+- **`@getpharos/cli` is not published to npm.** Every number above comes from the packed
+  tarball, which is exactly what `npx` will fetch, but `npx @getpharos/cli` cannot work for a
+  stranger until the publish happens. That is a maintainer action, as is flipping
+  `PHAROS_CLI_PUBLISHED` so `install-surfaces.yml` starts measuring the registry path daily.
+- **`pipx run getpharos demo`** still needs the proposed deviation recorded in
+  [01-phase-a-results.md](01-phase-a-results.md); `pharos verify` works from Python today, the
+  full `demo` delegates to Node.
+

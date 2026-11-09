@@ -55,6 +55,10 @@ const lazyOnlyPlugin = {
 
 await build({
   plugins: [lazyOnlyPlugin],
+  // @getpharos/pdp-spec is a published workspace package whose manifest points at dist/, so
+  // `pharos serve` (which mounts the API's PDP route) cannot be bundled from a fresh checkout
+  // unless that package was built first. Inline it from source like the private packages.
+  alias: { "@getpharos/pdp-spec": join(here, "../pdp-spec/src/index.ts") },
   entryPoints: { "bin/pharos": join(here, "src/main.ts") },
   outdir: dist,
   bundle: true,
