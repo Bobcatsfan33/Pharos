@@ -21,24 +21,60 @@ Requires Python 3.9+.
 ## Quickstart
 
 ```python
-from pharos_sdk import PharosClient, PharosBlockedError
+from pharos_sdk import PharosClient
 
 client = PharosClient(
     base_url="https://pharos.example.com",
     api_key="pk_...",
     deadline_ms=800,
-    local_fail_mode="fail_closed",  # or "fail_open" for reversible actions
+    local_fail_mode="fail_closed",  # used only when reversibility is unknown
+)
+
+result = client.submit(
+    tenantId="acme",
+    action={"type": "payment.transfer", "agentId": "billing-agent",
+            "payload": {"amount": 30000}},
+    liability={"mandate": None, "oversightMode": "autonomous",
+               "blastRadius": {"financialAmount": 30000, "currency": "USD",
+                               "reversibility": "irreversible"},
+               "modelMetadata": None},
+)
+
+verdict = result["verdict"]
+if verdict["decision"] == "block":
+    raise RuntimeError(verdict["ruleCitations"][0]["description"])
+# "allow" / "modify": proceed; "escalate": see workflow continuation below.
+```
+
+`submit()` takes the wire fields as keyword arguments — camelCase `tenantId`, `action`
+(`type`, `agentId`, optional `payload`), `liability` (`oversightMode`, `blastRadius` with
+`reversibility`), and optional `mandateId` / `idempotencyKey` — validates them before transmit,
+and sends them unchanged. A missing or mistyped field raises `PharosError` with
+`code == "invalid_input"`; `submit()` never raises `PharosBlockedError`, it returns the verdict.
+
+### Governing a tool (raises on block)
+
+`govern_tool` wraps a callable so each call is submitted first and a `block` / `reject`
+verdict raises `PharosBlockedError` (an `escalate` verdict waits for the human decision and
+resumes exactly once). Its options are snake_case; `map_action` can override the default
+`human_in_loop` / `irreversible` liability per call:
+
+```python
+from pharos_sdk import PharosBlockedError, govern_tool
+
+
+def transfer(args: dict) -> dict:
+    ...  # the real tool
+
+
+governed_transfer = govern_tool(
+    client,
+    {"tenant_id": "acme", "agent_id": "billing-agent", "tool_name": "transfer"},
+    transfer,
 )
 
 try:
-    result = client.submit(
-        tenant_id="acme",
-        agent_id="billing-agent",
-        action={"type": "payment.transfer", "payload": {"amount": 30000}},
-    )
-    verdict = result["verdict"]
-    if verdict["decision"] == "allow":
-        ...  # proceed with the action
+    governed_transfer({"amount": 30000})
 except PharosBlockedError as e:
     print("blocked:", e.reason, e.citations)
 ```
@@ -66,9 +102,47 @@ resolved = client.await_resolution(
 
 Every verdict is backed by a sealed, hash-chained evidence record that any third party can
 verify offline from the exported bundle and the published public keyset — no Pharos
-infrastructure required. See the
-[main repository](https://github.com/Bobcatsfan33/Pharos) for the evidence model and the
-offline verifier.
+infrastructure required. `pharos_sdk.verify` is an independent, pure-Python implementation
+of that procedure (`canonical_json`, `sha256_hex`, `verify_chain`, `verify_bundle`), written
+from the documented rules rather than ported from the TypeScript reference. See the
+[main repository](https://github.com/Bobcatsfan33/Pharos) for the evidence model.
+
+## Command line
+
+The distribution installs a `pharos` command. One subcommand is Python; the rest are the
+Node CLI.
+
+```bash
+pipx install 'getpharos[verify]'
+pharos verify evidence-bundle.json            # pure Python — no Node, no Pharos
+# or, without installing anything:
+pipx run --spec 'getpharos[verify]' pharos verify evidence-bundle.json
+```
+
+`pharos verify` checks every record's content hash, signature (Ed25519 or ECDSA P-256,
+dispatching on the published keyset) and chain link from genesis to head, then the
+bundle's `local` trusted-time anchors against its `tsaKeyset`. Signature checks need the
+`cryptography` package, hence the `[verify]` extra; the SDK itself stays dependency-free.
+
+Exit codes: `0` PASS · `1` FAIL · `2` PASS with skipped checks. The skip case is RFC 3161
+anchors: their CMS tokens are **not** verified in Python. They are reported as `skipped`,
+never as passed — verify them with
+`npx @getpharos/cli verify --tsa-cert-sha256 <pinned fingerprint> evidence-bundle.json`.
+
+`pharos init`, `demo`, `log`, `export`, `run` and `serve` seal records, and sealing is the
+trust core — there is exactly one implementation of it, the TypeScript packages shipped as
+[`@getpharos/cli`](https://www.npmjs.com/package/@getpharos/cli). The Python entry point
+delegates those commands to `npx -y @getpharos/cli …`; without Node (>= 22.13) it says so
+and exits 69. The control plane is Node; Python verifies it.
+
+## Changelog
+
+### 0.3.0
+
+- New `pharos` console script: `pharos verify` (pure Python, `[verify]` extra for
+  signatures); `init`/`demo`/`log`/`export`/`run`/`serve` delegate to `@getpharos/cli`.
+- New `pharos_sdk.verify` module (canonical JSON, content hash, seal signature v1/v2,
+  chain and bundle verification).
 
 ## License
 

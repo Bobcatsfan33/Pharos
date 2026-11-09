@@ -301,6 +301,79 @@ short-lived tokens as policy); D3 deciding how judges consume `effective`.
 
 ---
 
+## 10. Embedded mode (SQLite + local files) is an on-ramp, not a retention tier
+
+> **Tracking issue:** none — this is a design posture, not a gap to close. It is listed so the
+> zero-infrastructure path can never be mistaken for the production one.
+
+**Today:** `PHAROS_STORAGE_BACKEND=embedded` runs the whole control plane with nothing but
+Node ≥ 22.13: operational state and chain heads in one SQLite file (`node:sqlite`, no native
+build), every sealed record also written as a content-addressed file under
+`PHAROS_DATA_DIR/evidence/`, and rate-limit counters in process memory
+([`packages/storage/src/embedded/`](../packages/storage/src/embedded/)). The verdict-and-seal
+invariant holds exactly as on Postgres: the record file is written and fsynced, the row
+inserted, the head advanced, and the idempotency key claimed in **one SQLite transaction**;
+a file-write failure rolls the append back and no verdict is returned. The same storage
+conformance suite runs against both backends, and the chain verifies offline with the
+published keyset in the same way.
+
+**What it guarantees:** durability across restarts; tamper-**evidence** (an edited record file
+fails verify-on-read; a deleted one is reported as missing evidence by `reconcileEvidence`;
+the hash chain and seals expose any change to the operational copy); offline third-party
+verification from an exported bundle.
+
+**What it does NOT guarantee, and must never be described as providing:**
+
+- **WORM / retention.** Anyone with write access to the data directory can delete or replace
+  files and rows. Nothing enforces write-once semantics independently of Pharos. Retention
+  guarantees require the Postgres + **S3 Object Lock (COMPLIANCE mode)** path, whose bucket is
+  asserted at boot to have Object Lock enabled.
+- **Database-level tenant isolation.** SQLite has no roles or row-level security; the
+  application-layer tenant filters are the only control. Postgres adds RLS under a
+  `NOBYPASSRLS` role as a backstop.
+- **Multi-instance rate limits.** Counters are per process. Redis is the production counter
+  store.
+- **Key custody.** With no `PHAROS_KMS_KEYSTORE_PASSPHRASE` set, embedded mode generates a
+  random passphrase into `PHAROS_DATA_DIR/keystore.passphrase` (mode 0600) so the on-ramp needs
+  zero configuration. The passphrase then lives beside the keystore it protects — a
+  development posture. Set the variable from a keychain or secret manager to opt out; use AWS
+  KMS for production.
+
+`PHAROS_ENV=prod` refuses the embedded backend outright, and every surface that reports the
+backend (`/healthz`, the startup log, the CLI) reads these facts from the backend's own
+`EvidencePosture` rather than restating them.
+
+## 9. The Claude Code hook governs tool calls before they run — within what a hook can see
+
+> **Tracking issue:** none — a scoping statement for `pharos hook claude-code`.
+
+**Today:** `pharos init --claude-code` installs a `PreToolUse` hook for `Bash`, `Write`,
+`Edit`, `MultiEdit`, `NotebookEdit`, `Read`, and every `mcp__*` tool. Each call is mapped to
+an action (`shell.exec`, `file.write`, `file.read`, `mcp.<server>.<tool>`), evaluated against
+the project's packs, and **sealed to the local embedded chain before Claude Code learns the
+answer** — a denied call is evidence too. `block` → `deny` (which Claude Code honours even
+under `--dangerously-skip-permissions`), `escalate` → `ask` with the cited rule, `allow` →
+no decision by default so Claude Code's own permission rules still apply.
+
+**What it does not guarantee:**
+
+- **Coverage is the hook's, not Pharos's.** A user can edit `.claude/settings.json`, run
+  Claude Code outside the project, or use a tool the matcher does not name. Pharos records
+  what it was asked about; it cannot prove it was asked about everything.
+- **It sees the call, not the effect.** `PreToolUse` carries the command string or file path;
+  Pharos does not observe the tool's output or what the command did once allowed. A
+  `PostToolUse` record is future work.
+- **String rules.** The `coding-agent-safety` pack matches command text and paths with
+  `contains`/`startsWith`; obfuscated or aliased commands (`$(echo rm) -rf /`) are not
+  understood. It is a safety net with cited reasons, not a sandbox.
+- **Fail closed, visibly.** Malformed hook input, no `pharos.yaml` in scope, or a failed seal
+  exit 2 — the call is blocked and Claude is told why — rather than silently allowing.
+- **Latency and the `npx` form.** The installed command is `npx -y @getpharos/cli hook
+  claude-code`; the first call downloads the package, later calls take a few hundred
+  milliseconds (platform open + seal) each. The transcript under `examples/claude-code/`
+  used the locally built bundle for the same reason.
+- Embedded storage posture applies (§8): tamper-evident, offline-verifiable, not WORM.
+
 ---
 
 *Maintenance: when a roadmap task above lands, delete its entry here (and the corresponding

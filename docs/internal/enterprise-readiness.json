@@ -342,7 +342,7 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-10-31",
+    "generatedAt": "2026-11-09",
     "files": [
       {
         "path": ".github/CODEOWNERS",
@@ -354,7 +354,7 @@
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "73593f71bbd25743a73b4947ad447906ad46db066ffbafaccde0ef820ddc74eb"
+        "sha256": "eefec726f3e1c6361f639a6e15e778d4453b16006d477c4dc3d93155e26c369e"
       },
       {
         "path": ".github/workflows/codeql.yml",
@@ -558,7 +558,7 @@
       },
       {
         "path": "services/api/src/platform.ts",
-        "sha256": "95e542e0c2f8304c202e585c3769e44e42e64ed998bf286248e1cb37da5a3b7c"
+        "sha256": "4ec064fab17c255eecb55008b0065e06c66ca3b13634df80baf4df8a4c6eeef2"
       },
       {
         "path": "test/fixtures/onnx-parity-funds.json",
@@ -586,7 +586,7 @@
       },
       {
         "path": "training/pyproject.toml",
-        "sha256": "47bf824114bcb2c6878622e50a7579f63cfa5f38a36a75d86e4a480573c7071a"
+        "sha256": "a4cf6608d9d00b27c496595935fcb0ede2a8410497c12e5c01d02167fd2d132f"
       },
       {
         "path": "training/quantize.py",
@@ -602,7 +602,7 @@
       },
       {
         "path": "training/uv.lock",
-        "sha256": "9bbea8f1880bd75c360aa8a13815e924e8937c680b5ae50d92c2c43e3c6c65eb"
+        "sha256": "cad6dd537d692b0395e7f6088dc39407839e9664c547f5ca87687ebbdc4d0fb4"
       }
     ]
   }

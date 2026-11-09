@@ -22,5 +22,6 @@
     "@pharos/core": "workspace:*",
     "@pharos/judge": "workspace:*",
     "@pharos/policy": "workspace:*"
-  }
+  },
+  "sideEffects": false
 }
