@@ -53,9 +53,15 @@ const HIPAA_PACK_V2 = SHIPPED_PACKS.hipaa!;
 
 describe("shipped regulation packs (citation-level)", () => {
   it("are discovered from packages/policy/packs, not listed in code", () => {
-    expect(Object.keys(SHIPPED_PACKS).sort()).toEqual(["core", "finra", "hipaa"]);
+    expect(Object.keys(SHIPPED_PACKS).sort()).toEqual([
+      "coding-agent-safety",
+      "core",
+      "finra",
+      "hipaa",
+    ]);
     expect(FINRA_PACK_V2.version).toBe("2.0.0");
     // Every Tier-3 concern the cascade routes is declared by exactly one pack binding.
+    // coding-agent-safety is deterministic rules only, so it declares no judge binding.
     const concerns = judgeBindingsOf(SHIPPED_PACKS).map((b) => b.packId);
     expect(concerns.sort()).toEqual([
       "finra-promissory",

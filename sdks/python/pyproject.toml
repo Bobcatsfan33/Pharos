@@ -19,7 +19,12 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
+# `pharos verify` needs a signature library; everything else stays standard-library only.
+verify = ["cryptography>=42"]
 dev = ["pytest>=7"]
+
+[project.scripts]
+pharos = "pharos_sdk.cli:main"
 
 [build-system]
 requires = ["setuptools>=68"]
