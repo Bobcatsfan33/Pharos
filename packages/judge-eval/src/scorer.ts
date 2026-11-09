@@ -2,9 +2,9 @@ import { type JudgeModelArtifact, score as scoreLogistic } from "@pharos/judge";
 import { mulberry32 } from "./prng.js";
 
 /**
- * Async, batchable scorer contract (roadmap S5-T2 / §7-10(f)).
+ * Async, batchable scorer contract.
  *
- * Sprint 6's served ONNX judge is async; today's logistic judge is synchronous. The harness only
+ * The served ONNX judge is async; today's logistic judge is synchronous. The harness only
  * ever calls `scoreBatch`, so a served transformer can plug in with no harness rewrite. Batch size
  * is configurable. Output order MUST match input order.
  */

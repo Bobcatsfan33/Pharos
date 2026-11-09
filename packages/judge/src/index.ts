@@ -6,6 +6,14 @@ export {
   loadRegistryFromDir,
   loadDefaultRegistry,
   DEFAULT_MODELS_DIR,
+  registerJudgeProvider,
+  createJudgeRegistry,
+  hasJudgeProvider,
+  listJudgeProviders,
+  servedConcerns,
+  type JudgeLoader,
+  type JudgeProviderContext,
+  type JudgeProviderFactory,
 } from "./registry.js";
 export {
   OnnxJudge,

@@ -1,6 +1,6 @@
 """CrewAI adapter — execute a crew *live* under KEEL (M4).
 
-Phase 4 shipped a CrewAI *importer* (YAML -> KIR). This adapter takes the next step:
+A CrewAI *importer* (YAML -> KIR) already exists. This adapter takes the next step:
 it executes a crew live on KEEL's durable executor, so a CrewAI agent gains resume,
 replay, budgets, and tracing. Each task becomes an ``AgentNode`` whose ``run`` builds
 the role/goal prompt and calls the KEEL-backed ``TracedModel``; dependencies become the

@@ -30,7 +30,7 @@ async function main(): Promise<void> {
   let pool: Pool | undefined;
   const durability = loadGatewayDurabilityConfig(process.env);
   if (durability) {
-    pool = createPool(durability.pgUrl);
+    pool = await createPool(durability.pgUrl);
     await runMigrations(pool);
     heldRequestStore = new PostgresHeldRequestStore(
       pool,

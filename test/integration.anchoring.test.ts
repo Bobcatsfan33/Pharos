@@ -7,7 +7,7 @@ import type { FastifyInstance } from "fastify";
 import { verifyClaimsPack, type ClaimsPackBundle } from "@pharos/evidence";
 
 /**
- * S4-T2 acceptance: scheduled per-tenant anchoring.
+ * Acceptance: scheduled per-tenant anchoring.
  *
  * Drives the real platform: seal records, observe that the chain view flags a missing anchor,
  * run the anchor job (the same sweep the scheduler runs hourly), observe the warning clears and
@@ -44,7 +44,7 @@ beforeAll(async () => {
     platform = await buildPlatform();
     app = await buildApp(platform);
     await platform.tenants.createTenant({ tenantId: TENANT, displayName: "Anchor" });
-    // Mandate authority is server-resolved (#81): store the grant once, then reference
+    // Mandate authority is server-resolved: store the grant once, then reference
     // it by id on every submit below.
     await platform.mandates.create({
       tenantId: TENANT,
@@ -82,7 +82,7 @@ async function submit(amount: number) {
     payload: {
       tenantId: TENANT,
       action: { type: "payment.transfer", agentId: "treasury", payload: { amount, to: "vendor" } },
-      // Mandate authority is server-resolved (#81); the grant is stored in beforeAll
+      // Mandate authority is server-resolved; the grant is stored in beforeAll
       // and referenced by id here.
       mandateId: "m",
       liability: {

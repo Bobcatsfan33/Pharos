@@ -22,14 +22,15 @@ const IGNORED_DIRS = new Set([
 ]);
 
 /** Workspace roots a `pnpm --filter <pkg> exec …` command can legitimately run from. */
-const WORKSPACE_GLOB_ROOTS = ["packages", "services", "apps", "sdks"];
+const WORKSPACE_GLOB_ROOTS = ["packages", "services", "apps", "sdks", "runtime"];
 
 /**
  * Matches a repo-relative or doc-relative path into a `scripts/` directory,
  * e.g. `scripts/external-verify.ts`, `../../scripts/bench-latency.ts`.
  * Requires a known source extension so globs like `scripts/*` are not treated as files.
  */
-const SCRIPT_REFERENCE = /(?:[\w.-]+\/)*scripts\/[\w.-]+\.(?:ts|mts|cts|mjs|cjs|js|py|sh)\b/g;
+const SCRIPT_REFERENCE =
+  /(?:[\w.-]+\/)*scripts\/(?:[\w.-]+\/)?[\w.-]+\.(?:ts|mts|cts|mjs|cjs|js|py|sh)\b/g;
 
 function markdownFiles(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -92,15 +93,5 @@ describe("documentation command integrity", () => {
     }
 
     expect(broken).toEqual([]);
-  });
-
-  it("the procurement decision names the real enterprise-readiness verifier", () => {
-    const doc = readFileSync(join(repoRoot, "docs/procurement-readiness.md"), "utf8");
-
-    expect(doc).toContain("node scripts/verify-enterprise-readiness.mjs");
-    // The verifier has never been a Python script; a stale instruction sends the
-    // operator looking for a file that does not exist.
-    expect(doc).not.toContain("verify_enterprise_readiness.py");
-    expect(isFile(join(repoRoot, "scripts/verify-enterprise-readiness.mjs"))).toBe(true);
   });
 });

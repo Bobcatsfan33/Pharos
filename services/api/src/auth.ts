@@ -176,7 +176,7 @@ function secretsMatch(presented: string, expected: string): boolean {
  * Platform-operator bootstrap guard for tenant provisioning.
  *
  * The admin token is the highest-privilege credential in the system, so the comparison
- * is constant-time (#75). A `!==` on two strings short-circuits at the first differing
+ * is constant-time. A `!==` on two strings short-circuits at the first differing
  * byte, and that timing difference is the signal an attacker uses to recover a secret
  * one byte at a time.
  */

@@ -18,5 +18,8 @@
     "@pharos/core": "workspace:*",
     "asn1js": "^3.0.10",
     "pkijs": "^3.4.1"
-  }
+  },
+  "sideEffects": [
+    "./src/tsa/providers.ts"
+  ]
 }

@@ -148,7 +148,7 @@ describe("Lantern — served cascade over the API", () => {
     const { FaultInjectingCascade } = await import("../packages/cascade/src/testing.js");
     const { VerdictEngine } = await import("../packages/core/src/index.js");
     // Swap in a cascade whose Tier-3 judge always faults. The fault seam lives in the
-    // test-only subclass (#82); the production class has no such branch.
+    // test-only subclass; the production class has no such branch.
     platform.cascade = new FaultInjectingCascade(
       {
         engine: new VerdictEngine({ deadlineMs: 800 }),
@@ -199,7 +199,7 @@ describe("Lantern — served cascade over the API", () => {
       await victim.apiKeys.create(TENANT + "-x", "x", ["actions:write", "liability:assert"])
     ).plaintext;
     const app = await buildApp(victim);
-    await victim.pool.end(); // kill Postgres connectivity mid-flight
+    await victim.pool!.end(); // kill Postgres connectivity mid-flight
 
     const res = await app.inject({
       method: "POST",

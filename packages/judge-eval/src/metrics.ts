@@ -1,5 +1,5 @@
 /**
- * Classification metrics for the eval harness (roadmap S5-T2).
+ * Classification metrics for the eval harness.
  *
  * Pure functions over `LabeledScore[]` (a label + a calibrated probability). PR-AUC is the LEAD
  * ranking metric (§7-10(b)); ROC-AUC is secondary context. All deterministic — ties in AUC use

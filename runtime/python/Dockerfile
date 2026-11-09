@@ -4,14 +4,19 @@
 ARG PYTHON_IMAGE=python:3.11-slim-bookworm@sha256:0bee7276f83efd4a1ee05bbbf4281d95ed28e079220a9457f25a93e3f1e3c31b
 FROM ${PYTHON_IMAGE} AS builder
 ENV PIP_NO_CACHE_DIR=1
+# Build context is the repository root (`docker build -f runtime/python/Dockerfile .`) so
+# the runtime installs the Pharos Python SDK from this same checkout rather than PyPI;
+# the two are released together. `Dockerfile.dockerignore` keeps the context small.
 WORKDIR /build
-COPY pyproject.toml README.md ./
-COPY keel ./keel
-COPY pharos_runtime ./pharos_runtime
-RUN pip install --prefix=/install ".[viewer,pg,otel]"
+COPY sdks/python ./sdks/python
+RUN pip install --prefix=/install ./sdks/python
+COPY runtime/python/pyproject.toml runtime/python/README.md ./
+COPY runtime/python/keel ./keel
+COPY runtime/python/pharos_runtime ./pharos_runtime
+RUN PYTHONPATH=/install/lib/python3.11/site-packages pip install --prefix=/install ".[viewer,pg,otel]"
 # Examples ship in the image so `pharos run examples/...` works out of the box; a
 # pre-owned /data seeds the anonymous volume with non-root ownership.
-COPY examples ./examples
+COPY runtime/python/examples ./examples
 RUN mkdir -p /seed-data
 
 FROM ${PYTHON_IMAGE} AS runtime

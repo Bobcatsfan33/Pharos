@@ -1,4 +1,4 @@
-# GA, standards & the channel (Sprint 9 — Signal)
+# GA, standards & the channel
 
 The endgame moats are network and standard. Platforms can copy features; they cannot easily
 copy a spec the ecosystem adopted or a channel underwriters already trust.

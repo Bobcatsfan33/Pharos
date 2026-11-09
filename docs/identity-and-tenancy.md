@@ -1,6 +1,6 @@
-# Identity, RBAC, and multi-tenancy (Sprint 1 — Gatehouse)
+# Identity, RBAC, and multi-tenancy
 
-An evidence product whose own access cannot be audited is self-refuting. Sprint 1 makes
+An evidence product whose own access cannot be audited is self-refuting. This layer makes
 the platform safe to expose: enterprise SSO, role-based access, hard multi-tenant
 isolation with per-tenant signing keys, and a hash-chained access audit.
 

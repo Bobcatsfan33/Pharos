@@ -1,24 +1,24 @@
-# When *not* to use KEEL
+# When *not* to use Pharos Runtime
 
-KEEL is durable execution for LLM agents. That has a real cost — every step writes
+Pharos Runtime is durable execution for LLM agents. That has a real cost — every step writes
 events to an append-only log — and it buys you nothing if your workload doesn't need
 durability, replay, or recorded-run regression testing. Honest non-fit cases:
 
 - **Single-shot prompts.** One model call with no multi-step state, no tools, and no
   human gate. The event log is pure overhead; call the provider SDK directly.
 - **Latency-critical hot paths.** If a few milliseconds of trace-bus + persistence per
-  step matters more than the ability to resume or replay, KEEL is the wrong layer.
+  step matters more than the ability to resume or replay, Pharos Runtime is the wrong layer.
   Measure first (see [`BENCHMARKS.md`](BENCHMARKS.md)); the overhead is small but it is
   not zero.
 - **Throwaway scripts and notebooks.** Exploratory work you will never resume, replay,
   or regression-test doesn't benefit from the machinery.
-- **You need a high-level authoring framework.** KEEL is deliberately *not* competing on
+- **You need a high-level authoring framework.** Pharos Runtime is deliberately *not* competing on
   `Agent`/`Task`/`Crew` ergonomics — that space is well served. If you want an opinionated
-  authoring DSL, use CrewAI or LangGraph and (soon) run it *under* KEEL via an adapter.
+  authoring DSL, use CrewAI or LangGraph and (soon) run it *under* Pharos Runtime via an adapter.
 - **Hard real-time or sub-millisecond budgets.** The event-sourced model assumes you can
   afford a durable write on the critical path.
 
-## Use KEEL when
+## Use Pharos Runtime when
 
 - A run spans **multiple billed model calls and/or tool side effects** and a crash or
   deploy mid-run must not re-bill or re-execute completed work.
@@ -30,7 +30,7 @@ durability, replay, or recorded-run regression testing. Honest non-fit cases:
 ## Maturity (read before depending on it)
 
 - **Early-stage, single-maintainer.** Continuity risk is real; see the governance and
-  branch-protection notes in [`SDLC-POLICY.md`](SDLC-POLICY.md).
+  branch-protection notes in [`SDLC-POLICY.md`](../../../docs/internal/runtime/SDLC-POLICY.md).
 - **Not independently audited.** No third-party security audit or penetration test yet.
 - **Not soak-tested across nodes in production.** Multi-worker leasing and Postgres/NATS
   backends exist and are tested, but a long-running multi-node soak is still pending
@@ -40,5 +40,5 @@ durability, replay, or recorded-run regression testing. Honest non-fit cases:
   deterministic path — see [`DETERMINISM.md`](DETERMINISM.md). M1 closes these and the
   README will only claim what the conformance suite proves.
 
-If those limits are acceptable for your use case, KEEL is usable today; if not, the
+If those limits are acceptable for your use case, Pharos Runtime is usable today; if not, the
 strategy doc shows exactly when each gap closes and how it's proven.

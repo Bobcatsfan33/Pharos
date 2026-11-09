@@ -14,12 +14,16 @@
   },
   "keywords": [
     "ai-agents",
-    "policy",
-    "governance",
-    "audit",
+    "agent-governance",
+    "policy-engine",
+    "guardrails",
+    "audit-log",
     "evidence",
+    "mcp",
+    "llm",
     "compliance",
-    "llm"
+    "authorization",
+    "pharos"
   ],
   "type": "module",
   "main": "./dist/index.js",
@@ -40,5 +44,9 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "dependencies": {
+    "@getpharos/pdp-spec": "workspace:^"
+  },
+  "sideEffects": false
 }

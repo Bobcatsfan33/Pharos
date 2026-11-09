@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://getpharos.dev/schemas/policy-pack.json",
+  "title": "Pharos policy pack",
+  "description": "A versioned, citation-level regulation pack. Rules test deterministic fields and Tier-3 judge probabilities; judgeBindings route Tier-3 models to the action types their concern is about.",
+  "type": "object",
+  "required": ["packId", "version", "title", "rules"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "packId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "title": { "type": "string", "minLength": 1 },
+    "changelog": { "type": "string" },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ruleId", "pack", "clause", "description", "when", "decision"],
+        "additionalProperties": false,
+        "properties": {
+          "ruleId": { "type": "string" },
+          "pack": { "type": "string" },
+          "clause": { "type": "string" },
+          "description": { "type": "string" },
+          "when": { "$ref": "#/$defs/condition" },
+          "decision": { "enum": ["allow", "block", "modify", "escalate"] }
+        }
+      }
+    },
+    "judgeBindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["packId", "onFlag", "citation"],
+        "additionalProperties": false,
+        "properties": {
+          "packId": {
+            "type": "string",
+            "description": "The Tier-3 concern (judge model) this binding routes."
+          },
+          "actionTypes": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Action-type prefixes (\"email.\") or exact types the concern applies to. Absent = every action."
+          },
+          "onFlag": { "enum": ["block", "escalate"] },
+          "requireNoMandate": { "type": "boolean" },
+          "citation": {
+            "type": "object",
+            "required": ["ruleId", "pack", "clause"],
+            "additionalProperties": false,
+            "properties": {
+              "ruleId": { "type": "string" },
+              "pack": { "type": "string" },
+              "clause": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "condition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["field", "op", "value"],
+          "additionalProperties": false,
+          "properties": {
+            "field": { "type": "string" },
+            "op": {
+              "enum": ["eq", "neq", "gt", "gte", "lt", "lte", "in", "startsWith", "contains"]
+            },
+            "value": {}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["judge", "gte"],
+          "additionalProperties": false,
+          "properties": { "judge": { "type": "string" }, "gte": { "type": "number" } }
+        },
+        {
+          "type": "object",
+          "required": ["all"],
+          "additionalProperties": false,
+          "properties": { "all": { "type": "array", "items": { "$ref": "#/$defs/condition" } } }
+        },
+        {
+          "type": "object",
+          "required": ["any"],
+          "additionalProperties": false,
+          "properties": { "any": { "type": "array", "items": { "$ref": "#/$defs/condition" } } }
+        },
+        {
+          "type": "object",
+          "required": ["not"],
+          "additionalProperties": false,
+          "properties": { "not": { "$ref": "#/$defs/condition" } }
+        }
+      ]
+    }
+  }
+}

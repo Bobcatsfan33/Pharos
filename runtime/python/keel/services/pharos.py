@@ -1,8 +1,8 @@
-"""Pharos governance at Keel's durable step boundary.
+"""Pharos governance at the runtime's durable step boundary.
 
 Every step is submitted with a stable idempotency key before it is scheduled.  An
 allow/modify verdict continues, a block fails the run, and an escalation parks the
-run until Pharos has a human resolution.  Re-running ``keel resume`` replays the
+run until Pharos has a human resolution.  Re-running ``pharos resume`` replays the
 same Pharos record and uses a stable claim identity, so a process crash cannot lose
 an approval or authorize a second runtime.
 """
@@ -15,7 +15,8 @@ import json
 from dataclasses import dataclass
 from typing import Any, Literal, Mapping, Protocol
 
-import httpx
+from pharos_sdk import PharosClient as SdkClient
+from pharos_sdk import PharosError as SdkError
 
 from ..executor.engine import FatalError, GatePaused, RunContext
 from ..kir.schema import Node, NodeType
@@ -33,7 +34,7 @@ class PharosConfig:
     base_url: str
     api_key: str
     tenant_id: str
-    agent_id: str = "keel-runtime"
+    agent_id: str = "pharos-runtime"
     deadline_ms: int = 800
     max_retries: int = 2
     failure_mode: FailureMode = "fail_closed"
@@ -67,17 +68,22 @@ class PharosClientPort(Protocol):
 
 
 class PharosHttpClient:
-    """Small async protocol client; Keel does not require either Pharos SDK package."""
+    """Async adapter over the Pharos Python SDK (``getpharos``).
 
-    def __init__(
-        self, config: PharosConfig, *, transport: httpx.AsyncBaseTransport | None = None
-    ) -> None:
+    The runtime decides fail-open / fail-closed itself at the step boundary, so it uses the
+    SDK's raw ``request`` call (envelope-checked, retried, no local fallback) rather than
+    ``submit``. The SDK is synchronous and standard-library only; each call runs in a
+    worker thread so the event loop is never blocked by a verdict round-trip.
+    """
+
+    def __init__(self, config: PharosConfig, *, sdk: SdkClient | None = None) -> None:
         self._config = config
-        self._client = httpx.AsyncClient(
+        self._sdk = sdk or SdkClient(
             base_url=config.base_url.rstrip("/"),
-            headers={"x-api-key": config.api_key},
-            timeout=config.deadline_ms / 1000,
-            transport=transport,
+            api_key=config.api_key,
+            deadline_ms=config.deadline_ms,
+            max_retries=config.max_retries,
+            local_fail_mode=config.failure_mode,
         )
 
     async def submit(self, body: Mapping[str, Any]) -> dict[str, Any]:
@@ -92,59 +98,26 @@ class PharosHttpClient:
     async def _request(
         self, method: str, path: str, body: Mapping[str, Any] | None = None
     ) -> dict[str, Any]:
-        last_error: Exception | None = None
-        for attempt in range(self._config.max_retries + 1):
-            try:
-                response = await self._client.request(method, path, json=body)
-                payload = response.json()
-                if 400 <= response.status_code < 500:
-                    error = payload.get("error") if isinstance(payload, dict) else None
-                    code = error.get("code", "client_error") if isinstance(error, dict) else "client_error"
-                    raise PharosError(
-                        f"Pharos rejected the governance request ({code})",
-                        code=str(code),
-                        retryable=False,
-                    )
-                if response.status_code >= 500:
-                    raise PharosError(
-                        f"Pharos returned HTTP {response.status_code}",
-                        code="server_error",
-                        retryable=True,
-                    )
-                if not isinstance(payload, dict) or payload.get("success") is not True:
-                    raise PharosError(
-                        "Pharos returned an invalid response envelope",
-                        code="invalid_response",
-                        retryable=True,
-                    )
-                data = payload.get("data")
-                if not isinstance(data, dict):
-                    raise PharosError(
-                        "Pharos response did not contain data",
-                        code="invalid_response",
-                        retryable=True,
-                    )
-                return data
-            except PharosError as error:
-                if not error.retryable:
-                    raise
-                last_error = error
-            except (httpx.HTTPError, json.JSONDecodeError) as error:
-                last_error = error
-            if attempt < self._config.max_retries:
-                await asyncio.sleep(0.025 * (2**attempt))
-        raise PharosError(
-            f"Pharos is unavailable: {type(last_error).__name__}",
-            code="unavailable",
-            retryable=True,
-        ) from last_error
+        payload = dict(body) if body is not None else None
+        try:
+            return await asyncio.to_thread(self._sdk.request, method, path, payload)
+        except SdkError as error:
+            code = str(error.code)
+            retryable = code in {"unavailable", "server_error", "invalid_response"}
+            if code == "unavailable":
+                raise PharosError(f"Pharos is unavailable: {error}", code=code, retryable=True) from error
+            if retryable:
+                raise PharosError(str(error), code=code, retryable=True) from error
+            raise PharosError(
+                f"Pharos rejected the governance request ({code})", code=code, retryable=False
+            ) from error
 
     async def close(self) -> None:
-        await self._client.aclose()
+        return None
 
 
 class PharosGovernance:
-    """Keel ``StepInterceptor`` backed by Pharos verdicts and sealed evidence."""
+    """Runtime ``StepInterceptor`` backed by Pharos verdicts and sealed evidence."""
 
     def __init__(self, config: PharosConfig, client: PharosClientPort | None = None) -> None:
         self._config = config
@@ -242,7 +215,7 @@ class PharosGovernance:
         tokens_out: int,
     ) -> None:
         # STEP_COMPLETED is the execution outcome. GOVERNANCE_DECIDED immediately before
-        # STEP_SCHEDULED contains the Pharos evidence binding, so the append-only Keel log
+        # STEP_SCHEDULED contains the Pharos evidence binding, so the append-only execution log
         # joins authorization and outcome without a second, ambiguous audit submission.
         return None
 

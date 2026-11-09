@@ -3,7 +3,7 @@ import type { VerdictRequest } from "@pharos/core";
 import { VerdictCascade, JudgeFault, type CascadeDeps, type ContentRun } from "./cascade.js";
 
 /**
- * Test-only fault injection for the decision cascade (#82).
+ * Test-only fault injection for the decision cascade.
  *
  * The production `VerdictCascade` previously accepted a `faults` dependency, so the
  * shipped class contained a branch into injected failure. It was only reachable via a

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, Mapping
 
-import httpx
+from pharos_sdk import PharosError as SdkError
 import pytest
 
 from keel.kir.schema import Graph, Node, NodeType
@@ -195,13 +195,30 @@ async def test_human_modified_action_replaces_executable_node_config() -> None:
     assert observed == ["reviewer-approved"]
 
 
+class _OfflineSdk:
+    """Stands in for ``pharos_sdk.PharosClient`` when the control plane is unreachable."""
+
+    def request(self, method: str, path: str, body: dict | None = None) -> dict:
+        raise SdkError("Pharos is unavailable: ConnectionRefusedError", "unavailable")
+
+
+class _RecordingSdk:
+    """Records every raw protocol call the runtime makes through the SDK."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str, dict | None]] = []
+
+    def request(self, method: str, path: str, body: dict | None = None) -> dict:
+        self.calls.append((method, path, body))
+        if path.endswith("/claim"):
+            return {"claimed": True}
+        return _submission("allow")
+
+
 @pytest.mark.asyncio
 async def test_unavailable_pharos_fails_closed_by_parking_the_run() -> None:
-    async def unavailable(_request: httpx.Request) -> httpx.Response:
-        raise httpx.ConnectError("offline")
-
     config = _config()
-    client = PharosHttpClient(config, transport=httpx.MockTransport(unavailable))
+    client = PharosHttpClient(config, sdk=_OfflineSdk())
     runner = await Runner.open(in_memory=True, model=MockModelPort())
     runner.governance = PharosGovernance(config, client)
     state = await runner.run(_graph(), run_id="run-offline")
@@ -215,26 +232,30 @@ async def test_unavailable_pharos_fails_closed_by_parking_the_run() -> None:
 
 @pytest.mark.asyncio
 async def test_http_client_sends_pharos_contract_and_replay_safe_claim_id() -> None:
-    seen: list[httpx.Request] = []
-
-    async def endpoint(request: httpx.Request) -> httpx.Response:
-        seen.append(request)
-        if request.url.path.endswith("/claim"):
-            return httpx.Response(
-                200,
-                json={"success": True, "data": {"claimed": True}, "error": None},
-            )
-        return httpx.Response(
-            201,
-            json={"success": True, "data": _submission("allow"), "error": None},
-        )
-
-    client = PharosHttpClient(_config(), transport=httpx.MockTransport(endpoint))
+    sdk = _RecordingSdk()
+    client = PharosHttpClient(_config(), sdk=sdk)
     submitted = await client.submit({"tenantId": "acme"})
     claimed = await client.claim("acme", "esc-1", "keel:claim:v1:123")
     await client.close()
 
     assert submitted["verdict"]["decision"] == "allow"
     assert claimed["claimed"] is True
-    assert seen[0].headers["x-api-key"] == "secret-key"
-    assert json.loads(seen[1].content) == {"claimId": "keel:claim:v1:123"}
+    assert sdk.calls[0] == ("POST", "/v1/actions", {"tenantId": "acme"})
+    assert sdk.calls[1] == (
+        "POST",
+        "/v1/tenants/acme/escalations/esc-1/claim",
+        {"claimId": "keel:claim:v1:123"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_sdk_client_errors_map_to_runtime_error_codes() -> None:
+    class Rejecting:
+        def request(self, method: str, path: str, body: dict | None = None) -> dict:
+            raise SdkError("request failed: tenant_not_found", "tenant_not_found", 404)
+
+    client = PharosHttpClient(_config(), sdk=Rejecting())
+    with pytest.raises(PharosError) as raised:
+        await client.submit({"tenantId": "nope"})
+    assert raised.value.code == "tenant_not_found"
+    assert raised.value.retryable is False

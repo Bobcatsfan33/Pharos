@@ -1,12 +1,17 @@
 import { describe, it, expect } from "vitest";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   compilePolicy,
   evaluateArtifact,
   decideWith,
   dryRun,
   divergence,
-  FINRA_PACK_V2,
-  HIPAA_PACK_V2,
+  SHIPPED_PACKS,
+  loadShippedPacks,
+  judgeBindingsOf,
+  PackLoadError,
   type EvalContext,
   type PolicyArtifact,
 } from "@pharos/policy";
@@ -43,7 +48,39 @@ function ctx(
   };
 }
 
+const FINRA_PACK_V2 = SHIPPED_PACKS.finra!;
+const HIPAA_PACK_V2 = SHIPPED_PACKS.hipaa!;
+
 describe("shipped regulation packs (citation-level)", () => {
+  it("are discovered from packages/policy/packs, not listed in code", () => {
+    expect(Object.keys(SHIPPED_PACKS).sort()).toEqual([
+      "coding-agent-safety",
+      "core",
+      "finra",
+      "hipaa",
+    ]);
+    expect(FINRA_PACK_V2.version).toBe("2.0.0");
+    // Every Tier-3 concern the cascade routes is declared by exactly one pack binding.
+    // coding-agent-safety is deterministic rules only, so it declares no judge binding.
+    const concerns = judgeBindingsOf(SHIPPED_PACKS).map((b) => b.packId);
+    expect(concerns.sort()).toEqual([
+      "finra-promissory",
+      "funds-movement-intent",
+      "phi-in-context",
+    ]);
+    expect(new Set(concerns).size).toBe(concerns.length);
+  });
+
+  it("refuses a malformed pack file by name", () => {
+    const dir = mkdtempSync(join(tmpdir(), "pharos-packs-"));
+    writeFileSync(
+      join(dir, "broken.json"),
+      JSON.stringify({ packId: "broken", version: "1.0.0", title: "x", rules: [{ ruleId: "r" }] }),
+    );
+    expect(() => loadShippedPacks(dir)).toThrow(PackLoadError);
+    expect(() => loadShippedPacks(dir)).toThrow(/broken\.json: rules\[0\]\.pack/);
+  });
+
   it("every rule carries a citation/clause and an examiner-readable description", () => {
     for (const pack of [FINRA_PACK_V2, HIPAA_PACK_V2]) {
       for (const rule of pack.rules) {

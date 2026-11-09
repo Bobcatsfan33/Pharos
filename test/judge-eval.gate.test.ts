@@ -31,7 +31,7 @@ const tol = loadTolerances();
 // Small resample count keeps the test fast; the CLI uses the default 1000.
 const RS = 200;
 
-describe("CI eval gate (S5-T4)", () => {
+describe("CI eval gate", () => {
   it("passes on the live served artifacts vs the frozen baseline (the real CI gate)", async () => {
     // Candidate = the ACTUAL packages/judge/models. A PR that weakens a served judge makes this
     // fail in CI (the `test` job runs on every PR). Today served == frozen, so Δ=0.

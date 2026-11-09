@@ -6,7 +6,11 @@ import {
   ActionRecordSchema,
   KmsUnavailableError,
   canonicalize,
+  parseKeyId,
+  resolveVerdictRequest,
   sha256Hex,
+  type MandateToken,
+  type PublicKeyEntry,
 } from "@pharos/core";
 import { fingerprintVerdict } from "@pharos/cascade";
 import { routeEscalation } from "@pharos/review";
@@ -31,7 +35,13 @@ const SubmitBodySchema = z.object({
   /** Optional: bind a stored mandate by id (resolved server-side and sealed into the record). */
   mandateId: z.string().optional(),
   /**
-   * Optional client replay guard (#74). Supplying it makes ingest exactly-once for
+   * Optional: a MandateToken (Workstream A). Verified here against the tenant's published
+   * mandate key; a verified token supersedes `mandateId`, a refused one is a sealed Tier-1 block.
+   * Its shape is checked by the verifier so that a malformed token is evidence, not a 400.
+   */
+  mandateToken: z.record(z.string(), z.unknown()).optional(),
+  /**
+   * Optional client replay guard. Supplying it makes ingest exactly-once for
    * this request: a redelivery returns the record the first delivery sealed instead of
    * sealing another. Also keys the escalation parked on an `escalate` verdict.
    */
@@ -52,6 +62,7 @@ function requestFingerprint(body: {
   action: { emittedAt?: string };
   liability: unknown;
   mandateId?: string;
+  mandateToken?: unknown;
 }): string {
   const { emittedAt: _ignored, ...action } = body.action;
   return sha256Hex(
@@ -60,8 +71,19 @@ function requestFingerprint(body: {
       action,
       liability: body.liability,
       mandateId: body.mandateId ?? null,
+      ...(body.mandateToken !== undefined ? { mandateToken: body.mandateToken } : {}),
     }),
   );
+}
+
+/** Only this tenant's mandate key family may vouch for a token presented to this tenant. */
+function mandateRootKeyBelongsTo(keyId: unknown, tenantId: string): keyId is string {
+  if (typeof keyId !== "string") return false;
+  try {
+    return parseKeyId(keyId).keyName === `mandate:${tenantId}`;
+  } catch {
+    return false;
+  }
 }
 
 /** The submit response body, shared by the fresh-append and replay paths. */
@@ -104,7 +126,7 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
     );
     if (!principal) return reply;
 
-    // Replay guard (#74). Resolved after authorization — an unauthenticated caller must
+    // Replay guard. Resolved after authorization — an unauthenticated caller must
     // not be able to probe which idempotency keys a tenant has used.
     const fingerprint = body.idempotencyKey ? requestFingerprint(body) : null;
 
@@ -156,7 +178,7 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
     };
 
     // Resolve a stored mandate, if referenced, and seal it into the record.
-    // Mandate authority is derived server-side, never asserted by the caller (#81).
+    // Mandate authority is derived server-side, never asserted by the caller.
     //
     // The rest of `liability` is a caller *declaration* about the action — blast radius,
     // oversight mode — which Pharos seals as evidence of what was asserted. `mandate` is
@@ -179,6 +201,17 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
       });
     }
 
+    if (body.mandateId && body.mandateToken) {
+      return reply.status(400).send({
+        success: false,
+        data: null,
+        error: {
+          code: "mandate_binding_ambiguous",
+          message: "supply either mandateId or mandateToken, not both",
+        },
+      });
+    }
+
     let liability: LiabilityContext = { ...body.liability, mandate: null };
     if (body.mandateId) {
       const mandate = await platform.mandates.getActive(body.tenantId, body.mandateId);
@@ -192,10 +225,34 @@ export function registerActionRoutes(app: FastifyInstance, platform: Platform): 
       liability = { ...liability, mandate };
     }
 
+    const now = new Date();
+
+    // A presented token is verified against the tenant's PUBLISHED mandate key and folded into
+    // the liability before the cascade runs — so what is sealed is what was judged, and replay
+    // reaches the same verdict from the record alone. A token whose root key is not this
+    // tenant's, or whose stored mandate has since been revoked, is a sealed Tier-1 block.
+    if (body.mandateToken) {
+      const token = body.mandateToken as unknown as MandateToken;
+      const keyId = token?.authority?.keyId;
+      let rootKey: PublicKeyEntry | null = null;
+      let revoked = false;
+      if (mandateRootKeyBelongsTo(keyId, body.tenantId)) {
+        rootKey = await platform.signer.getPublicKey(keyId);
+        const mandateId = token.authority?.mandateId;
+        if (rootKey && typeof mandateId === "string") {
+          revoked = (await platform.mandates.getActive(body.tenantId, mandateId)) === null;
+        }
+      }
+      liability = resolveVerdictRequest(
+        { tenantId: body.tenantId, action, liability, mandateToken: { token, rootKey, revoked } },
+        now,
+      ).liability;
+    }
+
     const policyArtifacts = await platform.activePolicyArtifacts(body.tenantId);
     const verdict = await platform.cascade.evaluate(
       { tenantId: body.tenantId, action, liability },
-      new Date(),
+      now,
       policyArtifacts,
     );
 

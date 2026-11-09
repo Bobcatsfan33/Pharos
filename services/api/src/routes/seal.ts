@@ -12,7 +12,7 @@ import type { Platform } from "../platform.js";
 import { requireAuth } from "../auth.js";
 
 /**
- * Ledger evidence operations (Sprint 5 — Seal): litigation holds, trusted-time anchoring,
+ * Ledger evidence operations: litigation holds, trusted-time anchoring,
  * claims-pack assembly (draft → sealed → released), regulatory exports, and the scoped
  * exchange-portal read path (consent-gated, fully access-audited).
  */

@@ -9,7 +9,7 @@ import { type LabeledScore, confusionAt, ece, fpr, prAuc, recall } from "./metri
 import { pairedBootstrapDeltaCI, type CI } from "./bootstrap.js";
 
 /**
- * The statistically-meaningful CI eval gate (roadmap S5-T4 / §7-10(c)).
+ * The statistically meaningful CI eval gate.
  *
  * Compares a CANDIDATE scorer against a FROZEN baseline over the same records, per sliced metric,
  * at the frozen threshold. Each metric's candidate−baseline delta gets a deterministic paired

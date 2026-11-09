@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { awsKmsAliasName } from "@pharos/core";
+import { awsKmsAliasName, awsKmsAliasPrefix } from "@pharos/core";
 
 // The KMS alias is the identifier an operator must pre-provision a customer-managed CMK at.
 // It was previously derived in code and documented nowhere, so an operator following the install
@@ -30,12 +30,12 @@ describe("KMS key identifier: docs and code agree", () => {
     expect(install).toContain(`--alias-name ${derived}`);
   });
 
-  it("documents both alias prefixes the platform constructs", () => {
-    // platform.ts builds the signing keyset under `pharos` and the local-TSA keyset under
-    // `pharos-tsa`; an operator provisioning only one would half-break a deployment.
-    const platform = readFileSync(join(repoRoot, "services/api/src/platform.ts"), "utf8");
+  it("documents both alias prefixes the aws-kms provider constructs", () => {
+    // The signing keyset lives under `pharos` and the local-TSA keyset under `pharos-tsa`;
+    // an operator provisioning only one would half-break a deployment.
+    expect(awsKmsAliasPrefix("signing")).toBe("pharos");
+    expect(awsKmsAliasPrefix("tsa")).toBe("pharos-tsa");
     for (const prefix of ["pharos", "pharos-tsa"]) {
-      expect(platform).toContain(`aliasPrefix: "${prefix}"`);
       expect(install).toContain(prefix);
     }
   });

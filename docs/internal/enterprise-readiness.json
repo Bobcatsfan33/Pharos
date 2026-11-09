@@ -1,0 +1,609 @@
+{
+  "schemaVersion": 2,
+  "product": "Pharos",
+  "repository": "Bobcatsfan33/Pharos",
+  "assessment": {
+    "evidenceScope": "repository-self-assessment",
+    "preparedBy": {
+      "identity": "pharos-repository-maintainers",
+      "role": "Product Engineering",
+      "organization": "Pharos project"
+    },
+    "asOf": "2026-08-10",
+    "reviewBy": "2026-11-08",
+    "assessedCommit": "ef11b3bdca94994fcea35f4f72028e985416b5b8",
+    "softwareReleaseCandidate": false,
+    "deploymentDecision": "not-approved",
+    "decisionReason": "Production deployment engineering exists, but the judge, independent assurance, organizational, and deployment-specific trust gates remain open.",
+    "approval": null
+  },
+  "frameworks": [
+    {
+      "id": "nist-ssdf-1.1",
+      "name": "NIST SP 800-218 Secure Software Development Framework",
+      "version": "1.1",
+      "url": "https://csrc.nist.gov/pubs/sp/800/218/final"
+    },
+    {
+      "id": "slsa-1.2",
+      "name": "Supply-chain Levels for Software Artifacts",
+      "version": "1.2",
+      "url": "https://slsa.dev/spec/v1.2/"
+    },
+    {
+      "id": "owasp-asvs-5.0.0",
+      "name": "OWASP Application Security Verification Standard",
+      "version": "5.0.0",
+      "url": "https://owasp.org/www-project-application-security-verification-standard/"
+    },
+    {
+      "id": "csa-ccm-caiq-4.1",
+      "name": "CSA Cloud Controls Matrix and CAIQ",
+      "version": "4.1",
+      "url": "https://cloudsecurityalliance.org/artifacts/cloud-controls-matrix-v4-1"
+    },
+    {
+      "id": "nist-ai-rmf-1.0",
+      "name": "NIST Artificial Intelligence Risk Management Framework",
+      "version": "1.0",
+      "url": "https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-ai-rmf-10"
+    },
+    {
+      "id": "csa-ai-caiq-1.0.2",
+      "name": "CSA AI Consensus Assessments Initiative Questionnaire",
+      "version": "1.0.2",
+      "url": "https://cloudsecurityalliance.org/artifacts/ai-consensus-assessments-initiative-questionnaire-ai-caiq"
+    }
+  ],
+  "controls": [
+    {
+      "id": "GOV-01",
+      "title": "Security governance and product boundary",
+      "status": "implemented",
+      "frameworks": ["nist-ssdf-1.1", "nist-ai-rmf-1.0"],
+      "evidence": [
+        "SECURITY.md",
+        "docs/LIMITATIONS.md",
+        "docs/internal/prototype-roadmap.md",
+        "docs/assurance-and-risk.md",
+        "docs/internal/external-readiness/README.md",
+        "docs/internal/external-readiness/evidence-receipt.schema.json",
+        "docs/internal/procurement-readiness.md",
+        "docs/internal/readiness-evidence.md",
+        "scripts/internal/verify-external-gate-trackers.mjs"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "SDLC-01",
+      "title": "Secure development and change verification",
+      "status": "implemented",
+      "frameworks": ["nist-ssdf-1.1", "owasp-asvs-5.0.0"],
+      "evidence": [
+        ".github/CODEOWNERS",
+        ".github/workflows/ci.yml",
+        ".github/workflows/codeql.yml",
+        ".github/workflows/gitleaks.yml"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "APPSEC-01",
+      "title": "Technical security verification",
+      "status": "partial",
+      "frameworks": ["owasp-asvs-5.0.0", "csa-ccm-caiq-4.1"],
+      "evidence": [
+        "docs/security/THREAT_MODEL.md",
+        "docs/security/pentest-tenant-isolation.md",
+        ".github/workflows/codeql.yml"
+      ],
+      "gaps": [
+        "The encoded tenant-isolation campaign is not a commissioned independent penetration test."
+      ]
+    },
+    {
+      "id": "SUPPLY-01",
+      "title": "Release integrity, SBOM, signing, and provenance",
+      "status": "partial",
+      "frameworks": ["nist-ssdf-1.1", "slsa-1.2", "csa-ccm-caiq-4.1"],
+      "evidence": [
+        ".github/workflows/image.yml",
+        ".github/workflows/release.yml",
+        "docs/security/release-assurance.md",
+        "docs/internal/evidence/2026-08-10-github-release-controls.md"
+      ],
+      "gaps": [
+        "Live main protection, the active v* tag ruleset, environment ref restrictions, and disabled administrator bypass are implemented. The release environments still have no required reviewer because no independent collaborator is available, the npm trusted-publisher environment must be updated, and no protected release exercise has been retained."
+      ]
+    },
+    {
+      "id": "IAM-01",
+      "title": "Identity, authorization, and tenant isolation",
+      "status": "implemented",
+      "frameworks": ["owasp-asvs-5.0.0", "csa-ccm-caiq-4.1", "csa-ai-caiq-1.0.2"],
+      "evidence": [
+        "docs/identity-and-tenancy.md",
+        "docs/security/pentest-tenant-isolation.md",
+        "docs/security/THREAT_MODEL.md"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "CRYPTO-01",
+      "title": "Transport, storage encryption, signing, and key management",
+      "status": "partial",
+      "frameworks": ["owasp-asvs-5.0.0", "csa-ccm-caiq-4.1"],
+      "evidence": [
+        "docs/security/crypto-review-package.md",
+        "docs/runbooks/key-rotation.md",
+        "docs/runbooks/tsa-trust-rotation.md",
+        "docs/LIMITATIONS.md"
+      ],
+      "gaps": [
+        "Contracted TSA onboarding and certificate-pin approval are deployment-specific human gates.",
+        "AWS KMS is the only implemented production HSM provider; non-AWS customer-managed HSM portability remains open."
+      ]
+    },
+    {
+      "id": "DATA-01",
+      "title": "Data protection, privacy, retention, and deletion",
+      "status": "partial",
+      "frameworks": ["csa-ccm-caiq-4.1", "csa-ai-caiq-1.0.2", "nist-ai-rmf-1.0"],
+      "evidence": [
+        "docs/evidence-seal.md",
+        "docs/compliance/soc2-and-procurement.md",
+        "docs/legal/admissibility.md"
+      ],
+      "gaps": [
+        "DPA, retention, deletion, litigation-hold, residency, and legal positions require counsel and customer-specific approval."
+      ]
+    },
+    {
+      "id": "RES-01",
+      "title": "Backup, recovery, failover, and resilience",
+      "status": "partial",
+      "frameworks": ["csa-ccm-caiq-4.1"],
+      "evidence": [
+        "docs/operations.md",
+        "docs/internal/code-audit-durable-stores.md",
+        "docs/runbooks/gateway-held-key-rotation.md"
+      ],
+      "gaps": [
+        "Customer production topology must independently exercise and approve backup restore, region failover, RPO, and RTO."
+      ]
+    },
+    {
+      "id": "OBS-01",
+      "title": "Operational observability and SLO evidence",
+      "status": "partial",
+      "frameworks": ["csa-ccm-caiq-4.1", "csa-ai-caiq-1.0.2"],
+      "evidence": [
+        "docs/operations.md",
+        "docs/review-operations.md",
+        "docs/benchmarks/latency.md",
+        "docs/benchmarks/onnx-local-reference.json"
+      ],
+      "gaps": [
+        "The ONNX-default engineering reference meets the 800ms p99 objective only at low concurrency and fails the 1,000 verdicts/second aggregate objective; production-topology load and recovery acceptance remain open."
+      ]
+    },
+    {
+      "id": "IR-01",
+      "title": "Incident and vulnerability response",
+      "status": "partial",
+      "frameworks": ["nist-ssdf-1.1", "csa-ccm-caiq-4.1"],
+      "evidence": ["SECURITY.md", "docs/incident-response.md", "docs/evidence-seal.md"],
+      "gaps": [
+        "Named 24x7 responders, customer notification, and a production incident exercise are organizational gates."
+      ]
+    },
+    {
+      "id": "VM-01",
+      "title": "Dependency and vulnerability management",
+      "status": "implemented",
+      "frameworks": ["nist-ssdf-1.1", "csa-ccm-caiq-4.1"],
+      "evidence": [
+        ".github/dependabot.yml",
+        ".github/workflows/ci.yml",
+        ".github/workflows/gitleaks.yml",
+        ".github/workflows/codeql.yml",
+        ".github/workflows/image.yml",
+        ".github/workflows/training.yml",
+        "training/pyproject.toml",
+        "training/quantize.py",
+        "training/uv.lock",
+        "training/test_toolchain.py"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "AIRISK-01",
+      "title": "Judge efficacy, policy integrity, and AI governance",
+      "status": "partial",
+      "frameworks": ["nist-ai-rmf-1.0", "csa-ai-caiq-1.0.2"],
+      "evidence": [
+        "docs/benchmarks/judge-evals.md",
+        "docs/benchmarks/judge-evals.json",
+        "docs/benchmarks/funds-meta-frame-v2.json",
+        "docs/benchmarks/system-encoding-eval.md",
+        "packages/judge/models/manifest.json",
+        ".github/workflows/judge-parity.yml",
+        ".github/workflows/training.yml",
+        "docs/internal/evidence/2026-08-10-onnx-runtime-qualification.md",
+        "packages/judge/src/onnxModel.ts",
+        "training/corpus.py",
+        "training/check_leakage.py",
+        "training/pyproject.toml",
+        "training/quantize.py",
+        "training/uv.lock",
+        "training/train.py",
+        "training/test_toolchain.py",
+        "training/lockbox/funds-movement-intent.json",
+        "packages/observability/src/judgeDrift.ts",
+        "services/api/src/platform.ts",
+        "test/platform.judges.test.ts",
+        "test/fixtures/onnx-parity-funds.json",
+        "test/observability.judge-drift.test.ts",
+        "docs/model-cards/production-judges.md",
+        "docs/runbooks/judge-drift.md",
+        "docs/decision-cascade.md",
+        "docs/LIMITATIONS.md"
+      ],
+      "gaps": [
+        "Production requires and preloads the hash-verified ONNX transformers, but independent representative and adversarial efficacy approval for all three concerns is incomplete.",
+        "Version-pinned model cards and fail-closed drift-monitoring infrastructure exist; independently approved representative ONNX reference distributions and a completed drift alert/rollback exercise remain open.",
+        "Approved prevalence-adjusted operating points, OOD calibration, and production latency evidence remain open."
+      ]
+    }
+  ],
+  "externalGates": [
+    {
+      "id": "ENG-JUDGES",
+      "title": "Production judge and efficacy promotion",
+      "status": "open",
+      "blocking": true,
+      "ownerRole": "AI Engineering",
+      "acceptanceCriteria": "Production transformer judges, independently approved model cards, adversarial and representative evaluation, calibrated operating points, version-pinned drift profiles plus alert/rollback exercise, and production latency evidence pass approved thresholds.",
+      "trackingIssues": [
+        "https://github.com/Bobcatsfan33/Pharos/issues/36",
+        "https://github.com/Bobcatsfan33/Pharos/issues/37",
+        "https://github.com/Bobcatsfan33/Pharos/issues/91"
+      ],
+      "handoff": "docs/internal/external-readiness/eng-judges.md",
+      "evidence": [],
+      "evidenceReceipt": null,
+      "completion": null
+    },
+    {
+      "id": "EXT-PENTEST",
+      "title": "Independent penetration test",
+      "status": "open",
+      "blocking": true,
+      "ownerRole": "Product Security",
+      "acceptanceCriteria": "Signed report covers API, gateway, console, SDKs, PDP, tenant isolation, evidence chain, KMS, TSA, WORM, and deployment; critical and high findings are closed or CISO-accepted.",
+      "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/164"],
+      "handoff": "docs/internal/external-readiness/ext-pentest.md",
+      "evidence": [],
+      "evidenceReceipt": null,
+      "completion": null
+    },
+    {
+      "id": "EXT-TRUST",
+      "title": "KMS, TSA, and legal trust onboarding",
+      "status": "open",
+      "blocking": true,
+      "ownerRole": "Security, PKI, and Legal",
+      "acceptanceCriteria": "Approved production KMS keys and roles, independently obtained TSA pins, rotation evidence, and outside-counsel admissibility review are retained.",
+      "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/165"],
+      "handoff": "docs/internal/external-readiness/ext-trust.md",
+      "evidence": [],
+      "evidenceReceipt": null,
+      "completion": null
+    },
+    {
+      "id": "EXT-OPERATIONS",
+      "title": "Production operations and recovery acceptance",
+      "status": "open",
+      "blocking": true,
+      "ownerRole": "SRE",
+      "acceptanceCriteria": "Protected release approval and tag controls, customer-topology deployment, backup restore, failover, RPO/RTO, alerts, SLOs, support, incident, escalation, and notification procedures are exercised and signed.",
+      "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/166"],
+      "handoff": "docs/internal/external-readiness/ext-operations.md",
+      "evidence": [],
+      "evidenceReceipt": null,
+      "completion": null
+    },
+    {
+      "id": "EXT-COMPLIANCE",
+      "title": "Organizational, privacy, and procurement assurance",
+      "status": "open",
+      "blocking": true,
+      "ownerRole": "GRC and Legal",
+      "acceptanceCriteria": "Applicable SOC 2 or ISO evidence, SIG or CAIQ responses, DPA, privacy and residency terms, subprocessors, insurance, accessibility, support, and license terms are approved.",
+      "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/167"],
+      "handoff": "docs/internal/external-readiness/ext-compliance.md",
+      "evidence": [],
+      "evidenceReceipt": null,
+      "completion": null
+    },
+    {
+      "id": "EXT-CUSTOMERS",
+      "title": "Design-partner and production validation",
+      "status": "open",
+      "blocking": true,
+      "ownerRole": "Product",
+      "acceptanceCriteria": "Approved pilot and production references demonstrate adoption, efficacy, operations, and support across the intended regulated-market boundary.",
+      "trackingIssues": ["https://github.com/Bobcatsfan33/Pharos/issues/168"],
+      "handoff": "docs/internal/external-readiness/ext-customers.md",
+      "evidence": [],
+      "evidenceReceipt": null,
+      "completion": null
+    }
+  ],
+  "evidenceSnapshot": {
+    "algorithm": "sha256",
+    "generatedAt": "2026-11-09",
+    "files": [
+      {
+        "path": ".github/CODEOWNERS",
+        "sha256": "66d728671ed0fc98aa5a7195d7bda07b53cf2323f8d75778e4f34e8ca2301d9d"
+      },
+      {
+        "path": ".github/dependabot.yml",
+        "sha256": "52a4bcd67359e41e126f4b440ba24b9e6834f4ef0ddff3a158790a3e0183dacb"
+      },
+      {
+        "path": ".github/workflows/ci.yml",
+        "sha256": "eefec726f3e1c6361f639a6e15e778d4453b16006d477c4dc3d93155e26c369e"
+      },
+      {
+        "path": ".github/workflows/codeql.yml",
+        "sha256": "cb7e025b5d97d1d0d76ef16d35149e808111f309077b4e8b0604259ee81c8efe"
+      },
+      {
+        "path": ".github/workflows/gitleaks.yml",
+        "sha256": "3a24463df55edf4a1474fe24a849c91d5310f3a76e6dcfb08ac12a7a9a61ae85"
+      },
+      {
+        "path": ".github/workflows/image.yml",
+        "sha256": "13422d859d57d995dd589e532f389da26b9d1885335ea17d9d23e20c2c6f50ab"
+      },
+      {
+        "path": ".github/workflows/judge-parity.yml",
+        "sha256": "f36571a19ab398782defbef60191b852a508339bc00b44ae7187012e3fd5d176"
+      },
+      {
+        "path": ".github/workflows/release.yml",
+        "sha256": "25e965a391c6f71b21754a8434ce79dc54764a68e6e200a68ca7860ca22bb571"
+      },
+      {
+        "path": ".github/workflows/training.yml",
+        "sha256": "7fc343c71db62396590975c82129117044d89fb9f5c7ebad985e65012b6d0500"
+      },
+      {
+        "path": "SECURITY.md",
+        "sha256": "bc7c33be6f517ce23172477aaf9f05429ea90a6ad946d422a8064945df5c51e6"
+      },
+      {
+        "path": "docs/LIMITATIONS.md",
+        "sha256": "137e9b27a1da8a40f5d7c5c318448c0d3acebec3e8baa0bdd5f46dd812c47ba5"
+      },
+      {
+        "path": "docs/assurance-and-risk.md",
+        "sha256": "ec005420a5b3fd9efad3a8b7cb25fa3afea4c8f6664dbd75b0ce26065d9701aa"
+      },
+      {
+        "path": "docs/benchmarks/funds-meta-frame-v2.json",
+        "sha256": "4652115c37240a7405f406d80101069604b111e2eb95cf6516b47e1dcb148c0c"
+      },
+      {
+        "path": "docs/benchmarks/judge-evals.json",
+        "sha256": "d161f34fe846832dc43e9d872509f6d8a17d58afd48945177e4ffbc4aa90160c"
+      },
+      {
+        "path": "docs/benchmarks/judge-evals.md",
+        "sha256": "4eb8dc1b0e749921bfbbc4216f594b8de3b66d968d7782c08aa4e7b75366d9ce"
+      },
+      {
+        "path": "docs/benchmarks/latency.md",
+        "sha256": "88220c4a918483f6b1cbac2f032d72402357dcb0a5b164547ea2768e3f8abcb6"
+      },
+      {
+        "path": "docs/benchmarks/onnx-local-reference.json",
+        "sha256": "376e187a9427d6cfa30b3fb7287a84df49a4d00e89262fa1632aa6720c88c958"
+      },
+      {
+        "path": "docs/benchmarks/system-encoding-eval.md",
+        "sha256": "ef6dede873dfbd1a7ab943573003d54781ce8749edefae7398bd7d5f8cae7b1b"
+      },
+      {
+        "path": "docs/compliance/soc2-and-procurement.md",
+        "sha256": "4ca9f294fd9327385b2079ad24e17a8bf4fed3c24d695d074623989778458326"
+      },
+      {
+        "path": "docs/decision-cascade.md",
+        "sha256": "7ab07997f34e539bdc07c37d7eb34daeafd9b47b2ddbc0bf9d7caf903197ddf5"
+      },
+      {
+        "path": "docs/evidence-seal.md",
+        "sha256": "1f3f7d264a26e3631642114488efd6ae90c46dcb837629871ae1e3c0eaa0ac7d"
+      },
+      {
+        "path": "docs/identity-and-tenancy.md",
+        "sha256": "6e6e993f73bcae6cec562be896ba233402711d8271f768b46f9ceb1e18f50bd4"
+      },
+      {
+        "path": "docs/incident-response.md",
+        "sha256": "7a9cd24d3784143fdfe900b47cb1119a1f9818d9ae018ce3e14177546be99f27"
+      },
+      {
+        "path": "docs/internal/code-audit-durable-stores.md",
+        "sha256": "44d6d1bad6384bb377182b6a0c3893b72ecb489d14a7b713366a1cdaafb03115"
+      },
+      {
+        "path": "docs/internal/evidence/2026-08-10-github-release-controls.md",
+        "sha256": "443748246ac1e5d456809d61eaee434860cc7ac5c286c43feb8bd7757850e373"
+      },
+      {
+        "path": "docs/internal/evidence/2026-08-10-onnx-runtime-qualification.md",
+        "sha256": "53eaab832a12f78fe1e6be66f15ecd0c617df0a9fcce4fe1f5dc9a95f8573d9d"
+      },
+      {
+        "path": "docs/internal/external-readiness/README.md",
+        "sha256": "be8ed6c9d9d5ebf0f246ac3c5117d0bf90fbdbb3c002aed1b46cd1513559c7a0"
+      },
+      {
+        "path": "docs/internal/external-readiness/eng-judges.md",
+        "sha256": "c1078f287fc8bf039a9708be405b04c5ff92840f9ebe143eb813f1a559aacb8f"
+      },
+      {
+        "path": "docs/internal/external-readiness/evidence-receipt.schema.json",
+        "sha256": "7428badfd976e05798771e1433698ae04fbe8e42903c6d470f599297a151f3ee"
+      },
+      {
+        "path": "docs/internal/external-readiness/ext-compliance.md",
+        "sha256": "06605536acbf32c64b40aa8b84a4ae9f90bf41f61a7812f71712e9bd39230673"
+      },
+      {
+        "path": "docs/internal/external-readiness/ext-customers.md",
+        "sha256": "7e6520c4abc3479c3fb9b2a717056e25c3dec882d1199409e7bce8862c9b079c"
+      },
+      {
+        "path": "docs/internal/external-readiness/ext-operations.md",
+        "sha256": "d9c4ec2b544ce18a58b05ee73a38ddea71bc08f617ee14b0fc619e2da7dea18e"
+      },
+      {
+        "path": "docs/internal/external-readiness/ext-pentest.md",
+        "sha256": "9c3afa45e142777d29504c88c29842569c4ce3aeb11dbe2fce5b63beedafde2b"
+      },
+      {
+        "path": "docs/internal/external-readiness/ext-trust.md",
+        "sha256": "cfc72c7a3571a4f879f8a3646e8073f0c851e04be8c6c9f6654df6f52babf238"
+      },
+      {
+        "path": "docs/internal/procurement-readiness.md",
+        "sha256": "64b3eaea771a6745eb66f46510bf4af15a1d4c794f93e374c97c00b0e327e779"
+      },
+      {
+        "path": "docs/internal/prototype-roadmap.md",
+        "sha256": "ca65558981d2d37169c8e890766013df97f60cf36a6178549636ae040517aaf4"
+      },
+      {
+        "path": "docs/internal/readiness-evidence.md",
+        "sha256": "1b928a9ab401b85b8ce1a6e284e9ac5dda69b243b0e23d1de8609fee624f75b3"
+      },
+      {
+        "path": "docs/legal/admissibility.md",
+        "sha256": "849476e4df284f5e1350811a7055fbdcdac0db79f0886fe2d6856e1fe2e8cb96"
+      },
+      {
+        "path": "docs/model-cards/production-judges.md",
+        "sha256": "d331228cb4dd285dbfec0fe66af9e435df2180bac3d8ad1294f006b827b8c119"
+      },
+      {
+        "path": "docs/operations.md",
+        "sha256": "f98a963f38ac35d5770844760e944ed31b37e9659e8639280fe0b2e3d9a7650e"
+      },
+      {
+        "path": "docs/review-operations.md",
+        "sha256": "6ce0facf11378f3fb0fd064d8d6583ad7d1d5dde4b2f3ed9a775626f2b1a0d73"
+      },
+      {
+        "path": "docs/runbooks/gateway-held-key-rotation.md",
+        "sha256": "2fb7ff5cdca19ca1f7b63a96ee8eba73383bf5015ec8dd30d56526182b1dd4eb"
+      },
+      {
+        "path": "docs/runbooks/judge-drift.md",
+        "sha256": "408d50197deb7373688aedb2d9d814fcdf25bb3eec013e3eb5eec2321dee784e"
+      },
+      {
+        "path": "docs/runbooks/key-rotation.md",
+        "sha256": "6aa93a44cfc9385d7e1cb25a3ed8eea16386fda1b64b9b5ae036160046d37108"
+      },
+      {
+        "path": "docs/runbooks/tsa-trust-rotation.md",
+        "sha256": "c3e73b3a669b6574f1a0c58fbd6f1d639beb8c6baeea306009969a4b4ba7c601"
+      },
+      {
+        "path": "docs/security/THREAT_MODEL.md",
+        "sha256": "75fb57fe2ec6fbe8b366e45ac3cbb5c37910fa36335cd270263caab2b6013e1e"
+      },
+      {
+        "path": "docs/security/crypto-review-package.md",
+        "sha256": "e51532d342c56bb63ce790f51ef66af953fbe0c5f46c77fb7e0b750f60e7ca04"
+      },
+      {
+        "path": "docs/security/pentest-tenant-isolation.md",
+        "sha256": "2574a875bd7b38587a6fe5e9df21ae2c526069469a215b26cb9b6a10f1939cdf"
+      },
+      {
+        "path": "docs/security/release-assurance.md",
+        "sha256": "fd85dbb965df0da7ca75fa7c165fe1ea90a8e20a95f71d41cbfedd8221ddcb95"
+      },
+      {
+        "path": "packages/judge/models/manifest.json",
+        "sha256": "e09f3eac2c5422c9748ea94c00f104ddf6808b6efc1a19278104c8ae0436c191"
+      },
+      {
+        "path": "packages/judge/src/onnxModel.ts",
+        "sha256": "2a15a96ef8e3a581c6edd44a3a856dcc9a6cba2b798b559f38de4f80eddd1d95"
+      },
+      {
+        "path": "packages/observability/src/judgeDrift.ts",
+        "sha256": "767f1c644c0f7ced7445db05856fd5387289b820ed3579eae42432533e9af309"
+      },
+      {
+        "path": "scripts/internal/verify-external-gate-trackers.mjs",
+        "sha256": "95a877242860977e6ca04e2e50f168c20ec5b475243569f1017e9a08004c701a"
+      },
+      {
+        "path": "services/api/src/platform.ts",
+        "sha256": "4ec064fab17c255eecb55008b0065e06c66ca3b13634df80baf4df8a4c6eeef2"
+      },
+      {
+        "path": "test/fixtures/onnx-parity-funds.json",
+        "sha256": "e4989d21bebb3d19d9ba81f9ea4b37e697b1a63b77112be27cdf5b23a4b2834c"
+      },
+      {
+        "path": "test/observability.judge-drift.test.ts",
+        "sha256": "f5d9b485300b2f075d9cbbef7bdb03d462fbb5b54a64a7dca7925910c374a40b"
+      },
+      {
+        "path": "test/platform.judges.test.ts",
+        "sha256": "b8d5390ad902f17b9a372e94cee942c88ed8aa0ca4b335c828c25dfa039eb161"
+      },
+      {
+        "path": "training/check_leakage.py",
+        "sha256": "738f0f70fa7a2a8e5b1a4c7527408502f46cfb75362a7b3e5abf7043aca91f16"
+      },
+      {
+        "path": "training/corpus.py",
+        "sha256": "bbeeadaf48e15eed15d9655dc96196277b72c22c793127ba92cc627bdbf92781"
+      },
+      {
+        "path": "training/lockbox/funds-movement-intent.json",
+        "sha256": "6e29a255fa5dfac3419460e6fa359ad9afa861c1e3dbd032a49e1c777c9ff2d3"
+      },
+      {
+        "path": "training/pyproject.toml",
+        "sha256": "a4cf6608d9d00b27c496595935fcb0ede2a8410497c12e5c01d02167fd2d132f"
+      },
+      {
+        "path": "training/quantize.py",
+        "sha256": "63c24c54ba9ab2e36dfb0c6ab5e13e101a6dfcc60b0aba1d914e366bb998a0d7"
+      },
+      {
+        "path": "training/test_toolchain.py",
+        "sha256": "c51d3a39bfc0f583a10f72a10805ddfbdd2e1a26ad6032f6418305cfa03151d0"
+      },
+      {
+        "path": "training/train.py",
+        "sha256": "151df23bf0b1cf3274742b93251c10d21d34eccd6e1a94893f4fc86923c3508d"
+      },
+      {
+        "path": "training/uv.lock",
+        "sha256": "cad6dd537d692b0395e7f6088dc39407839e9664c547f5ca87687ebbdc4d0fb4"
+      }
+    ]
+  }
+}

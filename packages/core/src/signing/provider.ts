@@ -17,7 +17,7 @@
  * (ECDSA over NIST P-256 with SHA-256) is what AWS KMS produces — KMS has no Ed25519. A
  * verifier dispatches on this field, so a keyset can mix both across a rotation.
  */
-export type SignatureAlgorithm = "ed25519" | "ecdsa-p256";
+export type SignatureAlgorithm = import("@getpharos/pdp-spec").SignatureAlgorithm;
 
 export interface PublicKeyEntry {
   keyId: string;
