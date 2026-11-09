@@ -1,0 +1,27 @@
+# Transcript — durability demo in embedded mode (no Docker)
+#
+# Produced by running, on 547d20e (branch adopt-a-01-embedded-honest-labels), 2026-10-23,
+# macOS/arm64, Node v25.9.0, with NO containers running:
+#
+#   PHAROS_STORAGE_BACKEND=embedded PHAROS_DATA_DIR=$(mktemp -d) pnpm exec tsx scripts/demo-durability.ts
+#   PHAROS_STORAGE_BACKEND=embedded PHAROS_DATA_DIR=<same dir> pnpm exec tsx scripts/demo-durability.ts --verify
+#
+# Wall time: submit 0.85 s (first verdict on screen), cold verify 0.73 s.
+# Data dir afterwards: pharos.db, keystore/, keystore.passphrase (0600), evidence/demo-tenant/<seq>-<hash>.json x3
+
+Provisioned tenant + auditor key (saved to .pharos-demo-auditor-key).
+
+=== Submitting 3 demo actions for tenant "demo-tenant" ===
+  seq 0  email.send          -> ALLOW      hash 40ec553dfc36…
+  seq 1  payment.transfer    -> BLOCK      hash ac5e8a47c63d…
+  seq 2  crm.update          -> ALLOW      hash 76abd4f355fc…
+
+Chain head: sequence 2 hash 76abd4f355fc51d3…
+Records are now durable (embedded SQLite + local record files — tamper-evident, not WORM). Re-run with --verify to simulate a cold restart.
+
+
+=== Cold verification for tenant "demo-tenant" (simulated restart) ===
+Found 3 persisted records after restart.
+Genesis-to-head chain verification: PASS ✅
+  records checked: 3
+
