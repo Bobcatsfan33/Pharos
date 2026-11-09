@@ -41,7 +41,7 @@
     "smoke": "bash ../../scripts/cli-smoke.sh"
   },
   "dependencies": {
-    "@fastify/cors": "^11.3.0",
+    "@fastify/cors": "^11.4.1",
     "fastify": "^5.12.1"
   },
   "devDependencies": {
