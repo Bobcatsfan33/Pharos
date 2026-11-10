@@ -9,7 +9,7 @@ dependencies = [
   "torch==2.14.1",
   "transformers==5.17.0",
   "onnx==1.23.0",
-  "onnxruntime==1.24.3",
+  "onnxruntime==1.31.1",
   "numpy==2.2.6",
 ]
 
