@@ -7,7 +7,7 @@ description = "Transformer judge training pipeline. Out of the Node dependency t
 requires-python = ">=3.11"
 dependencies = [
   "torch==2.14.1",
-  "transformers==5.17.0",
+  "transformers==5.22.2",
   "onnx==1.23.0",
   "onnxruntime==1.24.3",
   "numpy==2.2.6",
