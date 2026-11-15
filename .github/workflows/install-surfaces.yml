@@ -19,7 +19,7 @@ permissions:
 jobs:
   npm-sdk:
     name: npm — @getpharos/sdk@latest installs and exports PharosClient
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -38,7 +38,7 @@ jobs:
 
   pypi-sdk:
     name: PyPI — getpharos installs and imports pharos_sdk
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -58,7 +58,7 @@ jobs:
     # The repository variable PHAROS_CLI_PUBLISHED is set to "true" by the maintainer after the
     # first publish. Until then this job is skipped and `cli-tarball` below is the proof.
     if: vars.PHAROS_CLI_PUBLISHED == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -84,7 +84,7 @@ jobs:
   cli-tarball:
     name: tarball — pack @getpharos/cli, npm-install it into an empty project, run every command
     # The unpublished proof: what `npx @getpharos/cli` will do for a stranger, from this checkout.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -106,7 +106,7 @@ jobs:
     # daily run tracks the published CLI, and runnable on demand so the entrypoint can be proven
     # before the CLI is on npm.
     if: vars.PHAROS_CLI_PUBLISHED == 'true' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
