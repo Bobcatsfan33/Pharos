@@ -4,12 +4,14 @@ import {
   compilePolicy,
   dryRun,
   decideWith,
+  importPolicy,
   type EvalContext,
   type PolicyArtifact,
+  type PolicySourceDocument,
   SHIPPED_PACKS,
 } from "@pharos/policy";
 import { actionText } from "@pharos/cascade";
-import type { VerdictRequest } from "@pharos/core";
+import { canonicalize, type VerdictRequest } from "@pharos/core";
 import type { Platform } from "../platform.js";
 import { requireAuth } from "../auth.js";
 
@@ -18,7 +20,24 @@ import { requireAuth } from "../auth.js";
  * (the impact dashboard); shadow mode with divergence; activate (only from shadow, enforcing
  * dry-run-before-enforce); and one-click rollback.
  */
-const CompileSchema = z.object({ name: z.string().min(1), text: z.string().min(1) });
+/**
+ * Two ways to author a policy, one lifecycle.
+ *
+ * `text` is the constrained-grammar compiler (the simple default). `document` is an
+ * interchange document from an external control plane — an OPA JSON profile or a Cedar JSON
+ * profile — imported through `importPolicy`, which lowers it into the same canonical
+ * `PolicyArtifact` the compiler produces. From that point dry-run, shadow, divergence,
+ * activate and rollback are identical, because they only ever see the artifact.
+ */
+const CompileSchema = z.union([
+  z.object({ name: z.string().min(1), text: z.string().min(1) }),
+  z.object({
+    name: z.string().min(1),
+    /** Which interchange profile `document` is written in. */
+    source: z.enum(["opa", "cedar", "pharos"]),
+    document: z.record(z.string(), z.unknown()),
+  }),
+]);
 
 const JUDGE_PACKS = ["finra-promissory", "phi-in-context", "funds-movement-intent"];
 const POLICY_JUDGE_CONCURRENCY = 4;
@@ -80,6 +99,44 @@ export function registerPolicyRoutes(app: FastifyInstance, platform: Platform): 
           error: { code: "invalid_request", issues: parsed.error.issues },
         });
 
+      // Interchange document (OPA / Cedar): import it into the canonical IR, then take the
+      // same lifecycle as a compiled policy. The source digest and any construct the profile
+      // could not express are returned, never silently dropped.
+      if ("source" in parsed.data) {
+        let imported;
+        try {
+          // The document is untrusted input; each importer validates its own required fields
+          // and throws a named error, which is what the 400 below reports.
+          imported = importPolicy({
+            source: parsed.data.source,
+            document: parsed.data.document,
+          } as unknown as PolicySourceDocument);
+        } catch (err) {
+          return reply.status(400).send({
+            success: false,
+            data: null,
+            error: { code: "policy_import_failed", message: (err as Error).message },
+          });
+        }
+        const policy = await platform.policyStore.createDraft({
+          tenantId,
+          name: parsed.data.name,
+          artifact: { ...imported.artifact, packId: parsed.data.name },
+          sourceText: canonicalize(parsed.data.document),
+        });
+        return reply.status(201).send({
+          success: true,
+          data: {
+            policy,
+            source: imported.source,
+            sourceDigest: imported.sourceDigest,
+            warnings: imported.warnings,
+            unparsed: [],
+          },
+          error: null,
+        });
+      }
+
       const compiled = compilePolicy(parsed.data.name, "1", parsed.data.name, parsed.data.text);
       const artifact: PolicyArtifact = {
         packId: parsed.data.name,
@@ -95,7 +152,12 @@ export function registerPolicyRoutes(app: FastifyInstance, platform: Platform): 
       });
       return reply.status(201).send({
         success: true,
-        data: { policy, warnings: compiled.warnings, unparsed: compiled.unparsed },
+        data: {
+          policy,
+          source: "pharos",
+          warnings: compiled.warnings,
+          unparsed: compiled.unparsed,
+        },
         error: null,
       });
     },
