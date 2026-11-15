@@ -29,6 +29,7 @@
   "scripts": {
     "build": "pnpm -r --filter=./packages/* --filter=./services/* build",
     "build:publishable": "pnpm --filter @getpharos/sdk --filter @getpharos/middleware --filter @getpharos/pdp-spec build",
+    "release:dry-run": "bash scripts/release-dryrun.sh",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm runtime:check",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
