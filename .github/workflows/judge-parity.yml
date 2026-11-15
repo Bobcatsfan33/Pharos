@@ -16,6 +16,11 @@ on:
       - "test/fixtures/onnx-parity-funds.json"
       - "test/onnx-serving.spec.ts"
       - "training/generate_runtime_parity_reference.py"
+      # The Python onnxruntime in the training lock GENERATES the reference Node output must
+      # match, so a change to it is exactly what this gate exists to catch. Without these two
+      # paths the gate stayed silent on the training-toolchain majors (#325/#326/#327).
+      - "training/pyproject.toml"
+      - "training/uv.lock"
       - "vitest.live.config.ts"
   pull_request:
     paths:
@@ -28,6 +33,11 @@ on:
       - "test/fixtures/onnx-parity-funds.json"
       - "test/onnx-serving.spec.ts"
       - "training/generate_runtime_parity_reference.py"
+      # The Python onnxruntime in the training lock GENERATES the reference Node output must
+      # match, so a change to it is exactly what this gate exists to catch. Without these two
+      # paths the gate stayed silent on the training-toolchain majors (#325/#326/#327).
+      - "training/pyproject.toml"
+      - "training/uv.lock"
       - "vitest.live.config.ts"
 
 permissions:
