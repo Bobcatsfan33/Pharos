@@ -604,11 +604,25 @@ jobs:
         with:
           fetch-depth: 0
       - name: DCO sign-off check
+        env:
+          # The DCO is a statement by a person about code they have the right to submit.
+          # Dependabot cannot make it, and cannot be configured to add the trailer, so a PR
+          # that only moves a version in our own manifests would be permanently unmergeable —
+          # which contradicts CONTRIBUTING.md "Dependency updates", whose whole policy is
+          # "merge when CI is green". Commits authored by this bot are therefore exempt; every
+          # other author, human or machine, must sign off. A human commit pushed onto a
+          # Dependabot branch is still checked, because the exemption is per commit author.
+          DCO_EXEMPT_AUTHORS: dependabot[bot]
         run: |
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           missing=0
           for c in $(git rev-list "$base".."$head"); do
+            author="$(git show -s --format=%an "$c")"
+            if [ "$author" = "$DCO_EXEMPT_AUTHORS" ]; then
+              echo "note: $(git show -s --format='%h %s' "$c") authored by $author — DCO exempt"
+              continue
+            fi
             if ! git show -s --format=%B "$c" | grep -qiE '^Signed-off-by: .+ <.+@.+>'; then
               echo "::error::commit $(git show -s --format='%h %s' "$c") is missing a Signed-off-by line"
               missing=1
