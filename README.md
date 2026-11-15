@@ -81,6 +81,10 @@ Prerequisites: Node ≥ 22, pnpm 10, Docker. First run spends most of its time p
 images; the commands themselves take seconds. The full walkthrough — including tampering with
 the bundle and watching it fail — is in [docs/demo.md](docs/demo.md).
 
+There is a `Makefile` wrapping these if you type `make` by reflex — `make setup up test demo
+verify`, and `make help` for the rest. Every target delegates to the pnpm script of the same
+name, so the two cannot drift.
+
 ## Use it from your agent
 
 <table>
