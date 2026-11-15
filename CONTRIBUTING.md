@@ -177,6 +177,15 @@ submit; Dependabot cannot make it and cannot be configured to add the trailer. T
 therefore exempts commits authored by `dependabot[bot]` and checks every other author. A
 human commit pushed onto a Dependabot branch is still checked.
 
+**Auto-merge.** [`.github/workflows/dependabot-automerge.yml`](.github/workflows/dependabot-automerge.yml)
+turns on GitHub's auto-merge for the rows above that say "merge when CI is green", and only
+those. Auto-merge bypasses nothing — GitHub still waits for every required check — so it
+changes who presses the button, not whether the gates ran. Three guards must all hold: the PR
+is authored by `dependabot[bot]`, the update type is `semver-patch` or `semver-minor` (never a
+major), and no updated dependency is on the trust path (`zod`, `jose`, and also `pkijs` and
+`asn1js`, which parse RFC 3161 tokens on the evidence path). A blocked PR gets a log line
+saying which guard stopped it, and waits for a human.
+
 ## Getting help
 
 Thirty minutes stuck → write down what you tried → open an issue or a discussion. Two hours

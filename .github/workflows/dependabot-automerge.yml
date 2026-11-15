@@ -1,0 +1,71 @@
+name: dependabot auto-merge
+
+# Enables GitHub's auto-merge on Dependabot PRs that the written policy in CONTRIBUTING.md
+# already says to merge on green — and ONLY those. Auto-merge does not bypass anything: GitHub
+# still waits for every required check, so this changes who presses the button, not whether the
+# gates ran.
+#
+# Three guards, all of which must hold:
+#   1. the PR is authored by dependabot[bot];
+#   2. the update type is semver-patch or semver-minor (never a major);
+#   3. no updated dependency is on the trust path.
+#
+# Trust-path packages are excluded by name because CONTRIBUTING requires a written re-check
+# note on the validation / token-verification path for them, and a note is a human act.
+on: pull_request_target
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    runs-on: ubuntu-24.04
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: read the dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: refuse trust-path packages
+        id: guard
+        env:
+          # zod and jose per CONTRIBUTING.md "Trust-path libraries"; pkijs and asn1js because
+          # they parse RFC 3161 tokens on the evidence-admissibility path (see #324).
+          TRUST_PATH: zod jose pkijs asn1js
+          UPDATED: ${{ steps.meta.outputs.dependency-names }}
+        run: |
+          blocked=""
+          for dep in $(echo "$UPDATED" | tr ',' ' '); do
+            for guarded in $TRUST_PATH; do
+              [ "$dep" = "$guarded" ] && blocked="$blocked $dep"
+            done
+          done
+          if [ -n "$blocked" ]; then
+            echo "trust-path package(s) in this update:$blocked — a human merges these"
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "eligible=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: enable auto-merge for a patch or minor
+        if: >-
+          steps.guard.outputs.eligible == 'true' &&
+          (steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+           steps.meta.outputs.update-type == 'version-update:semver-minor')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR"
+
+      - name: say why it was left alone
+        if: >-
+          steps.guard.outputs.eligible != 'true' ||
+          (steps.meta.outputs.update-type != 'version-update:semver-patch' &&
+           steps.meta.outputs.update-type != 'version-update:semver-minor')
+        run: |
+          echo "not auto-merged — update-type=${{ steps.meta.outputs.update-type }}," \
+               "trust-path-eligible=${{ steps.guard.outputs.eligible }}"
+          echo "A major, or a trust-path package, is merged by a human per CONTRIBUTING.md."
