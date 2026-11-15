@@ -48,7 +48,7 @@ seq  verdict   tier  action      cited rule                    sealed at        
 
 ## What the hook can and cannot see
 
-Read [`docs/LIMITATIONS.md` §9](../../docs/LIMITATIONS.md#9-the-claude-code-hook-governs-tool-calls-before-they-run--within-what-a-hook-can-see)
+Read [`docs/LIMITATIONS.md` §11](../../docs/LIMITATIONS.md#11-the-claude-code-hook-governs-tool-calls-before-they-run--within-what-a-hook-can-see)
 before relying on it: the hook sees the command string or file path, not the effect; coverage is
 whatever `.claude/settings.json` says; the rules are string matches, not a sandbox; and embedded
 storage is tamper-evident, not WORM. It fails closed (exit 2, call blocked, reason shown) when

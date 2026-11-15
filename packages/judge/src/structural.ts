@@ -1,6 +1,7 @@
 import { sha256Hex, type ActionIntent, type MandateBinding } from "@pharos/core";
 import {
   type ActionSchema,
+  type SealedMandateTokenLike,
   type Deadline,
   type Judge,
   type JudgeInput,
@@ -32,7 +33,7 @@ export const STRUCTURAL_CHECKS = [
 export type StructuralCheck = (typeof STRUCTURAL_CHECKS)[number];
 
 /** Bumped whenever a check's semantics change; the content hash makes the version self-describing. */
-const STRUCTURAL_SEMANTICS_VERSION = "3";
+const STRUCTURAL_SEMANTICS_VERSION = "4";
 export const STRUCTURAL_JUDGE_VERSION = `structural@${sha256Hex({
   semantics: STRUCTURAL_SEMANTICS_VERSION,
   checks: STRUCTURAL_CHECKS,
@@ -59,7 +60,7 @@ export class StructuralJudge implements Judge {
     void _deadline; // sub-millisecond; the panel's deadline is enforced around us
     const start = process.hrtime.bigint();
     const findings = [
-      checkMandateScope(input.action, input.mandate),
+      checkMandateScope(input.action, input.mandate, input.liability.mandateToken),
       checkPayloadSchema(input.action, input.context.actionSchemas?.[input.action.type]),
       checkPlan(input.action, input.context.plan),
       checkBlastRadius(input),
@@ -91,7 +92,7 @@ export class StructuralJudge implements Judge {
   /** Every check as its own signal, for policy rules that key on a specific concern. */
   async evaluateAll(input: JudgeInput): Promise<Finding[]> {
     return [
-      checkMandateScope(input.action, input.mandate),
+      checkMandateScope(input.action, input.mandate, input.liability.mandateToken),
       checkPayloadSchema(input.action, input.context.actionSchemas?.[input.action.type]),
       checkPlan(input.action, input.context.plan),
       checkBlastRadius(input),
@@ -128,18 +129,55 @@ const fail = (concern: StructuralCheck, citation: string, rationale: string): Fi
 });
 
 /** The mandate declares the action types it covers in `limits.actionTypes` (prefix list). */
-export function checkMandateScope(action: ActionIntent, mandate: MandateBinding | null): Finding {
-  const c = "structural.mandate-scope";
-  if (!mandate) return na(c, "no mandate bound");
+/**
+ * Where the action types this mandate covers actually come from.
+ *
+ * A verified MandateToken is the narrower, and therefore the governing, authority: its holder
+ * may have attenuated the stored mandate offline, and the attenuation is what Tier 1 enforced.
+ * The token-derived `MandateBinding` deliberately carries no `limits.actionTypes` (scope is
+ * sealed under `liability.mandateToken.effective`, not flattened into limits), so reading only
+ * the binding made this check abstain for exactly the callers who had narrowed their authority.
+ *
+ * Precedence: a verified token's effective scope, else the stored mandate's declared list. A
+ * REFUSED token contributes nothing — Tier 1 has already blocked it, and treating a token that
+ * failed verification as a source of scope would be reading authority out of an invalid claim.
+ */
+function scopeSource(
+  mandate: MandateBinding | null,
+  token: SealedMandateTokenLike | undefined,
+): { prefixes: string[]; source: string } | { prefixes: null; reason: string } {
+  if (token?.verification === "verified" && token.effective) {
+    const declared = token.effective.scope?.actionTypes;
+    const prefixes = Array.isArray(declared)
+      ? declared.filter((d): d is string => typeof d === "string")
+      : [];
+    if (prefixes.length > 0) {
+      return { prefixes, source: `mandate token for ${token.effective.mandateId}` };
+    }
+    return { prefixes: null, reason: "mandate token declares no action types" };
+  }
+  if (!mandate) return { prefixes: null, reason: "no mandate bound" };
   const declared = mandate.limits?.actionTypes;
-  if (!Array.isArray(declared) || declared.length === 0)
-    return na(c, "mandate declares no action types");
-  const prefixes = declared.filter((d): d is string => typeof d === "string");
-  if (actionTypeMatches(action.type, prefixes)) return ok(c);
+  const prefixes = Array.isArray(declared)
+    ? declared.filter((d): d is string => typeof d === "string")
+    : [];
+  if (prefixes.length === 0) return { prefixes: null, reason: "mandate declares no action types" };
+  return { prefixes, source: `mandate ${mandate.id}` };
+}
+
+export function checkMandateScope(
+  action: ActionIntent,
+  mandate: MandateBinding | null,
+  token?: SealedMandateTokenLike | undefined,
+): Finding {
+  const c = "structural.mandate-scope";
+  const scope = scopeSource(mandate, token);
+  if (scope.prefixes === null) return na(c, scope.reason);
+  if (actionTypeMatches(action.type, scope.prefixes)) return ok(c);
   return fail(
     c,
     "structural-mandate-scope",
-    `action type ${action.type} is outside mandate ${mandate.id}'s declared scope (${prefixes.join(", ")})`,
+    `action type ${action.type} is outside ${scope.source}'s declared scope (${scope.prefixes.join(", ")})`,
   );
 }
 

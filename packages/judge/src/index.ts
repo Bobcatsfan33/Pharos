@@ -50,6 +50,7 @@ export {
   type Deadline,
   type Judge,
   type JudgeInput,
+  type SealedMandateTokenLike,
   type JudgeKind,
   type PanelJudgeResult,
   type PropertySchema,
