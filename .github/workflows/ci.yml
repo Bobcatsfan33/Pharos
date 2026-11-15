@@ -9,13 +9,13 @@ permissions:
 jobs:
   action-pins:
     name: workflow actions are pinned to commit SHAs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: node scripts/verify-action-pins.mjs
 
   helm:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
@@ -284,7 +284,7 @@ jobs:
           fi
 
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
@@ -305,7 +305,7 @@ jobs:
   # Workstream A exit gate: Tier-1-only verdicts carrying a MandateToken must sustain
   # ≥ 1,000/s on this runner. Pure CPU (signature verification + Tier 1); no services.
   tier1-token-bench:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
@@ -325,7 +325,7 @@ jobs:
 
   training-supply-chain:
     name: training lock audit (Python ${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -358,7 +358,7 @@ jobs:
           -r "${RUNNER_TEMP}/training-requirements.txt"
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
@@ -468,7 +468,7 @@ jobs:
   # embedded storage backend (and everything the on-ramp relies on) runs with no
   # infrastructure at all, and that it never skips — the same zero-skip gate applies.
   test-embedded:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
@@ -499,7 +499,7 @@ jobs:
   # none of the Postgres/AWS/ONNX modules were installed (roadmap amendment 7b: a release AC
   # is installing the packed tarball and running it, not merely building it).
   cli-smoke:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
@@ -517,7 +517,7 @@ jobs:
         run: bash scripts/cli-smoke.sh
 
   runtime:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -555,7 +555,7 @@ jobs:
         run: python -m tests.chaos.soak
 
   python-sdk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -571,7 +571,7 @@ jobs:
   changeset:
     # Any PR that changes a publishable (non-private) package must include a changeset.
     # Add the `no-changeset` label to skip (docs-only / internal-only changes).
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: >-
       github.event_name == 'pull_request' &&
       !contains(github.event.pull_request.labels.*.name, 'no-changeset')
@@ -597,7 +597,7 @@ jobs:
 
   dco:
     # Every commit in a PR must be signed off (git commit -s) per the DCO. See CONTRIBUTING.md.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

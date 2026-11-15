@@ -20,7 +20,7 @@ on:
 
 jobs:
   release-channel:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       publish_sdks: ${{ steps.classify.outputs.publish_sdks }}
       channel: ${{ steps.classify.outputs.channel }}
@@ -38,7 +38,7 @@ jobs:
   npm-publish:
     needs: release-channel
     if: needs.release-channel.outputs.publish_sdks == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: production-release
     permissions:
       contents: read
@@ -73,7 +73,7 @@ jobs:
   pypi-publish:
     needs: release-channel
     if: needs.release-channel.outputs.publish_sdks == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: pharos # MUST match the environment on the PyPI trusted publisher
     permissions:
       id-token: write # required for PyPI trusted publishing
@@ -106,7 +106,7 @@ jobs:
   runtime-package:
     needs: release-channel
     if: needs.release-channel.outputs.publish_sdks == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: pharos
     permissions:
       id-token: write
