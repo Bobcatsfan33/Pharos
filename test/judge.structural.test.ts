@@ -71,6 +71,67 @@ describe("structural judge — mandate scope", () => {
   });
 });
 
+describe("structural judge — mandate scope from a verified token (#300)", () => {
+  const stored = mandate({ actionTypes: ["payment.", "invoice.read"] });
+  const tokenFor = (actionTypes: string[], verification = "verified") => ({
+    verification,
+    effective: { mandateId: "m-1", scope: { actionTypes } },
+  });
+
+  it("a token narrower than the stored mandate governs: an action the mandate allows is flagged", () => {
+    // The stored mandate permits every `payment.` action; the holder attenuated the token to
+    // `payment.transfer` only. Tier 1 enforces the narrowed scope, and so must this check.
+    expect(checkMandateScope(action("payment.refund"), stored)).toMatchObject({
+      score: 0,
+      abstain: false,
+    });
+    const narrowed = checkMandateScope(
+      action("payment.refund"),
+      stored,
+      tokenFor(["payment.transfer"]),
+    );
+    expect(narrowed).toMatchObject({ score: 1, citation: "structural-mandate-scope" });
+    expect(narrowed.rationale).toMatch(/mandate token for m-1/);
+    // In scope for the token: passes.
+    expect(
+      checkMandateScope(action("payment.transfer"), stored, tokenFor(["payment.transfer"])).score,
+    ).toBe(0);
+  });
+
+  it("the token governs even when the binding carries no action types at all", () => {
+    // A token-derived MandateBinding has limits {maxAmount, currency}, never actionTypes —
+    // which is exactly the case that used to abstain.
+    const tokenBinding = mandate({ maxAmount: 5000, currency: "USD" });
+    expect(checkMandateScope(action("crm.update"), tokenBinding).abstain).toBe(true);
+    expect(
+      checkMandateScope(action("crm.update"), tokenBinding, tokenFor(["payment."])),
+    ).toMatchObject({ score: 1, citation: "structural-mandate-scope" });
+  });
+
+  it("a refused token contributes no scope — Tier 1 has already blocked it", () => {
+    for (const verification of ["proof", "widening", "expired", "mandate-revoked"]) {
+      const f = checkMandateScope(
+        action("crm.update"),
+        stored,
+        tokenFor(["payment."], verification),
+      );
+      // Falls back to the stored mandate, which does not cover crm.update.
+      expect(f.rationale, verification).toMatch(/mandate m-1/);
+    }
+  });
+
+  it("no token leaves the previous behaviour byte-identical", () => {
+    for (const a of ["payment.transfer", "invoice.read", "crm.update"]) {
+      expect(checkMandateScope(action(a), stored, undefined)).toEqual(
+        checkMandateScope(action(a), stored),
+      );
+    }
+    expect(checkMandateScope(action("payment.transfer"), null, undefined).abstain).toBe(true);
+    // A verified token with an empty scope list abstains rather than failing everything.
+    expect(checkMandateScope(action("x"), null, tokenFor([])).abstain).toBe(true);
+  });
+});
+
 describe("structural judge — payload schema", () => {
   const schema = {
     type: "object" as const,
@@ -166,6 +227,39 @@ describe("structural judge — blast radius", () => {
     expect(checkBlastRadius(input(action("email.send", { body: "hi" }), liability())).abstain).toBe(
       true,
     );
+  });
+});
+
+describe("structural judge — a token turns an abstention into a real check (#300)", () => {
+  it("abstains for a token-derived binding without the token, and checks with it", async () => {
+    const judge = new StructuralJudge();
+    const dl = deadlineFrom(process.hrtime.bigint(), 800);
+    // A token-derived binding: limits carry money, never action types.
+    const binding = mandate({ maxAmount: 5000, currency: "USD" });
+    const base = input(action("payment.transfer", { record: "x" }), liability(), {
+      mandate: binding,
+    });
+    // Without the sealed token the scope check has nothing to read, so the whole judge abstains:
+    // "no structural citation" did NOT mean "the scope was verified".
+    expect((await judge.evaluate(base, dl)).abstain).toBe(true);
+
+    // With the verified token it is a real check that passes — the judge no longer abstains.
+    const withToken = await judge.evaluate(
+      {
+        ...base,
+        liability: {
+          ...base.liability,
+          mandateToken: {
+            verification: "verified",
+            effective: { mandateId: "m-1", scope: { actionTypes: ["payment."] } },
+          },
+        } as typeof base.liability,
+      },
+      dl,
+    );
+    expect(withToken.abstain).toBe(false);
+    expect(withToken.score).toBe(0);
+    expect(withToken.rationale).toMatch(/structural\.mandate-scope: ok/);
   });
 });
 

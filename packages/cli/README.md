@@ -63,7 +63,7 @@ an action, sealed to `.pharos/`, and answered: **block → deny** (holds even wi
 `--dangerously-skip-permissions`), **escalate → ask** with the cited rule, **allow → no
 decision** so Claude Code's own permission rules still apply (`--on-allow allow` to
 auto-approve). `pharos log` shows what the agent tried. What the hook can and cannot see is in
-[LIMITATIONS §9](https://github.com/Bobcatsfan33/Pharos/blob/main/docs/LIMITATIONS.md#9-the-claude-code-hook-governs-tool-calls-before-they-run--within-what-a-hook-can-see);
+[LIMITATIONS §11](https://github.com/Bobcatsfan33/Pharos/blob/main/docs/LIMITATIONS.md#11-the-claude-code-hook-governs-tool-calls-before-they-run--within-what-a-hook-can-see);
 a real session transcript is in
 [`examples/claude-code/`](https://github.com/Bobcatsfan33/Pharos/tree/main/examples/claude-code).
 

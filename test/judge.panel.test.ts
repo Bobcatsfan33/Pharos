@@ -186,6 +186,58 @@ describe("judge panel — structural decisions", () => {
     expect(v.judgeVersion).toMatch(/^structural@/);
   });
 
+  it("a verified mandate token's scope governs the structural check, under Tier 1 (#300)", async () => {
+    // Layering, stated precisely. Tier 1's `mandate-token-scope` rule already BLOCKS an action
+    // outside a verified token's scope, and a Tier-1 block short-circuits the cascade — so the
+    // out-of-scope case never reaches Tier 3. What #300 changes is the in-scope case: the
+    // structural judge used to ABSTAIN for token holders (a token-derived binding carries no
+    // `limits.actionTypes`), so the record showed no scope check at all. It now checks the
+    // token's effective scope and reports a pass, and the unit tests in
+    // test/judge.structural.test.ts prove it FAILS an out-of-scope action when it is reached.
+    const sealedToken = {
+      rootKeyId: "mandate:t#v1",
+      blockHashes: ["a".repeat(64), "b".repeat(64)],
+      headHash: "c".repeat(64),
+      verification: "verified" as const,
+      effective: {
+        tenantId: "t",
+        agentId: "a",
+        mandateId: "m",
+        grantor: "cfo",
+        issuedAt: now.toISOString(),
+        expiresAt: "2035-01-01T00:00:00.000Z",
+        scope: { actionTypes: ["payment.transfer"], resources: ["*"] },
+        limits: { financialAmount: 5000, currency: "USD" },
+        citations: [],
+      },
+    };
+    const tokenBinding = {
+      id: "m",
+      scope: "token",
+      limits: { maxAmount: 5000, currency: "USD" },
+      grantor: "cfo",
+      expiresAt: "2035-01-01T00:00:00.000Z",
+      version: "token",
+    };
+
+    // Out of the token's scope: Tier 1 blocks and Tier 3 is skipped.
+    const outOfScope = await cascade.evaluate(
+      req("payment.refund", { amount: 10 }, { mandate: tokenBinding, mandateToken: sealedToken }),
+      now,
+    );
+    expect(outOfScope.decision).toBe("block");
+    expect(outOfScope.tierReached).toBe(1);
+    expect(outOfScope.ruleCitations.map((c) => c.ruleId)).toEqual(["mandate-token-scope"]);
+
+    // In scope: the panel runs, the structural judge raises nothing, and the verdict stands.
+    const inScope = await cascade.evaluate(
+      req("payment.transfer", { amount: 10 }, { mandate: tokenBinding, mandateToken: sealedToken }),
+      now,
+    );
+    expect(inScope.tierReached).toBe(3);
+    expect(inScope.ruleCitations.map((c) => c.ruleId)).not.toContain("structural-mandate-scope");
+  });
+
   it("a declared blast radius that contradicts the payload escalates", async () => {
     const v = await cascade.evaluate(
       req(

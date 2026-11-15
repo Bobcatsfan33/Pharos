@@ -101,3 +101,17 @@ export interface Judge {
 export function actionTypeMatches(actionType: string, prefixes: readonly string[]): boolean {
   return prefixes.some((p) => (p.endsWith(".") ? actionType.startsWith(p) : actionType === p));
 }
+
+/**
+ * The shape this package needs from `liability.mandateToken` (schema 1.1.1). Structural, not an
+ * import of @pharos/core's type: the judge only reads the verifier's answer and the effective
+ * scope, and declaring that narrowly keeps the dependency one-way.
+ */
+export interface SealedMandateTokenLike {
+  verification: string;
+  effective?: {
+    mandateId: string;
+    scope?: { actionTypes?: string[]; resources?: string[] };
+    limits?: { financialAmount?: number; currency?: string; reversibility?: string };
+  };
+}

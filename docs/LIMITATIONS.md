@@ -245,7 +245,9 @@ payload-schema check needs a registered JSON-schema subset for the action type, 
 plan-conformance check needs the allowed next steps of the current plan. Both arrive through
 the cascade's `contextFor` hook; **the served API does not yet populate it**, so over
 `POST /v1/actions` those two checks abstain on every action today. The mandate-scope check
-fires only when a mandate declares `limits.actionTypes`, and the blast-radius check only when
+fires when a mandate declares `limits.actionTypes` or — since #300 — when a verified
+MandateToken is present, in which case the token's effective scope governs (it is the narrower,
+and therefore the enforced, authority); the blast-radius check fires only when
 the payload carries an amount or currency; it does not second-guess the declared
 reversibility, which is a statement about the world rather than about the payload. An abstention leaves no citation and no signal in the sealed record — only the
 `3/structural` timing key shows the judge ran — so the absence of a structural citation is
@@ -285,9 +287,13 @@ things an honest reader should know.
   SDK reports divergence (`local-verdict-diverged`) but the side effect may already have run.
   That is the trade the handoff describes, and it is the tenant's to make.
 - **Resources narrow but are not yet bound to the payload.** A token's `scope.resources` is
-  verified to only narrow and is sealed in `effective`, but no Tier-1 rule maps an action's
-  payload to a resource identifier yet, so an in-scope action type against an out-of-scope
-  resource is not blocked by the token. Action types are enforced.
+  verified to only narrow and is sealed in `effective`, but no Tier-1 rule and no structural
+  check maps an action's payload to a resource identifier yet, so an in-scope action type
+  against an out-of-scope resource is not blocked by the token. Action types **are** enforced,
+  at Tier 1 (`mandate-token-scope`, which blocks and short-circuits) and, since #300, in the
+  structural judge's `structural.mandate-scope` check, which reads the token's effective scope
+  rather than abstaining. The two agree by construction; Tier 1 is reached first, so the
+  structural check is the one that appears in the sealed record for actions Tier 1 admits.
 
 **Also true:** the structural judge does not read tokens (its mandate-scope check sees the
 token-derived binding's `limits`, which carry no action types by design); the follow-up for
@@ -343,7 +349,7 @@ verification from an exported bundle.
 backend (`/healthz`, the startup log, the CLI) reads these facts from the backend's own
 `EvidencePosture` rather than restating them.
 
-## 9. The Claude Code hook governs tool calls before they run — within what a hook can see
+## 11. The Claude Code hook governs tool calls before they run — within what a hook can see
 
 > **Tracking issue:** none — a scoping statement for `pharos hook claude-code`.
 
