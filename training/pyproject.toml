@@ -6,10 +6,10 @@ description = "Transformer judge training pipeline. Out of the Node dependency t
 # and the Pharos Runtime already requires 3.11. Python 3.10 reached end of life in Oct 2026.
 requires-python = ">=3.11"
 dependencies = [
-  "torch==2.14.1",
-  "transformers==5.17.0",
+  "torch==2.15.0",
+  "transformers==5.22.2",
   "onnx==1.23.2",
-  "onnxruntime==1.24.3",
+  "onnxruntime==1.31.1",
   "numpy==2.2.6",
 ]
 
