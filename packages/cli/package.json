@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.4.1",
-    "fastify": "^5.12.1"
+    "fastify": "^5.12.8"
   },
   "devDependencies": {
     "@pharos/api": "workspace:*",
