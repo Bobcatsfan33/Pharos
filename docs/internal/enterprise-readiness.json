@@ -9,8 +9,8 @@
       "role": "Product Engineering",
       "organization": "Pharos project"
     },
-    "asOf": "2026-08-10",
-    "reviewBy": "2026-11-08",
+    "asOf": "2026-11-15",
+    "reviewBy": "2027-02-15",
     "assessedCommit": "ef11b3bdca94994fcea35f4f72028e985416b5b8",
     "softwareReleaseCandidate": false,
     "deploymentDecision": "not-approved",
@@ -342,7 +342,7 @@
   ],
   "evidenceSnapshot": {
     "algorithm": "sha256",
-    "generatedAt": "2026-11-09",
+    "generatedAt": "2026-11-15",
     "files": [
       {
         "path": ".github/CODEOWNERS",
@@ -354,31 +354,31 @@
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "eefec726f3e1c6361f639a6e15e778d4453b16006d477c4dc3d93155e26c369e"
+        "sha256": "0d671c63c6ef1a2707e690fa8eb8d2e8a8171af78233ee104736caf045b3043e"
       },
       {
         "path": ".github/workflows/codeql.yml",
-        "sha256": "cb7e025b5d97d1d0d76ef16d35149e808111f309077b4e8b0604259ee81c8efe"
+        "sha256": "204d9207c829337cb917d63d9a5a8953d33afa59f6ff4faf4a150b7465335ef1"
       },
       {
         "path": ".github/workflows/gitleaks.yml",
-        "sha256": "3a24463df55edf4a1474fe24a849c91d5310f3a76e6dcfb08ac12a7a9a61ae85"
+        "sha256": "bb3c1a9222a194594f3f249a8caecf43137bb514353cd3ce3d62d8ed2ea94773"
       },
       {
         "path": ".github/workflows/image.yml",
-        "sha256": "13422d859d57d995dd589e532f389da26b9d1885335ea17d9d23e20c2c6f50ab"
+        "sha256": "543cb5d2ac68da7e06d717ff9d3525860030186a340718386d59bab5ee196f6c"
       },
       {
         "path": ".github/workflows/judge-parity.yml",
-        "sha256": "f36571a19ab398782defbef60191b852a508339bc00b44ae7187012e3fd5d176"
+        "sha256": "a83ef89e66ee22e42b12dd320717a23d0e9beedd2e304e1a8ebe3e6028f646d1"
       },
       {
         "path": ".github/workflows/release.yml",
-        "sha256": "25e965a391c6f71b21754a8434ce79dc54764a68e6e200a68ca7860ca22bb571"
+        "sha256": "e3ae3ee349e966f8e779f5320f4f92d5c7f5ec53941c693e8459c0d25c3abf66"
       },
       {
         "path": ".github/workflows/training.yml",
-        "sha256": "7fc343c71db62396590975c82129117044d89fb9f5c7ebad985e65012b6d0500"
+        "sha256": "55a019bf634192620cdef7ad110b24456b309b139c233c2a85a8792e40a07ccf"
       },
       {
         "path": "SECURITY.md",
@@ -386,7 +386,7 @@
       },
       {
         "path": "docs/LIMITATIONS.md",
-        "sha256": "137e9b27a1da8a40f5d7c5c318448c0d3acebec3e8baa0bdd5f46dd812c47ba5"
+        "sha256": "2569d8f0263a72ccea5edf7ce61c738e090a6192f342a94b3beaaf902f70c2b3"
       },
       {
         "path": "docs/assurance-and-risk.md",
@@ -526,7 +526,7 @@
       },
       {
         "path": "docs/security/THREAT_MODEL.md",
-        "sha256": "75fb57fe2ec6fbe8b366e45ac3cbb5c37910fa36335cd270263caab2b6013e1e"
+        "sha256": "48b37beeb488ebfcebbecdfcf9647e5a18e10c48ea077140798fffd111557f73"
       },
       {
         "path": "docs/security/crypto-review-package.md",
@@ -558,7 +558,7 @@
       },
       {
         "path": "services/api/src/platform.ts",
-        "sha256": "4ec064fab17c255eecb55008b0065e06c66ca3b13634df80baf4df8a4c6eeef2"
+        "sha256": "14802decfeac112635524778b98160ea99af2b5588c9d375ac8c67f5ae37ff81"
       },
       {
         "path": "test/fixtures/onnx-parity-funds.json",
@@ -586,7 +586,7 @@
       },
       {
         "path": "training/pyproject.toml",
-        "sha256": "a4cf6608d9d00b27c496595935fcb0ede2a8410497c12e5c01d02167fd2d132f"
+        "sha256": "7dceb1c86ce51fbbc1f76f1d2c9aa6e5472b6838b73599ca8906706c14005075"
       },
       {
         "path": "training/quantize.py",
@@ -602,7 +602,7 @@
       },
       {
         "path": "training/uv.lock",
-        "sha256": "cad6dd537d692b0395e7f6088dc39407839e9664c547f5ca87687ebbdc4d0fb4"
+        "sha256": "3b9319304bf6a7cd816e7e674437a08698acc2584775ce0d933bf0b21409e0c7"
       }
     ]
   }
