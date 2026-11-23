@@ -77,7 +77,7 @@
     "eslint-config-prettier": "^10.1.8",
     "fastify": "^5.12.8",
     "globals": "^17.14.0",
-    "jose": "^6.2.15",
+    "jose": "^6.2.18",
     "prettier": "^3.9.10",
     "tsx": "^4.23.15",
     "typescript": "^5.7.2",
