@@ -8,10 +8,17 @@ name: dependabot auto-merge
 # Three guards, all of which must hold:
 #   1. the PR is authored by dependabot[bot];
 #   2. the update type is semver-patch or semver-minor (never a major);
-#   3. no updated dependency is on the trust path.
+#   3. no updated dependency is on the trust path or needs a written requalification.
 #
 # Trust-path packages are excluded by name because CONTRIBUTING requires a written re-check
 # note on the validation / token-verification path for them, and a note is a human act.
+#
+# onnxruntime-node is excluded for a different reason, learned the hard way on #361: a bump to
+# it is only half a change. packages/judge/models/manifest.json lists the qualified runtime
+# identities, and `buildJudgeRegistry` refuses to start a production API on a runtime that is
+# not listed, so the pin and the manifest must move together with measured parity evidence.
+# Auto-merge took #361 in on its own at the pin-only head while that evidence was being pushed
+# to the branch, and left main pinning a runtime its own manifest rejected.
 on: pull_request_target
 
 permissions:
@@ -33,8 +40,10 @@ jobs:
         id: guard
         env:
           # zod and jose per CONTRIBUTING.md "Trust-path libraries"; pkijs and asn1js because
-          # they parse RFC 3161 tokens on the evidence-admissibility path (see #324).
-          TRUST_PATH: zod jose pkijs asn1js
+          # they parse RFC 3161 tokens on the evidence-admissibility path (see #324);
+          # onnxruntime-node because its version is a qualified-runtime identity that must be
+          # requalified by measurement in the model manifest (see #361 and the header above).
+          TRUST_PATH: zod jose pkijs asn1js onnxruntime-node
           UPDATED: ${{ steps.meta.outputs.dependency-names }}
         run: |
           blocked=""
