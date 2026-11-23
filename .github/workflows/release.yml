@@ -66,9 +66,21 @@ jobs:
       # npm trusted publishing (OIDC) needs npm >= 11.5.1; Node 22 ships npm 10.
       - name: upgrade npm for OIDC trusted publishing
         run: npm install -g npm@latest && npm --version
-      - name: publish @getpharos/sdk to npm (OIDC trusted publishing + provenance)
-        working-directory: packages/sdk-ts
-        run: npm publish --access public
+      # scripts/release-publish.sh, not `npm publish` in a package directory. Two reasons, both
+      # load-bearing: a directory publish uploads package.json verbatim, so @getpharos/sdk
+      # would ship `"@getpharos/pdp-spec": "workspace:^"` and install for nobody; and the
+      # script refuses to publish any package whose @getpharos/* dependencies are not already
+      # resolvable on npm, which is what keeps the order in scripts/release-order.sh real.
+      # Each package is gated on its own repository variable because npm cannot attach a
+      # trusted publisher to a package that does not exist yet (npm/cli#8544) — the first
+      # publish of each new name is a maintainer action. See docs/PUBLISHING.md.
+      - name: publish the npm packages in dependency order (OIDC trusted publishing + provenance)
+        env:
+          PHAROS_NPM_PDP_SPEC_ENABLED: ${{ vars.PHAROS_NPM_PDP_SPEC_ENABLED }}
+          PHAROS_NPM_SDK_ENABLED: ${{ vars.PHAROS_NPM_SDK_ENABLED }}
+          PHAROS_NPM_MIDDLEWARE_ENABLED: ${{ vars.PHAROS_NPM_MIDDLEWARE_ENABLED }}
+          PHAROS_NPM_CLI_ENABLED: ${{ vars.PHAROS_NPM_CLI_ENABLED }}
+        run: bash scripts/release-publish.sh
 
   pypi-publish:
     needs: release-channel

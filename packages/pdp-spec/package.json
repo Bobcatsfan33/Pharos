@@ -1,6 +1,6 @@
 {
   "name": "@getpharos/pdp-spec",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Open Policy Decision Point (PDP) specification for AI agents \u2014 contract, conformance suite, and a reference implementation.",
   "license": "Apache-2.0",
   "type": "module",

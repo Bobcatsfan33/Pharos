@@ -48,7 +48,8 @@ runs), measured on an Apple M2 by
 empty project with npm, and runs every command below. Numbers and the full transcript:
 [docs/adoption/](docs/adoption/). `@getpharos/cli` is not on npm yet — publishing it is the
 one remaining maintainer step — so until then the same path runs from a clone with
-`pnpm --filter @getpharos/cli build`.
+`pnpm --filter @getpharos/cli build`
+([LIMITATIONS §12](docs/LIMITATIONS.md#12-the-cli-and-three-npm-packages-are-not-published-yet-so-the-npx-quickstart-only-works-from-a-clone)).
 
 Then govern the things a coding agent actually does:
 

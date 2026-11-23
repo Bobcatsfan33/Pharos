@@ -1,6 +1,6 @@
 {
   "name": "@getpharos/cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Pharos CLI \u2014 real-time policy verdicts for AI agents with a signed, hash-chained evidence record of every decision. Zero infrastructure: npx @getpharos/cli demo.",
   "license": "Apache-2.0",
   "repository": {
