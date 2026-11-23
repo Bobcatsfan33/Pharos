@@ -107,6 +107,22 @@ describe("ONNX production runtime qualification", () => {
     expect(() =>
       assertQualifiedOnnxRuntime(manifest, "onnxruntime-node@1.20.1/linux-x64"),
     ).not.toThrow();
+    // 1.31.1 was requalified on both platforms by measurement, not by assumption:
+    // docs/benchmarks/ort-1.31-requalification.md (28 records bit-identical to 1.30.0).
+    expect(() =>
+      assertQualifiedOnnxRuntime(manifest, "onnxruntime-node@1.31.1/linux-x64"),
+    ).not.toThrow();
+    expect(() =>
+      assertQualifiedOnnxRuntime(manifest, "onnxruntime-node@1.31.1/darwin-arm64"),
+    ).not.toThrow();
+    // The runtime this build actually pins must be qualified on the platform running the
+    // test, or production would refuse to start with the same manifest. Only asserted on the
+    // two platforms the project qualifies, so a contributor on a third one sees the honest
+    // "not qualified here" rather than a test failure they cannot act on.
+    const here = `${process.platform}-${process.arch}`;
+    if (here === "linux-x64" || here === "darwin-arm64") {
+      expect(() => assertQualifiedOnnxRuntime(manifest)).not.toThrow();
+    }
     expect(() => assertQualifiedOnnxRuntime(manifest, "onnxruntime-node@1.27.0/linux-x64")).toThrow(
       /not production-qualified/,
     );
