@@ -166,6 +166,7 @@ Dependabot opens dependency-update PRs weekly (config:
 | **Runtime-dependency patch/minor** | Merge when CI is green after a skim of the changelog. `no-changeset` label. |
 | **Any major (`x.0.0`)** | One PR at a time. Read the migration notes, get the full suite green, make a deliberate decision. Never batch majors. |
 | **Trust-path libraries** — `zod`, `jose` | A trust-path change even on a routine bump: full suite green and a written note in the PR describing what on the validation / token-verification path was re-checked. |
+| **Qualified-runtime deps** — `onnxruntime-node` | A bump is only half the change. `packages/judge/models/manifest.json` lists the qualified runtime identities and a production API refuses to start on one that is not listed, so the pin and the manifest move together, with measured parity evidence in `docs/benchmarks/`. Never auto-merged. |
 | **`apps/console`-only deps** | Patches: merge if green. Majors: close with reason and defer; the console is not on the critical path. |
 | **GitHub Actions majors** | Grouped; merge when CI is green. |
 
@@ -183,8 +184,14 @@ those. Auto-merge bypasses nothing — GitHub still waits for every required che
 changes who presses the button, not whether the gates ran. Three guards must all hold: the PR
 is authored by `dependabot[bot]`, the update type is `semver-patch` or `semver-minor` (never a
 major), and no updated dependency is on the trust path (`zod`, `jose`, and also `pkijs` and
-`asn1js`, which parse RFC 3161 tokens on the evidence path). A blocked PR gets a log line
-saying which guard stopped it, and waits for a human.
+`asn1js`, which parse RFC 3161 tokens on the evidence path, and `onnxruntime-node`, whose
+version is a qualified-runtime identity). A blocked PR gets a log line saying which guard
+stopped it, and waits for a human.
+
+The `onnxruntime-node` exclusion was added after #361: auto-merge took the pin-only head in on
+its own while the requalification evidence was still being pushed to the branch, leaving `main`
+pinning a runtime its own manifest rejected. A guard that depends on a second commit arriving
+in time is not a guard.
 
 ## Getting help
 
