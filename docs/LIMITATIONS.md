@@ -380,6 +380,33 @@ no decision by default so Claude Code's own permission rules still apply.
   used the locally built bundle for the same reason.
 - Embedded storage posture applies (§8): tamper-evident, offline-verifiable, not WORM.
 
+## 12. The CLI and three npm packages are not published yet, so the `npx` quickstart only works from a clone
+
+**What is true as of 2026-11-23.** `@getpharos/sdk` is on npm at `0.2.0` and installs clean.
+`@getpharos/cli`, `@getpharos/middleware`, `@getpharos/pdp-spec` and the `pharos-runtime`
+wheel have never been published.
+
+- **`npx @getpharos/cli ...`** — every `npx` line in the README, in
+  `packages/cli/README.md`, and in the Claude Code hook install **fails outside this
+  repository**: the package does not exist on npm. From a clone the same commands work through
+  the locally built bundle, which is what `scripts/cli-smoke.sh` and the recorded transcripts
+  use, and what the measured numbers come from.
+- **`@getpharos/sdk@0.2.0` is healthy, but the next version is not releasable alone.** Since
+  the single-schema-source change the SDK imports `@getpharos/pdp-spec`, so `0.3.0` cannot be
+  published until the spec package is. `0.2.0` predates that and has no dependencies.
+- **Why it is not simply fixed.** npm attaches a trusted publisher to a package that already
+  exists, so the first publish of each new name cannot come from CI under this repository's
+  no-tokens posture ([npm/cli#8544](https://github.com/npm/cli/issues/8544)). It is a
+  maintainer action with 2FA, in the dependency order in
+  [`scripts/release-order.sh`](../scripts/release-order.sh).
+- **The rehearsal is real.** `pnpm release:dry-run -- --local-registry` publishes every
+  artifact to a throwaway registry in that order and installs each one from its own tarball,
+  so the order is proven before anything irreversible happens. It reports a package needing an
+  unpublished dependency as `BLOCKED`, never as a regression of a published version.
+
+Tracked as [#344](https://github.com/Bobcatsfan33/Pharos/issues/344). Delete this section when
+the packages are published and the `npx` lines are true for everyone.
+
 ---
 
 *Maintenance: when a roadmap task above lands, delete its entry here (and the corresponding

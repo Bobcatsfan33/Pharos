@@ -1,5 +1,19 @@
 # @getpharos/middleware
 
+## 0.2.0
+
+### Minor Changes
+
+- 1f7599b: Default unmapped liability to irreversible/human-in-loop so platform outages fail closed when a
+  tool integration has not supplied authoritative risk context.
+
+### Patch Changes
+
+- Updated dependencies [8692a22]
+- Updated dependencies [f1ec80f]
+- Updated dependencies [dd915e3]
+  - @getpharos/sdk@0.3.0
+
 ## 0.1.1
 
 ### Patch Changes

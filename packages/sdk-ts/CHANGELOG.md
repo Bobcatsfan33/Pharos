@@ -8,6 +8,33 @@
   identity. Retrying the same identity after a crash retains claim ownership; a different
   identity is refused.
 
+## 0.3.0
+
+### Minor Changes
+
+- f1ec80f: MandateToken support (Workstream A): `submit({ mandateToken })` presents a portable, attenuable
+  mandate; `verifyMandateToken` / `effectiveAuthority` verify one offline against the tenant's
+  published mandate key (`GET /v1/keyset`, Ed25519 or ECDSA P-256); `attenuateMandateToken`
+  narrows one holder-side. With `mandateToken.rootKeys` configured on the client, a structurally
+  invalid token is a Tier-1 block decided locally and still submitted for sealing (`result.sealed`).
+  `mandateToken.localAllow` (default `false`) enables an optimistic local allow for reversible,
+  zero-amount, in-scope actions; the server's sealed verdict stays authoritative.
+- dd915e3: The wire contract has one source. `@getpharos/pdp-spec` now defines the PDP vocabulary and
+  exchange as zod schemas (`WIRE_SCHEMAS`, `PdpRequestSchema`, `PdpResponseSchema`, `VerdictSchema`,
+  …) and publishes them as JSON Schema at `schema/pdp-v1.schema.json`; `validatePdpResponse`
+  validates against the same schema. `@getpharos/sdk`'s public types (`Decision`, `Reversibility`,
+  `OversightMode`, `ActionInput`, `LiabilityInput`, `BlastRadius`, `Verdict`) are derived from the
+  spec package as type-only imports — the SDK still ships with zero runtime dependencies. The
+  Python SDK gains `pharos_sdk.types`, generated from the JSON Schema.
+
+### Patch Changes
+
+- 8692a22: Add replay-safe escalation claims: callers may pass a stable `claimId` so the same durable
+  continuation can recover ownership after a crash while competing identities remain refused.
+- Updated dependencies [8762daf]
+- Updated dependencies [dd915e3]
+  - @getpharos/pdp-spec@1.1.0
+
 ## 0.2.0
 
 ### Minor Changes
