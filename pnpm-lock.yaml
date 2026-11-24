@@ -183,11 +183,11 @@ importers:
         specifier: workspace:*
         version: link:../core
       asn1js:
-        specifier: ^4.0.0
-        version: 4.0.0
+        specifier: ^4.1.0
+        version: 4.1.0
       pkijs:
         specifier: ^4.0.1
-        version: 4.0.1(asn1js@4.0.0)
+        version: 4.0.1(asn1js@4.1.0)
 
   packages/identity:
     dependencies:
@@ -1012,6 +1012,10 @@ packages:
     resolution: {integrity: sha512-y2oDqAwp+VPZMUYFGFFMYlXM8xinwb7ehb69+2EhbEL+n7KsykCQX5F0u3/B+BFHxCkwTyft3T1id0ugyzNHVQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
+  '@peculiar/utils@4.1.1':
+    resolution: {integrity: sha512-Iw+pcp/fKEmKFhM3GCBXWBnfI/KvgZiAnquogvkQf+ExvrVSaj6H0Exa3nU0LgyNRpgnOFyFFpm4T2jAcvbJ0Q==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
 
@@ -1286,8 +1290,8 @@ packages:
   ajv@8.20.0:
     resolution: {integrity: sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==}
 
-  asn1js@4.0.0:
-    resolution: {integrity: sha512-81NlooYbXCbBWL2+p1/ivGyT4AR2+bnfKYlPq/3rCoIPJSuLbdS8G70XYt561wOJnbaYfBS2HQDMENaX5hM2vA==}
+  asn1js@4.1.0:
+    resolution: {integrity: sha512-kcL7adqQpfp+n+18Hh43X5bmN97JSULs26OpJSycfQA6pWXxxPUgMZc+SqfmB3im32zno+u2qxCd7fTJxVai+A==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   assertion-error@2.0.1:
@@ -2870,6 +2874,8 @@ snapshots:
 
   '@peculiar/utils@4.1.0': {}
 
+  '@peculiar/utils@4.1.1': {}
+
   '@pinojs/redact@0.4.0': {}
 
   '@pnpm/deps.graph-sequencer@1100.0.1': {}
@@ -3131,9 +3137,9 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
-  asn1js@4.0.0:
+  asn1js@4.1.0:
     dependencies:
-      '@peculiar/utils': 4.1.0
+      '@peculiar/utils': 4.1.1
 
   assertion-error@2.0.1: {}
 
@@ -3703,11 +3709,11 @@ snapshots:
       sonic-boom: 4.2.1
       thread-stream: 4.2.0
 
-  pkijs@4.0.1(asn1js@4.0.0):
+  pkijs@4.0.1(asn1js@4.1.0):
     dependencies:
       '@noble/hashes': 2.4.0
       '@peculiar/utils': 4.1.0
-      asn1js: 4.0.0
+      asn1js: 4.1.0
       bytestreamjs: 3.0.0
 
   postcss@8.5.33:
